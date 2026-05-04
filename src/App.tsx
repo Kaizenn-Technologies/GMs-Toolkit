@@ -65,7 +65,7 @@ export default function App() {
   const addClassSelection = () => {
     const newId = (Math.max(...classSelections.map((c) => parseInt(c.id)), 0) + 1).toString();
     const availableClass = classNames.find(name => !classSelections.some(c => c.className === name)) || "Wizard";
-    
+
     setClassSelections([
       ...classSelections,
       { id: newId, className: availableClass, level: 1 },
@@ -92,6 +92,22 @@ export default function App() {
 
   const result = calculateHP(classSelections, conModifier, tough, hillDwarf, true);
   const rolledResult = calculateHP(classSelections, conModifier, tough, hillDwarf, false);
+
+  const diff = rolledResult.totalHP - result.totalHP;
+  const threshold = Math.abs(conModifier) + (tough ? 2 : 0) + (hillDwarf ? 1 : 0);
+
+  let rollColorClass = "text-muted-foreground";
+  let rollIcon = null;
+
+
+
+  if (diff > threshold) {
+    rollColorClass = "text-[#00c93cff] dark:text-[#10ff58ff]";
+    rollIcon = <span className="absolute -right-5 top-0 text-[18px]">▲</span>;
+  } else if (diff < -threshold) {
+    rollColorClass = "text-[#ff3d3d]";
+    rollIcon = <span className="absolute -right-5 top-1 text-[18px]">▼</span>;
+  }
 
   const handleRollAgain = () => {
     setRolledKey((prev) => prev + 1);
@@ -122,9 +138,15 @@ export default function App() {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* INPUT SECTION */}
           <div>
-            {/* <h2 className="text-xl font-semibold mb-4">Input</h2> */}
+            {/* <div>
+              <p className="text-2xl font-bold mb-2">D&D HP Calculator</p>
+              <p className="text-muted-foreground pb-4 ">Calculate your character's hit points based on class, level, and modifiers.</p>
+              </div> */}
+
             <Card>
+              {/* <h2 className="text-xl font-semibold text-left pl-2">Class Picker</h2> */}
               <CardContent className=" space-y-6">
+                <p className="text-xl font-semibold text-center pb-2">Class Picker</p>
                 {/* Class Selections */}
                 <div className="space-y-4">
                   {classSelections.map((selection, index) => (
@@ -282,7 +304,7 @@ export default function App() {
                   </TabsList>
 
                   <TabsContent value="average" className="mt-6 space-y-6">
-                    <div className="border  p-6">
+                    <div className="p-2 pb-0">
                       <div className="text-center">
                         <div className="text-5xl font-bold mb-2">
                           {result.totalHP}
@@ -293,7 +315,7 @@ export default function App() {
                       </div>
                     </div>
 
-                    <div className="border  p-4">
+                    <div>
                       <div className="text-xs font-semibold text-muted-foreground mb-3">
                         Breakdown:
                       </div>
@@ -318,18 +340,30 @@ export default function App() {
                   </TabsContent>
 
                   <TabsContent value="rolled" className="mt-6 space-y-6" key={rolledKey}>
-                    <div className="border  p-6">
+                    <div className="p-2 pb-0">
                       <div className="text-center">
-                        <div className="text-5xl font-bold mb-2">
-                          {rolledResult.totalHP}
-                        </div>
+                        <TooltipProvider delay={100}>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <div className={`cursor-help text-5xl font-bold mb-2 flex justify-center ${rollColorClass}`}>
+                                <div className="relative">
+                                  {rolledResult.totalHP}
+                                  {rollIcon}
+                                </div>
+                              </div>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              <p>Difference from average: {diff > 0 ? `+${diff}` : diff}</p>
+                            </TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
                         <div className="text-sm text-muted-foreground font-medium">
                           Total HP
                         </div>
                       </div>
                     </div>
 
-                    <div className="border  p-4">
+                    <div className="mb-2">
                       <div className="text-xs font-semibold text-muted-foreground mb-3">
                         Breakdown:
                       </div>
