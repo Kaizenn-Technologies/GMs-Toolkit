@@ -4,6 +4,9 @@ import path from 'path'
 import { defineConfig } from 'vite'
 
 
+import { cloudflare } from "@cloudflare/vite-plugin";
+
+
 // https://vite.dev/config/
 export default defineConfig({
   resolve: {
@@ -11,5 +14,5 @@ export default defineConfig({
       "@": path.resolve(__dirname, "./src"),
     },
   },
-  plugins: [react(), tailwindcss()],
+  plugins: [react(), tailwindcss(), cloudflare()],
 })
