@@ -251,14 +251,16 @@ export default function App() {
                           onCheckedChange={(checked) => setTough(checked as boolean)}
                         />
                         <Tooltip>
-                          <TooltipTrigger asChild>
-                            <label
-                              htmlFor="tough"
-                              className="text-sm font-medium cursor-help border-b border-dashed border-muted-foreground/50"
-                            >
-                              Tough Origin Feat
-                            </label>
-                          </TooltipTrigger>
+                          <TooltipTrigger
+                            render={
+                              <label
+                                htmlFor="tough"
+                                className="text-sm font-medium cursor-help border-b border-dashed border-muted-foreground/50"
+                              >
+                                Tough Origin Feat
+                              </label>
+                            }
+                          />
                           <TooltipContent>
                             <p>+2 for each level</p>
                           </TooltipContent>
@@ -272,14 +274,16 @@ export default function App() {
                           onCheckedChange={(checked) => setHillDwarf(checked as boolean)}
                         />
                         <Tooltip>
-                          <TooltipTrigger asChild>
-                            <label
-                              htmlFor="hillDwarf"
-                              className="text-sm font-medium cursor-help border-b border-dashed border-muted-foreground/50"
-                            >
-                              Hill Dwarf Lineage
-                            </label>
-                          </TooltipTrigger>
+                          <TooltipTrigger
+                            render={
+                              <label
+                                htmlFor="hillDwarf"
+                                className="text-sm font-medium cursor-help border-b border-dashed border-muted-foreground/50"
+                              >
+                                Hill Dwarf Lineage
+                              </label>
+                            }
+                          />
                           <TooltipContent>
                             <p>Dwarven Toughness: +1 for each level</p>
                           </TooltipContent>
@@ -344,14 +348,16 @@ export default function App() {
                       <div className="text-center">
                         <TooltipProvider delay={100}>
                           <Tooltip>
-                            <TooltipTrigger asChild>
-                              <div className={`cursor-help text-5xl font-bold mb-2 flex justify-center ${rollColorClass}`}>
-                                <div className="relative">
-                                  {rolledResult.totalHP}
-                                  {rollIcon}
+                            <TooltipTrigger
+                              render={
+                                <div className={`cursor-help text-5xl font-bold mb-2 flex justify-center ${rollColorClass}`}>
+                                  <div className="relative">
+                                    {rolledResult.totalHP}
+                                    {rollIcon}
+                                  </div>
                                 </div>
-                              </div>
-                            </TooltipTrigger>
+                              }
+                            />
                             <TooltipContent>
                               <p>Difference from average: {diff > 0 ? `+${diff}` : diff}</p>
                             </TooltipContent>
