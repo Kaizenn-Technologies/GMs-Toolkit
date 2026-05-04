@@ -1,130 +1,88 @@
-import type { ClassSelection, CalculationResult } from "@/types";
+import type { ClassSelection, CalculationResult, BreakdownItem } from "@/types";
 import { classes } from "./classes";
-
-export interface Rolls {
-    [key: string]: number[]; // Format: "ClassName_levelIndex" -> [rolls...]
-}
-
-export const generateRolls = (
-    classSelections: ClassSelection[]
-): Rolls => {
-    const rolls: Rolls = {};
-
-    classSelections.forEach((selection) => {
-        const classData = classes[selection.className.toLowerCase()];
-        if (!classData) return;
-
-        const hitDie = classData.hitDie;
-        const key = `${selection.className}_${selection.level}`;
-        const levelRolls: number[] = [];
-
-        for (let i = 1; i <= selection.level; i++) {
-            if (i === 1) {
-                // Level 1: always max
-                levelRolls.push(hitDie);
-            } else {
-                // Subsequent levels: roll 1 to max
-                levelRolls.push(Math.floor(Math.random() * hitDie) + 1);
-            }
-        }
-
-        rolls[key] = levelRolls;
-    });
-
-    return rolls;
-};
-
 
 export const calculateHP = (
     classSelections: ClassSelection[],
     conModifier: number,
     tough: boolean,
-    highElf: boolean,
+    hillDwarf: boolean,
     useAverage: boolean = true
 ): CalculationResult => {
     let totalHP = 0;
-    const breakdownLines: string[] = [];
-    const rolls = useAverage ? null : generateRolls(classSelections);
+    const breakdown: BreakdownItem[] = [];
 
-    // Find the class with the highest hit die for 1st level
-    let firstLevelClass: ClassSelection | null = null;
-    let maxHitDie = 0;
-    classSelections.forEach((selection) => {
-        const classData = classes[selection.className.toLowerCase()];
-        if (classData && classData.hitDie > maxHitDie) {
-            maxHitDie = classData.hitDie;
-            firstLevelClass = selection;
-        }
+    // Sort classes by hit die descending
+    const sortedSelections = [...classSelections].sort((a, b) => {
+        const classA = classes[a.className.toLowerCase()]?.hitDie || 0;
+        const classB = classes[b.className.toLowerCase()]?.hitDie || 0;
+        return classB - classA;
     });
 
-    // Track how many levels have been processed for each class
-    const classLevelTracker: Record<string, number> = {};
-    let firstLevelGranted = false;
+    let characterLevel = 0;
 
-    classSelections.forEach((selection) => {
+    sortedSelections.forEach((selection) => {
         const classData = classes[selection.className.toLowerCase()];
         if (!classData) return;
 
         const hitDie = classData.hitDie;
         const levels = selection.level;
-        const key = `${selection.className}_${selection.level}`;
 
         for (let i = 1; i <= levels; i++) {
+            characterLevel++;
             let levelHP = 0;
-            const classKey = selection.className;
-            classLevelTracker[classKey] = (classLevelTracker[classKey] || 0) + 1;
-            const currentLevel = classLevelTracker[classKey];
+            let rollValue = 0;
+            const isFirstLevel = characterLevel === 1;
 
-            // Grant max HP at 1st level to the class with the highest hit die
-            if (!firstLevelGranted && firstLevelClass && selection.className === firstLevelClass.className && currentLevel === 1) {
-                levelHP = hitDie + conModifier;
-                breakdownLines.push(`${selection.className} Level ${currentLevel}: (${hitDie}+${conModifier}) [Max HP at 1st level]`);
-                firstLevelGranted = true;
+            if (isFirstLevel) {
+                rollValue = hitDie;
             } else {
                 if (useAverage) {
-                    // Average: (max + 1) / 2, rounded up
-                    const avgRoll = Math.ceil((hitDie + 1) / 2);
-                    levelHP = avgRoll + conModifier;
-                    breakdownLines.push(`${selection.className} Level ${currentLevel}: ${avgRoll}+${conModifier}=${levelHP}`);
+                    rollValue = Math.ceil((hitDie + 1) / 2);
                 } else {
-                    // Use pre-generated rolls
-                    if (rolls && rolls[key]) {
-                        const roll = rolls[key][currentLevel - 1];
-                        levelHP = roll + conModifier;
-                        breakdownLines.push(`${selection.className} Level ${currentLevel}: ${roll}+${conModifier}=${levelHP}`);
-                    }
+                    rollValue = Math.floor(Math.random() * hitDie) + 1;
                 }
             }
 
+            const toughBonus = tough ? 2 : 0;
+            const hillDwarfBonus = hillDwarf ? 1 : 0;
+            
+            levelHP = rollValue + conModifier + toughBonus + hillDwarfBonus;
             totalHP += levelHP;
+
+            // Construct calculation string
+            const calcParts = [rollValue, conModifier];
+            if (tough) calcParts.push(2);
+            if (hillDwarf) calcParts.push(1);
+            
+            const calcString = calcParts.join("+");
+
+            // Construct tooltip string
+            const tooltipParts = [isFirstLevel ? "Max HP" : "HP", "CON"];
+            if (tough) tooltipParts.push("Tough");
+            if (hillDwarf) tooltipParts.push("Hill Dwarf");
+            
+            const tooltipString = tooltipParts.join("+");
+
+            let valueStr = "";
+            if (isFirstLevel) {
+                valueStr = `(${calcString}) = ${levelHP}`;
+            } else {
+                valueStr = `${calcString} = ${levelHP}`;
+            }
+
+            breakdown.push({
+                label: `${selection.className} Level ${characterLevel}`,
+                value: valueStr,
+                tooltip: tooltipString
+            });
         }
     });
-
-    // Apply Tough feat (+2 HP per level)
-    if (tough) {
-        const toughBonus =
-            classSelections.reduce((acc, sel) => acc + sel.level, 0) * 2;
-        totalHP += toughBonus;
-        breakdownLines.push(`Tough feat: +${toughBonus}`);
-    }
-
-    // High Elf bonus: +1 max HP per character level gained
-    if (highElf) {
-        const characterLevel = classSelections.reduce(
-            (acc, sel) => acc + sel.level,
-            0
-        );
-        totalHP += characterLevel;
-        breakdownLines.push(`High Elf: +${characterLevel}`);
-    }
-
-    const breakdown = breakdownLines.join("\n");
 
     return {
         classSelections,
         conModifier,
         tough,
-        highElf,
+        hillDwarf,
         totalHP,
         breakdown,
     };

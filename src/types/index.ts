@@ -13,7 +13,13 @@ export interface CalculationResult {
     classSelections: ClassSelection[];
     conModifier: number;
     tough: boolean;
-    highElf: boolean;
+    hillDwarf: boolean;
     totalHP: number;
-    breakdown: string;
+    breakdown: BreakdownItem[];
+}
+
+export interface BreakdownItem {
+    label: string;
+    value: string;
+    tooltip: string;
 }
