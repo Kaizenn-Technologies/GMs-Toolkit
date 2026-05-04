@@ -34,6 +34,7 @@ export const generateRolls = (
     return rolls;
 };
 
+
 export const calculateHP = (
     classSelections: ClassSelection[],
     conModifier: number,
@@ -45,6 +46,21 @@ export const calculateHP = (
     const breakdownLines: string[] = [];
     const rolls = useAverage ? null : generateRolls(classSelections);
 
+    // Find the class with the highest hit die for 1st level
+    let firstLevelClass: ClassSelection | null = null;
+    let maxHitDie = 0;
+    classSelections.forEach((selection) => {
+        const classData = classes[selection.className.toLowerCase()];
+        if (classData && classData.hitDie > maxHitDie) {
+            maxHitDie = classData.hitDie;
+            firstLevelClass = selection;
+        }
+    });
+
+    // Track how many levels have been processed for each class
+    const classLevelTracker: Record<string, number> = {};
+    let firstLevelGranted = false;
+
     classSelections.forEach((selection) => {
         const classData = classes[selection.className.toLowerCase()];
         if (!classData) return;
@@ -55,23 +71,27 @@ export const calculateHP = (
 
         for (let i = 1; i <= levels; i++) {
             let levelHP = 0;
+            const classKey = selection.className;
+            classLevelTracker[classKey] = (classLevelTracker[classKey] || 0) + 1;
+            const currentLevel = classLevelTracker[classKey];
 
-            if (i === 1) {
-                // Level 1: max hit die + CON modifier
+            // Grant max HP at 1st level to the class with the highest hit die
+            if (!firstLevelGranted && firstLevelClass && selection.className === firstLevelClass.className && currentLevel === 1) {
                 levelHP = hitDie + conModifier;
-                breakdownLines.push(`${selection.className} Level ${i}: (${hitDie}+${conModifier})`);
+                breakdownLines.push(`${selection.className} Level ${currentLevel}: (${hitDie}+${conModifier}) [Max HP at 1st level]`);
+                firstLevelGranted = true;
             } else {
                 if (useAverage) {
                     // Average: (max + 1) / 2, rounded up
                     const avgRoll = Math.ceil((hitDie + 1) / 2);
                     levelHP = avgRoll + conModifier;
-                    breakdownLines.push(`${selection.className} Level ${i}: ${avgRoll}+${conModifier}=${levelHP}`);
+                    breakdownLines.push(`${selection.className} Level ${currentLevel}: ${avgRoll}+${conModifier}=${levelHP}`);
                 } else {
                     // Use pre-generated rolls
                     if (rolls && rolls[key]) {
-                        const roll = rolls[key][i - 1];
+                        const roll = rolls[key][currentLevel - 1];
                         levelHP = roll + conModifier;
-                        breakdownLines.push(`${selection.className} Level ${i}: ${roll}+${conModifier}=${levelHP}`);
+                        breakdownLines.push(`${selection.className} Level ${currentLevel}: ${roll}+${conModifier}=${levelHP}`);
                     }
                 }
             }
