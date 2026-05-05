@@ -1,6 +1,21 @@
+export type Ability =
+    | "Strength"
+    | "Dexterity"
+    | "Constitution"
+    | "Intelligence"
+    | "Wisdom"
+    | "Charisma";
+
+export type PrimaryStat =
+    | { type: "single"; value: Ability }
+    | { type: "multiple"; values: Ability[] }
+    | { type: "choice"; options: Ability[] };
+
 export interface ClassData {
     name: string;
     hitDie: number;
+    primaryStat: PrimaryStat;
+    savingThrows: Ability[];
 }
 
 export interface ClassSelection {
