@@ -1,6 +1,7 @@
-import { useState } from "react";
-import { Star, RotateCcw, BookOpen, Settings } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { Star, RotateCcw, BookOpen, Settings, Copy, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useLocation } from "react-router-dom";
 import {
   Select,
   SelectContent,
@@ -152,6 +153,8 @@ function defaultBgBonuses(): Record<Ability, number> {
 
 function StatGeneratorInner() {
   const { settings, openSettings } = useSettings();
+  const location = useLocation();
+  const hasHydratedFromUrl = useRef(false);
   const pb = settings.pointBuy;
 
   const {
@@ -170,6 +173,7 @@ function StatGeneratorInner() {
   const [bgBonuses, setBgBonuses] = useState<Record<Ability, number>>(
     defaultBgBonuses(),
   );
+  const [copied, setCopied] = useState(false);
 
   const spent = pointsUsed(scores, minPurchasable);
   const remaining = pointPool - spent;
@@ -212,11 +216,125 @@ function StatGeneratorInner() {
     setBgBonuses(defaultBgBonuses());
   };
 
-  const handleBackgroundChange = (val: string) => {
+  const handleBackgroundChange = (val: string | null) => {
     if (!val) return;
     setSelectedBackground(val);
     setBgBonuses(defaultBgBonuses());
   };
+
+  const handleCopyLink = async () => {
+    const shareUrl = new URL(window.location.href);
+    shareUrl.pathname = "/stat-generator";
+    shareUrl.search = "";
+
+    const params = shareUrl.searchParams;
+    params.set("class", selectedClass);
+    params.set("background", selectedBackground);
+    params.set("str", String(scores.Strength));
+    params.set("dex", String(scores.Dexterity));
+    params.set("con", String(scores.Constitution));
+    params.set("int", String(scores.Intelligence));
+    params.set("wis", String(scores.Wisdom));
+    params.set("cha", String(scores.Charisma));
+    params.set("bstr", String(bgBonuses.Strength));
+    params.set("bdex", String(bgBonuses.Dexterity));
+    params.set("bcon", String(bgBonuses.Constitution));
+    params.set("bint", String(bgBonuses.Intelligence));
+    params.set("bwis", String(bgBonuses.Wisdom));
+    params.set("bcha", String(bgBonuses.Charisma));
+
+    try {
+      await navigator.clipboard.writeText(shareUrl.toString());
+      setCopied(true);
+      window.setTimeout(() => setCopied(false), 1500);
+    } catch {
+      // If clipboard permissions are blocked, fail quietly.
+    }
+  };
+
+  useEffect(() => {
+    if (hasHydratedFromUrl.current) return;
+    hasHydratedFromUrl.current = true;
+
+    const params = new URLSearchParams(location.search);
+    if (!params.toString()) return;
+
+    const classFromUrl = params.get("class");
+    if (classFromUrl && classNames.includes(classFromUrl)) {
+      setSelectedClass(classFromUrl);
+    }
+
+    const bgFromUrl = params.get("background");
+    if (bgFromUrl && backgroundNames.includes(bgFromUrl)) {
+      setSelectedBackground(bgFromUrl);
+    }
+
+    const toScore = (val: string | null) => {
+      if (!val) return null;
+      const parsed = Number.parseInt(val, 10);
+      if (Number.isNaN(parsed)) return null;
+      return Math.max(clampedMin, Math.min(clampedMax, parsed));
+    };
+
+    const nextScores = makeDefaultScores(minPurchasable);
+    const str = toScore(params.get("str"));
+    const dex = toScore(params.get("dex"));
+    const con = toScore(params.get("con"));
+    const int = toScore(params.get("int"));
+    const wis = toScore(params.get("wis"));
+    const cha = toScore(params.get("cha"));
+
+    if (str !== null) nextScores.Strength = str;
+    if (dex !== null) nextScores.Dexterity = dex;
+    if (con !== null) nextScores.Constitution = con;
+    if (int !== null) nextScores.Intelligence = int;
+    if (wis !== null) nextScores.Wisdom = wis;
+    if (cha !== null) nextScores.Charisma = cha;
+    setScores(nextScores);
+
+    const toBgBonus = (val: string | null) => {
+      if (!val) return null;
+      const parsed = Number.parseInt(val, 10);
+      if (Number.isNaN(parsed)) return null;
+      return Math.max(0, Math.min(BG_BONUS_MAX, parsed));
+    };
+
+    const nextBonuses = defaultBgBonuses();
+    let remainingBonusPool = bgBonusPool;
+    const bstr = toBgBonus(params.get("bstr"));
+    const bdex = toBgBonus(params.get("bdex"));
+    const bcon = toBgBonus(params.get("bcon"));
+    const bint = toBgBonus(params.get("bint"));
+    const bwis = toBgBonus(params.get("bwis"));
+    const bcha = toBgBonus(params.get("bcha"));
+
+    if (bstr !== null) {
+      nextBonuses.Strength = Math.min(bstr, remainingBonusPool);
+      remainingBonusPool -= nextBonuses.Strength;
+    }
+    if (bdex !== null) {
+      nextBonuses.Dexterity = Math.min(bdex, remainingBonusPool);
+      remainingBonusPool -= nextBonuses.Dexterity;
+    }
+    if (bcon !== null) {
+      nextBonuses.Constitution = Math.min(bcon, remainingBonusPool);
+      remainingBonusPool -= nextBonuses.Constitution;
+    }
+    if (bint !== null) {
+      nextBonuses.Intelligence = Math.min(bint, remainingBonusPool);
+      remainingBonusPool -= nextBonuses.Intelligence;
+    }
+    if (bwis !== null) {
+      nextBonuses.Wisdom = Math.min(bwis, remainingBonusPool);
+      remainingBonusPool -= nextBonuses.Wisdom;
+    }
+    if (bcha !== null) {
+      nextBonuses.Charisma = Math.min(bcha, remainingBonusPool);
+      remainingBonusPool -= nextBonuses.Charisma;
+    }
+
+    setBgBonuses(nextBonuses);
+  }, [bgBonusPool, clampedMax, clampedMin, location.search, minPurchasable]);
 
   const pointsColor =
     remaining < 0
@@ -247,7 +365,7 @@ function StatGeneratorInner() {
         {/* Book + Settings icons */}
         <div className="flex items-center gap-1 mt-1">
           <TooltipProvider delay={100}>
-            <Tooltip>
+            {/* <Tooltip>
               <TooltipTrigger
                 render={
                   <Button variant="ghost" size="icon" disabled>
@@ -258,7 +376,7 @@ function StatGeneratorInner() {
               <TooltipContent>
                 <p>Rules (coming soon)</p>
               </TooltipContent>
-            </Tooltip>
+            </Tooltip> */}
 
             <Tooltip>
               <TooltipTrigger
@@ -512,10 +630,20 @@ function StatGeneratorInner() {
 
               {/* Footer row: Reset + Points counters */}
               <div className="flex items-center justify-between pt-2 border-t gap-4 flex-wrap">
-                <Button variant="outline" size="sm" onClick={handleReset}>
-                  <RotateCcw className="w-3.5 h-3.5 mr-1.5" />
-                  Reset
-                </Button>
+                <div className="flex items-center gap-2">
+                  <Button variant="outline" size="sm" onClick={handleReset}>
+                    <RotateCcw className="w-3.5 h-3.5 mr-1.5" />
+                    Reset
+                  </Button>
+                  <Button variant="outline" size="sm" onClick={handleCopyLink}>
+                    {copied ? (
+                      <Check className="w-3.5 h-3.5 mr-1.5" />
+                    ) : (
+                      <Copy className="w-3.5 h-3.5 mr-1.5" />
+                    )}
+                    {copied ? "Copied" : "Copy Link"}
+                  </Button>
+                </div>
 
                 <div className="flex items-center gap-6 text-sm font-medium flex-wrap">
                   {/* Background bonus pool */}

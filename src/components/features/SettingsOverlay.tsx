@@ -307,7 +307,7 @@ export function SettingsOverlay() {
         {/* Footer */}
         <div className="shrink-0 px-6 py-4 border-t border-border flex items-center justify-between gap-3">
           <Button
-            variant="ghost"
+            variant="secondary"
             size="sm"
             className="text-muted-foreground hover:text-foreground"
             onClick={() => { resetPointBuy(); }}
