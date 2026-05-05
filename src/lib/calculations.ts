@@ -1,5 +1,7 @@
-import type { ClassSelection, CalculationResult, BreakdownItem } from "@/types";
+import type { ClassSelection, CalculationResult, BreakdownItem, ClassData } from "@/types";
 import { classes } from "./classes";
+
+const classesMap = classes as Record<string, ClassData>;
 
 export const calculateHP = (
     classSelections: ClassSelection[],
@@ -13,15 +15,15 @@ export const calculateHP = (
 
     // Sort classes by hit die descending
     const sortedSelections = [...classSelections].sort((a, b) => {
-        const classA = classes[a.className.toLowerCase()]?.hitDie || 0;
-        const classB = classes[b.className.toLowerCase()]?.hitDie || 0;
+        const classA = classesMap[a.className.toLowerCase()]?.hitDie || 0;
+        const classB = classesMap[b.className.toLowerCase()]?.hitDie || 0;
         return classB - classA;
     });
 
     let characterLevel = 0;
 
     sortedSelections.forEach((selection) => {
-        const classData = classes[selection.className.toLowerCase()];
+        const classData = classesMap[selection.className.toLowerCase()];
         if (!classData) return;
 
         const hitDie = classData.hitDie;
