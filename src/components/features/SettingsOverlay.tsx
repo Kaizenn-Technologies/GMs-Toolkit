@@ -39,6 +39,13 @@ export interface PointBuySettings {
 
 export interface AppSettings {
   pointBuy: PointBuySettings;
+  roll: RollSettings;
+}
+
+export interface RollSettings {
+  rerollOnes: boolean;
+  sortDescending: boolean;
+  colorDice: boolean;
 }
 
 // ─── Defaults ─────────────────────────────────────────────────────────────────
@@ -51,11 +58,18 @@ export const DEFAULT_POINT_BUY_SETTINGS: PointBuySettings = {
   enforceAsiFromBackground: true,
 };
 
+export const DEFAULT_ROLL_SETTINGS: RollSettings = {
+  rerollOnes: false,
+  sortDescending: true,
+  colorDice: true,
+};
+
 // ─── Context ──────────────────────────────────────────────────────────────────
 
 interface SettingsContextValue {
   settings: AppSettings;
   updatePointBuy: (patch: Partial<PointBuySettings>) => void;
+  updateRoll: (patch: Partial<RollSettings>) => void;
   resetPointBuy: () => void;
   isOpen: boolean;
   openSettings: () => void;
@@ -67,6 +81,7 @@ const SettingsContext = createContext<SettingsContextValue | null>(null);
 export function SettingsProvider({ children }: { children: ReactNode }) {
   const [settings, setSettings] = useState<AppSettings>({
     pointBuy: { ...DEFAULT_POINT_BUY_SETTINGS },
+    roll: { ...DEFAULT_ROLL_SETTINGS },
   });
   const [isOpen, setIsOpen] = useState(false);
 
@@ -74,6 +89,12 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
     setSettings((prev) => ({
       ...prev,
       pointBuy: { ...prev.pointBuy, ...patch },
+    }));
+
+  const updateRoll = (patch: Partial<RollSettings>) =>
+    setSettings((prev) => ({
+      ...prev,
+      roll: { ...prev.roll, ...patch },
     }));
 
   const resetPointBuy = () =>
@@ -87,6 +108,7 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
       value={{
         settings,
         updatePointBuy,
+        updateRoll,
         resetPointBuy,
         isOpen,
         openSettings: () => setIsOpen(true),
@@ -227,7 +249,7 @@ function PointBuySettingsPanel() {
 // ─── Overlay ──────────────────────────────────────────────────────────────────
 
 export function SettingsOverlay() {
-  const { isOpen, closeSettings, resetPointBuy } = useSettings();
+  const { isOpen, closeSettings, resetPointBuy, settings, updateRoll } = useSettings();
 
   if (!isOpen) return null;
 
@@ -286,11 +308,38 @@ export function SettingsOverlay() {
               <PointBuySettingsPanel />
             </TabsContent>
 
-            {/* Roll — placeholder */}
+            {/* Roll settings */}
             <TabsContent value="roll" className="flex-1 px-6 pb-6 mt-0 pt-2">
-              <div className="flex flex-col items-center justify-center h-48 gap-3 text-muted-foreground">
-                <Dice5 className="w-10 h-10 opacity-30" />
-                <p className="text-sm">Roll settings — coming soon!</p>
+              <div className="space-y-2">
+                <SettingRow
+                  label="Reroll 1s"
+                  description="If enabled, any die that comes up 1 will be rerolled once."
+                >
+                  <Switch
+                    checked={settings.roll.rerollOnes}
+                    onCheckedChange={(v) => updateRoll({ rerollOnes: v })}
+                  />
+                </SettingRow>
+
+                <SettingRow
+                  label="Sort dice roll"
+                  description="Display dice in descending order when enabled."
+                >
+                  <Switch
+                    checked={settings.roll.sortDescending}
+                    onCheckedChange={(v) => updateRoll({ sortDescending: v })}
+                  />
+                </SettingRow>
+
+                <SettingRow
+                  label="Color dice roll"
+                  description="Highlight 1s in red and 6s in green in the dice display."
+                >
+                  <Switch
+                    checked={settings.roll.colorDice}
+                    onCheckedChange={(v) => updateRoll({ colorDice: v })}
+                  />
+                </SettingRow>
               </div>
             </TabsContent>
 
@@ -310,7 +359,10 @@ export function SettingsOverlay() {
             variant="secondary"
             size="sm"
             className="text-muted-foreground hover:text-foreground"
-            onClick={() => { resetPointBuy(); }}
+            onClick={() => {
+              resetPointBuy();
+              updateRoll({ rerollOnes: DEFAULT_ROLL_SETTINGS.rerollOnes, sortDescending: DEFAULT_ROLL_SETTINGS.sortDescending, colorDice: DEFAULT_ROLL_SETTINGS.colorDice });
+            }}
           >
             <RotateCcw className="w-3.5 h-3.5 mr-1.5" />
             Reset to defaults

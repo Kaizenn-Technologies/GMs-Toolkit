@@ -240,6 +240,16 @@ function StatGeneratorInner() {
     defaultManualBonuses(),
   );
   const [copied, setCopied] = useState(false);
+  // Rolled stats state
+  const [rolledBoxes, setRolledBoxes] = useState<
+    Record<Ability, { rolls: number[]; total: number }>
+  >(() =>
+    ABILITIES.reduce((acc, ability) => {
+      acc[ability] = { rolls: [0, 0, 0, 0], total: 0 };
+      return acc;
+    }, {} as Record<Ability, { rolls: number[]; total: number }>),
+  );
+  const [showAssignPanel, setShowAssignPanel] = useState(false);
 
   const activeTab: "pointbuy" | "roll" | "standard" =
     location.pathname === STAT_TAB_ROUTES.standard
@@ -252,11 +262,18 @@ function StatGeneratorInner() {
   const remaining = pointPool - spent;
 
   const activeClassForPrimary =
+    // If on Standard tab with no class chosen, don't highlight
     activeTab === "standard" && selectedStandardClass === CHOOSE_STANDARD_CLASS
       ? ""
-      : activeTab === "standard"
+      : // Use selected standard class when on Standard tab
+      activeTab === "standard"
         ? selectedStandardClass
-        : selectedClass;
+        : // When assigning rolled stats, use the class selected in the
+        // assignment UI so the primary highlight updates while assigning
+        activeTab === "roll" && showAssignPanel
+          ? selectedStandardClass
+          : // Otherwise use the main selected class (point buy / default)
+          selectedClass;
   const primaryStatInfo = getPrimaryStatInfo(activeClassForPrimary);
   const primaryStats = primaryStatInfo.abilities;
   const primaryDisplay =
@@ -555,6 +572,111 @@ function StatGeneratorInner() {
     minPurchasable,
   ]);
 
+  // --- Roll helpers ---
+  const rollDie = () => Math.floor(Math.random() * 6) + 1;
+
+  const computeTotalFromRolls = (rolls: number[]) => {
+    if (!rolls.length) return 0;
+    const sum = rolls.reduce((s, v) => s + v, 0);
+    const min = Math.min(...rolls);
+    return sum - min;
+  };
+
+  const rollAllStats = () => {
+    const next: Record<Ability, { rolls: number[]; total: number }> = {} as any;
+    ABILITIES.forEach((ability) => {
+      let rolls = Array.from({ length: 4 }, () => rollDie());
+      if (settings.roll?.rerollOnes) {
+        rolls = rolls.map((r) => (r === 1 ? rollDie() : r));
+      }
+      const total = computeTotalFromRolls(rolls);
+      next[ability] = { rolls, total };
+    });
+    setRolledBoxes(next);
+    setShowAssignPanel(false);
+  };
+
+  const getRolledTotals = () => ABILITIES.map((ab) => rolledBoxes[ab].total);
+
+  const handleShuffleAssign = () => {
+    const totals = getRolledTotals();
+    const shuffled = totals.slice().sort(() => 0.5 - Math.random());
+    const next = ABILITIES.reduce((acc, ability, idx) => {
+      acc[ability] = shuffled[idx];
+      return acc;
+    }, {} as Record<Ability, number | null>);
+    setStandardScores(next);
+    setShowAssignPanel(true);
+  };
+
+  const handleAssignManually = () => {
+    setStandardScores(makeUnfilledStandardScores());
+    setShowAssignPanel(true);
+  };
+
+  const handleRolledAssignChange = (ability: Ability, selectedValue: string | null) => {
+    if (!selectedValue) return;
+    const nextScore = Number.parseInt(selectedValue, 10);
+    // Count how many times this roll value exists in the pool
+    const pool = getRolledTotals();
+    const poolCount = pool.filter((p) => p === nextScore).length;
+
+    // Count how many other abilities (excluding the current) already use it
+    const usedByOthers = ABILITIES.filter(
+      (ab) => ab !== ability && standardScores[ab] === nextScore,
+    ).length;
+
+    // If there are remaining instances in the pool, just assign without
+    // touching the other ability that already has the same value.
+    if (usedByOthers < poolCount) {
+      setStandardScores((prev) => ({ ...prev, [ability]: nextScore }));
+      return;
+    }
+
+    // Otherwise no free instance exists — fall back to swapping with the
+    // first ability that currently holds the value so the selection stays
+    // consistent with available rolls.
+    const duplicateAbility = ABILITIES.find(
+      (ab) => ab !== ability && standardScores[ab] === nextScore,
+    );
+
+    if (duplicateAbility) {
+      setStandardScores((prev) => ({
+        ...prev,
+        [duplicateAbility]: prev[ability],
+        [ability]: nextScore,
+      }));
+      return;
+    }
+
+    setStandardScores((prev) => ({ ...prev, [ability]: nextScore }));
+  };
+
+  const handleAssignmentReset = () => {
+    setStandardScores(makeUnfilledStandardScores());
+  };
+
+  const handleShareAssigned = async () => {
+    const shareUrl = new URL(window.location.href);
+    shareUrl.pathname = STAT_TAB_ROUTES.standard;
+    shareUrl.search = "";
+    const params = shareUrl.searchParams;
+    params.set("class", selectedStandardClass === CHOOSE_STANDARD_CLASS ? "" : selectedStandardClass);
+    params.set("background", selectedBackground);
+    if (standardScores.Strength !== null) params.set("str", String(standardScores.Strength));
+    if (standardScores.Dexterity !== null) params.set("dex", String(standardScores.Dexterity));
+    if (standardScores.Constitution !== null) params.set("con", String(standardScores.Constitution));
+    if (standardScores.Intelligence !== null) params.set("int", String(standardScores.Intelligence));
+    if (standardScores.Wisdom !== null) params.set("wis", String(standardScores.Wisdom));
+    if (standardScores.Charisma !== null) params.set("cha", String(standardScores.Charisma));
+
+    try {
+      await navigator.clipboard.writeText(shareUrl.toString());
+      setCopied(true);
+      window.setTimeout(() => setCopied(false), 1500);
+    } catch { }
+  };
+
   const pointsColor =
     remaining < 0
       ? "text-[#ff3d3d]"
@@ -780,11 +902,9 @@ function StatGeneratorInner() {
                       const isBgAbility = bgAbilities.includes(ability);
                       const isAboveMax = score > clampedMax;
 
-                      // Show the bonus stepper when:
-                      //   - enforce is on → only for the bg's abilities
-                      //   - enforce is off → for every ability
-                      const showBgStepper =
-                        enforceAsiFromBackground ? isBgAbility : true;
+                      // Only show the background stepper for abilities granted by
+                      // the selected background.
+                      const showBgStepper = isBgAbility;
 
                       return (
                         <tr
@@ -948,12 +1068,240 @@ function StatGeneratorInner() {
               )}
             </TabsContent>
 
-            {/* ── ROLL TAB (placeholder) ── */}
-            <TabsContent value="roll">
-              <div className="flex flex-col items-center justify-center py-16 text-muted-foreground gap-3">
-                <span className="text-4xl">🎲</span>
-                <p className="text-sm">Rolled stats — coming soon!</p>
+            {/* ── ROLL TAB ── */}
+            <TabsContent value="roll" className="space-y-6">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                {ABILITIES.map((ability) => {
+                  const box = rolledBoxes[ability];
+                  const rolls = box?.rolls ?? [0, 0, 0, 0];
+                  const total = box?.total ?? 0;
+                  const displayed = settings.roll?.sortDescending
+                    ? [...rolls].sort((a, b) => b - a)
+                    : rolls;
+
+                  return (
+                    <div
+                      key={ability}
+                      className="bg-card border border-border rounded-md p-4 flex flex-col items-center"
+                    >
+                      <div className="text-sm text-muted-foreground mb-2">
+                        {ability}
+                      </div>
+                      <div className="text-3xl font-bold tabular-nums mb-2">{total}</div>
+                      <div className="text-sm text-muted-foreground/80">
+                        {displayed.map((d, i) => {
+                          const isLast = i === displayed.length - 1;
+                          const colorClass = settings.roll?.colorDice
+                            ? d === 1
+                              ? "text-red-500"
+                              : d === 6
+                                ? "text-emerald-500"
+                                : ""
+                            : "";
+                          return (
+                            <span
+                              key={i}
+                              className={`${colorClass} ${isLast ? "line-through" : ""} mx-0.5`}
+                            >
+                              {d}
+                              {i < displayed.length - 1 ? "+" : ""}
+                            </span>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
+
+              <div className="flex items-center gap-3">
+                <Button onClick={rollAllStats}>Roll Stats</Button>
+                <Button variant="outline" onClick={handleAssignManually}>
+                  Assign manually
+                </Button>
+                <Button variant="outline" onClick={handleShuffleAssign}>
+                  Shuffle
+                </Button>
+              </div>
+
+              {showAssignPanel && (
+                <div className="overflow-x-auto mt-6 pt-4 border-t">
+                  <div className="flex flex-col sm:flex-row sm:items-center gap-3 mb-3">
+                    <label className="text-sm font-semibold shrink-0 sm:w-28">Select Class:</label>
+                    <div className="flex-1 max-w-xs">
+                      <Select value={selectedStandardClass} onValueChange={(val) => val && setSelectedStandardClass(val)}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Choose a class" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value={CHOOSE_STANDARD_CLASS} className="text-muted-foreground">Choose a class</SelectItem>
+                          {classNames.map((name) => (
+                            <SelectItem key={name} value={name}>{name}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <label className="text-sm font-semibold shrink-0">Background:</label>
+                    <div className="flex-1 max-w-xs">
+                      <Select value={selectedBackground} onValueChange={handleBackgroundChange}>
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {backgroundNames.map((name) => (
+                            <SelectItem key={name} value={name}>{name}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div className="flex items-center gap-2 shrink-0">
+                      <TooltipProvider delay={100}>
+                        <Tooltip>
+                          <TooltipTrigger render={<span className="cursor-help border-b border-dashed border-muted-foreground">Feat Bonus</span>} />
+                          <TooltipContent>
+                            <p>Manually add a bonus to ability scores granted by feats.</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                      <Switch size="sm" checked={featBonusEnabled} onCheckedChange={setFeatBonusEnabled} aria-label="Toggle feat bonus" />
+                    </div>
+
+                    <p className="text-xs text-muted-foreground sm:ml-auto">Primary: <span className="font-semibold text-foreground">{primaryDisplay}</span></p>
+                  </div>
+
+                  {/* background pool + share/reset moved to footer below table */}
+                  <table className="w-full text-sm border-separate border-spacing-y-1">
+                    <thead>
+                      <tr className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                        <th className="text-left pb-2 pl-2">Ability</th>
+                        <th className="text-center pb-2">Score</th>
+                        <th className="text-center pb-2">Background</th>
+                        {featBonusEnabled && <th className="text-center pb-2">Feat Bonus</th>}
+                        <th className="text-center pb-2">Total</th>
+                        <th className="text-center pb-2">Modifier</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {ABILITIES.map((ability) => {
+                        const score = standardScores[ability];
+                        const bgBonus = bgBonuses[ability];
+                        const manualBonus = manualBonuses[ability];
+                        const total = score === null ? null : score + bgBonus + (featBonusEnabled ? manualBonus : 0);
+                        const modifier = total === null ? null : getModifier(total);
+
+                        // Build a per-ability available pool: remove one instance for
+                        // each value already assigned to *other* abilities so the
+                        // dropdown shows only the remaining rolls. Keep the
+                        // current ability's value available so it doesn't disappear
+                        // while selected.
+                        const pool = getRolledTotals();
+                        const availablePool = pool.slice().sort((a, b) => b - a);
+                        ABILITIES.forEach((ab) => {
+                          if (ab === ability) return;
+                          const assigned = standardScores[ab];
+                          if (assigned === null) return;
+                          const idx = availablePool.indexOf(assigned);
+                          if (idx !== -1) availablePool.splice(idx, 1);
+                        });
+                        if (score !== null && availablePool.indexOf(score) === -1) {
+                          availablePool.push(score);
+                        }
+
+                        const isBgAbility = bgAbilities.includes(ability);
+                        const isPrimary = primaryStats.includes(ability);
+
+                        return (
+                          <tr key={ability} className={`rounded-md transition-colors ${isPrimary ? "bg-primary/8 dark:bg-primary/10" : "hover:bg-muted/50"}`}>
+                            <td className="py-2 pl-3 pr-4 font-medium rounded-l-md">
+                              <div className="flex items-center gap-1.5">
+                                <span className="hidden sm:inline">{ability}</span>
+                                <span className="sm:hidden text-xs font-bold">{ABILITY_ABBR[ability]}</span>
+                                {isPrimary && (
+                                  <TooltipProvider delay={100}>
+                                    <Tooltip>
+                                      <TooltipTrigger
+                                        render={
+                                          <span className="cursor-help">
+                                            <Star className="w-3.5 h-3.5 text-amber-500 fill-amber-500" />
+                                          </span>
+                                        }
+                                      />
+                                      <TooltipContent>
+                                        <p>Primary stat for selected class</p>
+                                      </TooltipContent>
+                                    </Tooltip>
+                                  </TooltipProvider>
+                                )}
+                              </div>
+                            </td>
+                            <td className="py-2 px-2">
+                              <div className="flex justify-center">
+                                <Select value={score === null ? "" : String(score)} onValueChange={(val) => handleRolledAssignChange(ability, val)}>
+                                  <SelectTrigger className="rounded-none w-28">
+                                    <SelectValue placeholder="Select" />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    {availablePool.map((option, idx) => (
+                                      <SelectItem key={`${option}-${idx}`} value={String(option)}>
+                                        {option}
+                                      </SelectItem>
+                                    ))}
+                                  </SelectContent>
+                                </Select>
+                              </div>
+                            </td>
+
+                            <td className="py-2 px-2">
+                              <div className="flex justify-center">
+                                {isBgAbility ? (
+                                  <StepperInput className="rounded-none w-28" value={bgBonus} min={0} max={BG_BONUS_MAX} onChange={(val) => handleBgBonusChange(ability, val)} />
+                                ) : (
+                                  <span className="inline-block w-28 text-center text-muted-foreground/40 select-none">—</span>
+                                )}
+                              </div>
+                            </td>
+
+                            {featBonusEnabled && (
+                              <td className="py-2 px-2">
+                                <div className="flex justify-center">
+                                  <StepperInput className="rounded-none w-28" value={manualBonus} min={0} max={MANUAL_BONUS_MAX} onChange={(val) => handleManualBonusChange(ability, val)} />
+                                </div>
+                              </td>
+                            )}
+
+                            <td className="py-2 px-2 text-center">
+                              <span className="inline-block w-10 text-center font-bold text-base">{total ?? "—"}</span>
+                            </td>
+
+                            <td className="py-2 pr-3 text-center rounded-r-md">
+                              <span className={`inline-block w-10 text-center text-sm font-semibold ${modifier !== null && modifier > 0 ? "text-[#00c93cff] dark:text-[#10ff58ff]" : modifier !== null && modifier < 0 ? "text-[#ff3d3d]" : "text-muted-foreground"}`}>
+                                {modifier === null ? "—" : formatModifier(modifier)}
+                              </span>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+
+                  <div className="flex items-center justify-between mt-3 gap-3">
+                    <div className="flex items-center gap-3">
+                      <div>
+                        Background Points: <span className={`font-bold tabular-nums ${bgPoolColor}`}>{bgBonusRemaining}</span>
+                        <span className="text-muted-foreground">/{bgBonusPool}</span>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                      <Button variant="outline" size="sm" onClick={handleShareAssigned}>{copied ? "Shared" : "Share"}</Button>
+                      <Button variant="outline" size="sm" onClick={handleAssignmentReset}><RotateCcw className="w-3.5 h-3.5 mr-1.5" />Reset</Button>
+                    </div>
+                  </div>
+
+                </div>
+              )}
             </TabsContent>
 
             {/* ── STANDARD ARRAY TAB ── */}
@@ -1099,8 +1447,10 @@ function StatGeneratorInner() {
                       const modifier = total === null ? null : getModifier(total);
                       const isPrimary = primaryStats.includes(ability);
                       const isBgAbility = bgAbilities.includes(ability);
-                      const showBgStepper =
-                        enforceAsiFromBackground ? isBgAbility : true;
+
+                      // Only show the background stepper for abilities granted by
+                      // the selected background.
+                      const showBgStepper = isBgAbility;
 
                       return (
                         <tr
