@@ -21,7 +21,7 @@ import {
 import { StepperInput } from "@/components/ui/stepper-input";
 import { classes, classNames } from "@/lib/classes";
 import { backgrounds, backgroundNames } from "@/lib/backgrounds";
-import type { Ability } from "@/types";
+import type { Ability, PrimaryStat } from "@/types";
 import {
   SettingsProvider,
   SettingsOverlay,
@@ -107,14 +107,17 @@ function formatModifier(mod: number): string {
 
 // ─── Primary stat helpers ─────────────────────────────────────────────────────
 
-function getPrimaryStats(className: string): Ability[] {
+function getPrimaryStatInfo(className: string): {
+  type: PrimaryStat["type"];
+  abilities: Ability[];
+} {
   const entry = Object.values(classes).find((c) => c.name === className);
-  if (!entry) return [];
+  if (!entry) return { type: "single", abilities: [] };
   const ps = entry.primaryStat;
-  if (ps.type === "single") return [ps.value];
-  if (ps.type === "multiple") return ps.values;
-  if (ps.type === "choice") return ps.options;
-  return [];
+  if (ps.type === "single") return { type: ps.type, abilities: [ps.value] };
+  if (ps.type === "multiple") return { type: ps.type, abilities: ps.values };
+  if (ps.type === "choice") return { type: ps.type, abilities: ps.options };
+  return { type: "single", abilities: [] };
 }
 
 // ─── Background helpers ───────────────────────────────────────────────────────
@@ -195,7 +198,16 @@ function StatGeneratorInner() {
   const spent = pointsUsed(scores, minPurchasable);
   const remaining = pointPool - spent;
 
-  const primaryStats = getPrimaryStats(selectedClass);
+  const primaryStatInfo = getPrimaryStatInfo(selectedClass);
+  const primaryStats = primaryStatInfo.abilities;
+  const primaryDisplay =
+    primaryStats.length === 0
+      ? ""
+      : primaryStatInfo.type === "choice"
+        ? primaryStats.join(" or ")
+        : primaryStatInfo.type === "multiple"
+          ? primaryStats.join(" & ")
+          : primaryStats[0];
   const bgAbilities = getBackgroundAbilities(selectedBackground);
 
   const bgBonusSpent = ABILITIES.reduce((sum, ab) => sum + bgBonuses[ab], 0);
@@ -541,7 +553,7 @@ function StatGeneratorInner() {
                   <p className="text-xs text-muted-foreground sm:ml-auto">
                     Primary:{" "}
                     <span className="font-semibold text-foreground">
-                      {primaryStats.join(" / ")}
+                      {primaryDisplay}
                     </span>
                   </p>
                 )}
@@ -749,7 +761,7 @@ function StatGeneratorInner() {
                 <div className="flex items-center gap-6 text-sm font-medium flex-wrap">
                   {/* Background bonus pool */}
                   <div>
-                    Bg bonus:{" "}
+                    Background Points:{" "}
                     <span className={`font-bold tabular-nums ${bgPoolColor}`}>
                       {bgBonusRemaining}
                     </span>
