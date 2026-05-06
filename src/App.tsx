@@ -11,10 +11,10 @@ export default function App() {
   const navigate = useNavigate();
 
   const activeTab: "hp" | "point-buy" =
-    location.pathname === "/stat-generator" ? "point-buy" : "hp";
+    location.pathname.startsWith("/stat-generator") ? "point-buy" : "hp";
 
   const setActiveTab = (tab: "hp" | "point-buy") => {
-    navigate(tab === "hp" ? "/hp-calculator" : "/stat-generator");
+    navigate(tab === "hp" ? "/hp-calculator" : "/stat-generator/pointbuy");
   };
 
   // Apply dark mode to document
@@ -43,7 +43,16 @@ export default function App() {
         <Routes>
           <Route path="/" element={<Navigate to="/hp-calculator" replace />} />
           <Route path="/hp-calculator" element={<HpCalculator />} />
-          <Route path="/stat-generator" element={<StatGenerator />} />
+          <Route
+            path="/stat-generator"
+            element={<Navigate to="/stat-generator/pointbuy" replace />}
+          />
+          <Route path="/stat-generator/pointbuy" element={<StatGenerator />} />
+          <Route
+            path="/stat-generator/standard-array"
+            element={<StatGenerator />}
+          />
+          <Route path="/stat-generator/roll" element={<StatGenerator />} />
           <Route path="*" element={<Navigate to="/hp-calculator" replace />} />
         </Routes>
         <Footer />

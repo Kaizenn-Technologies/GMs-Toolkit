@@ -52,6 +52,7 @@ export interface ClassData {
     hitDie: number;
     primaryStat: PrimaryStat;
     savingThrows: Ability[];
+    standardArray: number[];
 }
 
 export interface ClassSelection {
