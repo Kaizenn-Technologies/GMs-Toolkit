@@ -54,7 +54,7 @@ const STANDARD_ARRAY_OPTIONS = [8, 10, 12, 13, 14, 15] as const;
 const CHOOSE_STANDARD_CLASS = "Choose a class";
 const STAT_TAB_ROUTES = {
   pointbuy: "/stat-generator/pointbuy",
-  roll: "/stat-generator/roll",
+  roll: "/stat-generator/rolled",
   standard: "/stat-generator/standard-array",
 } as const;
 
@@ -638,7 +638,7 @@ function StatGeneratorInner() {
           >
             <TabsList className="grid w-full grid-cols-3 mb-6">
               <TabsTrigger value="pointbuy">Point Buy</TabsTrigger>
-              <TabsTrigger value="roll">Roll</TabsTrigger>
+              <TabsTrigger value="roll">Rolled Stats</TabsTrigger>
               <TabsTrigger value="standard">Standard Array</TabsTrigger>
             </TabsList>
 
@@ -691,20 +691,20 @@ function StatGeneratorInner() {
                 </div>
 
                 <div className="flex items-center gap-2 shrink-0">
-                <TooltipProvider delay={100}>
-                          <Tooltip>
-                            <TooltipTrigger
-                              render={
-                                <span className="cursor-help border-b border-dashed border-muted-foreground">
-                                  Feat Bonus
-                                </span>
-                              }
-                            />
-                            <TooltipContent>
-                              <p>Manually add a bonus to ability scores granted by feats.</p>
-                            </TooltipContent>
-                          </Tooltip>
-                        </TooltipProvider>
+                  <TooltipProvider delay={100}>
+                    <Tooltip>
+                      <TooltipTrigger
+                        render={
+                          <span className="cursor-help border-b border-dashed border-muted-foreground">
+                            Feat Bonus
+                          </span>
+                        }
+                      />
+                      <TooltipContent>
+                        <p>Manually add a bonus to ability scores granted by feats.</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
                   <Switch
                     size="sm"
                     checked={featBonusEnabled}
@@ -747,7 +747,7 @@ function StatGeneratorInner() {
                         </TooltipProvider>
                       </th>
                       {featBonusEnabled && (
-                        <th className="text-center pb-2">Manual Bonus</th>
+                        <th className="text-center pb-2">Feat Bonus</th>
                       )}
                       <th className="text-center pb-2">Total</th>
                       <th className="text-center pb-2">
@@ -789,11 +789,10 @@ function StatGeneratorInner() {
                       return (
                         <tr
                           key={ability}
-                          className={`rounded-md transition-colors ${
-                            isPrimary
-                              ? "bg-primary/8 dark:bg-primary/10"
-                              : "hover:bg-muted/50"
-                          }`}
+                          className={`rounded-md transition-colors ${isPrimary
+                            ? "bg-primary/8 dark:bg-primary/10"
+                            : "hover:bg-muted/50"
+                            }`}
                         >
                           {/* Ability name */}
                           <td className="py-2 pl-3 pr-4 font-medium rounded-l-md">
@@ -876,9 +875,8 @@ function StatGeneratorInner() {
                           {/* Total score badge */}
                           <td className="py-2 px-2 text-center">
                             <span
-                              className={`inline-block w-10 text-center font-bold text-base ${
-                                isAboveMax ? "text-amber-500" : ""
-                              }`}
+                              className={`inline-block w-10 text-center font-bold text-base ${isAboveMax ? "text-amber-500" : ""
+                                }`}
                             >
                               {total}
                             </span>
@@ -887,13 +885,12 @@ function StatGeneratorInner() {
                           {/* Modifier */}
                           <td className="py-2 pr-3 text-center rounded-r-md">
                             <span
-                              className={`inline-block w-10 text-center text-sm font-semibold ${
-                                modifier > 0
-                                  ? "text-[#00c93cff] dark:text-[#10ff58ff]"
-                                  : modifier < 0
-                                    ? "text-[#ff3d3d]"
-                                    : "text-muted-foreground"
-                              }`}
+                              className={`inline-block w-10 text-center text-sm font-semibold ${modifier > 0
+                                ? "text-[#00c93cff] dark:text-[#10ff58ff]"
+                                : modifier < 0
+                                  ? "text-[#ff3d3d]"
+                                  : "text-muted-foreground"
+                                }`}
                             >
                               {formatModifier(modifier)}
                             </span>
@@ -1069,7 +1066,7 @@ function StatGeneratorInner() {
                         </TooltipProvider>
                       </th>
                       {featBonusEnabled && (
-                        <th className="text-center pb-2">Manual Bonus</th>
+                        <th className="text-center pb-2">Feat Bonus</th>
                       )}
                       <th className="text-center pb-2">Total</th>
                       <th className="text-center pb-2">
@@ -1108,11 +1105,10 @@ function StatGeneratorInner() {
                       return (
                         <tr
                           key={ability}
-                          className={`rounded-md transition-colors ${
-                            isPrimary
-                              ? "bg-primary/8 dark:bg-primary/10"
-                              : "hover:bg-muted/50"
-                          }`}
+                          className={`rounded-md transition-colors ${isPrimary
+                            ? "bg-primary/8 dark:bg-primary/10"
+                            : "hover:bg-muted/50"
+                            }`}
                         >
                           <td className="py-2 pl-3 pr-4 font-medium rounded-l-md">
                             <div className="flex items-center gap-1.5">
@@ -1134,7 +1130,7 @@ function StatGeneratorInner() {
                                       <p>
                                         Primary stat for{" "}
                                         {selectedStandardClass ===
-                                        CHOOSE_STANDARD_CLASS
+                                          CHOOSE_STANDARD_CLASS
                                           ? "selected class"
                                           : selectedStandardClass}
                                       </p>
@@ -1223,13 +1219,12 @@ function StatGeneratorInner() {
 
                           <td className="py-2 pr-3 text-center rounded-r-md">
                             <span
-                              className={`inline-block w-10 text-center text-sm font-semibold ${
-                                modifier !== null && modifier > 0
-                                  ? "text-[#00c93cff] dark:text-[#10ff58ff]"
-                                  : modifier !== null && modifier < 0
-                                    ? "text-[#ff3d3d]"
-                                    : "text-muted-foreground"
-                              }`}
+                              className={`inline-block w-10 text-center text-sm font-semibold ${modifier !== null && modifier > 0
+                                ? "text-[#00c93cff] dark:text-[#10ff58ff]"
+                                : modifier !== null && modifier < 0
+                                  ? "text-[#ff3d3d]"
+                                  : "text-muted-foreground"
+                                }`}
                             >
                               {modifier === null ? "—" : formatModifier(modifier)}
                             </span>

@@ -32,11 +32,11 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
-      <Header 
-        activeTab={activeTab} 
-        setActiveTab={setActiveTab} 
-        darkMode={darkMode} 
-        toggleDarkMode={toggleDarkMode} 
+      <Header
+        activeTab={activeTab}
+        setActiveTab={setActiveTab}
+        darkMode={darkMode}
+        toggleDarkMode={toggleDarkMode}
       />
 
       <main className="max-w-6xl mx-auto w-full flex-1 flex flex-col pt-4 px-4 pb-2 md:pt-8 md:px-8 md:pb-2">
@@ -52,7 +52,7 @@ export default function App() {
             path="/stat-generator/standard-array"
             element={<StatGenerator />}
           />
-          <Route path="/stat-generator/roll" element={<StatGenerator />} />
+          <Route path="/stat-generator/rolled" element={<StatGenerator />} />
           <Route path="*" element={<Navigate to="/hp-calculator" replace />} />
         </Routes>
         <Footer />
