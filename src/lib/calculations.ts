@@ -2,6 +2,7 @@ import type { ClassSelection, CalculationResult, BreakdownItem, ClassData } from
 import { classes } from "./classes";
 
 const classesMap = classes as Record<string, ClassData>;
+const CUSTOM_CLASS_NAME = "Custom";
 
 export const calculateHP = (
     classSelections: ClassSelection[],
@@ -15,8 +16,14 @@ export const calculateHP = (
 
     // Sort classes by hit die descending
     const sortedSelections = [...classSelections].sort((a, b) => {
-        const classA = classesMap[a.className.toLowerCase()]?.hitDie || 0;
-        const classB = classesMap[b.className.toLowerCase()]?.hitDie || 0;
+        const classA =
+            a.className === CUSTOM_CLASS_NAME
+                ? (a.customHitDie ?? 0)
+                : (classesMap[a.className.toLowerCase()]?.hitDie || 0);
+        const classB =
+            b.className === CUSTOM_CLASS_NAME
+                ? (b.customHitDie ?? 0)
+                : (classesMap[b.className.toLowerCase()]?.hitDie || 0);
         return classB - classA;
     });
 
@@ -24,9 +31,11 @@ export const calculateHP = (
 
     sortedSelections.forEach((selection) => {
         const classData = classesMap[selection.className.toLowerCase()];
-        if (!classData) return;
-
-        const hitDie = classData.hitDie;
+        const hitDie =
+            selection.className === CUSTOM_CLASS_NAME
+                ? selection.customHitDie
+                : classData?.hitDie;
+        if (!hitDie) return;
         const levels = selection.level;
 
         for (let i = 1; i <= levels; i++) {

@@ -17,6 +17,10 @@ import { classNames } from "@/lib/classes";
 import { calculateHP } from "@/lib/calculations";
 import { StepperInput } from "@/components/ui/stepper-input";
 
+const CUSTOM_CLASS_NAME = "Custom";
+const CUSTOM_HIT_DIE_OPTIONS = [6, 8, 10, 12] as const;
+const hpClassOptions = [CUSTOM_CLASS_NAME, ...classNames];
+
 export function HpCalculator() {
   const [classSelections, setClassSelections] = useState<ClassSelection[]>([
     { id: "1", className: "Wizard", level: 1 },
@@ -28,7 +32,7 @@ export function HpCalculator() {
 
   const addClassSelection = () => {
     const newId = (Math.max(...classSelections.map((c) => parseInt(c.id)), 0) + 1).toString();
-    const availableClass = classNames.find(name => !classSelections.some(c => c.className === name)) || "Wizard";
+    const availableClass = hpClassOptions.find(name => !classSelections.some(c => c.className === name)) || "Wizard";
 
     setClassSelections([
       ...classSelections,
@@ -44,12 +48,23 @@ export function HpCalculator() {
 
   const updateClassSelection = (
     id: string,
-    field: "className" | "level",
+    field: "className" | "level" | "customHitDie",
     value: string | number
   ) => {
     setClassSelections(
       classSelections.map((c) =>
-        c.id === id ? { ...c, [field]: value } : c
+        c.id === id
+          ? field === "className"
+            ? {
+                ...c,
+                className: value as string,
+                customHitDie:
+                  value === CUSTOM_CLASS_NAME
+                    ? (c.customHitDie ?? CUSTOM_HIT_DIE_OPTIONS[0])
+                    : undefined,
+              }
+            : { ...c, [field]: value }
+          : c
       )
     );
   };
@@ -111,7 +126,7 @@ export function HpCalculator() {
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
-                          {classNames.map((className) => {
+                          {hpClassOptions.map((className) => {
                             const isSelected = classSelections.some(c => c.className === className && c.id !== selection.id);
                             return (
                               <SelectItem
@@ -126,6 +141,31 @@ export function HpCalculator() {
                         </SelectContent>
                       </Select>
                     </div>
+
+                    {selection.className === CUSTOM_CLASS_NAME && (
+                      <div className="w-32 shrink-0">
+                        <label className="text-xs font-medium text-muted-foreground mb-2 block">
+                          Hit Die
+                        </label>
+                        <Select
+                          value={`d${selection.customHitDie ?? CUSTOM_HIT_DIE_OPTIONS[0]}`}
+                          onValueChange={(value) =>
+                            updateClassSelection(selection.id, "customHitDie", Number(value.replace("d", "")))
+                          }
+                        >
+                          <SelectTrigger>
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {CUSTOM_HIT_DIE_OPTIONS.map((die) => (
+                              <SelectItem key={die} value={`d${die}`}>
+                                {`d${die}`}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    )}
 
                     <div className="w-32 shrink-0">
                       <label className="text-xs font-medium text-muted-foreground mb-2 block">

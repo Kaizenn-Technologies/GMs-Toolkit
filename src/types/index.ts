@@ -59,6 +59,7 @@ export interface ClassSelection {
     id: string;
     className: string;
     level: number;
+    customHitDie?: number;
 }
 
 export interface BackgroundData {
