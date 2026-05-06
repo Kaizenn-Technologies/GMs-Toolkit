@@ -322,7 +322,11 @@ function StatGeneratorInner() {
     setStandardScores(makeScoresFromStandardArray(val));
   };
 
-  const handleStandardScoreChange = (ability: Ability, selectedValue: string) => {
+  const handleStandardScoreChange = (
+    ability: Ability,
+    selectedValue: string | null,
+  ) => {
+    if (!selectedValue) return;
     const nextScore = Number.parseInt(selectedValue, 10);
     if (!STANDARD_ARRAY_OPTIONS.includes(nextScore as (typeof STANDARD_ARRAY_OPTIONS)[number])) {
       return;

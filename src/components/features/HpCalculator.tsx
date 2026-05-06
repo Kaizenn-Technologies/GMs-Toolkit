@@ -149,9 +149,14 @@ export function HpCalculator() {
                         </label>
                         <Select
                           value={`d${selection.customHitDie ?? CUSTOM_HIT_DIE_OPTIONS[0]}`}
-                          onValueChange={(value) =>
-                            updateClassSelection(selection.id, "customHitDie", Number(value.replace("d", "")))
-                          }
+                          onValueChange={(value) => {
+                            if (!value) return;
+                            updateClassSelection(
+                              selection.id,
+                              "customHitDie",
+                              Number(value.replace("d", ""))
+                            );
+                          }}
                         >
                           <SelectTrigger>
                             <SelectValue />
