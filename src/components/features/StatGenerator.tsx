@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Star, RotateCcw, BookOpen, Settings, Copy, Check } from "lucide-react";
+import { Star, RotateCcw, Settings, Copy, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useLocation } from "react-router-dom";
 import {
@@ -11,6 +11,7 @@ import {
 } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent } from "@/components/ui/card";
+import { Switch } from "@/components/ui/switch";
 import {
   Tooltip,
   TooltipContent,
@@ -48,6 +49,7 @@ const ABILITY_ABBR: Record<Ability, string> = {
 };
 
 const BG_BONUS_MAX = 2;
+const MANUAL_BONUS_MAX = 20;
 
 // ─── Point-cost helpers ───────────────────────────────────────────────────────
 
@@ -149,6 +151,17 @@ function defaultBgBonuses(): Record<Ability, number> {
   };
 }
 
+function defaultManualBonuses(): Record<Ability, number> {
+  return {
+    Strength: 0,
+    Dexterity: 0,
+    Constitution: 0,
+    Intelligence: 0,
+    Wisdom: 0,
+    Charisma: 0,
+  };
+}
+
 // ─── Inner component (consumes settings context) ──────────────────────────────
 
 function StatGeneratorInner() {
@@ -172,6 +185,10 @@ function StatGeneratorInner() {
   );
   const [bgBonuses, setBgBonuses] = useState<Record<Ability, number>>(
     defaultBgBonuses(),
+  );
+  const [featBonusEnabled, setFeatBonusEnabled] = useState(false);
+  const [manualBonuses, setManualBonuses] = useState<Record<Ability, number>>(
+    defaultManualBonuses(),
   );
   const [copied, setCopied] = useState(false);
 
@@ -214,12 +231,19 @@ function StatGeneratorInner() {
   const handleReset = () => {
     setScores(makeDefaultScores(minPurchasable));
     setBgBonuses(defaultBgBonuses());
+    setFeatBonusEnabled(false);
+    setManualBonuses(defaultManualBonuses());
   };
 
   const handleBackgroundChange = (val: string | null) => {
     if (!val) return;
     setSelectedBackground(val);
     setBgBonuses(defaultBgBonuses());
+  };
+
+  const handleManualBonusChange = (ability: Ability, newVal: number) => {
+    const clamped = Math.max(0, Math.min(MANUAL_BONUS_MAX, newVal));
+    setManualBonuses((prev) => ({ ...prev, [ability]: clamped }));
   };
 
   const handleCopyLink = async () => {
@@ -242,6 +266,13 @@ function StatGeneratorInner() {
     params.set("bint", String(bgBonuses.Intelligence));
     params.set("bwis", String(bgBonuses.Wisdom));
     params.set("bcha", String(bgBonuses.Charisma));
+    params.set("feat", featBonusEnabled ? "1" : "0");
+    params.set("mstr", String(manualBonuses.Strength));
+    params.set("mdex", String(manualBonuses.Dexterity));
+    params.set("mcon", String(manualBonuses.Constitution));
+    params.set("mint", String(manualBonuses.Intelligence));
+    params.set("mwis", String(manualBonuses.Wisdom));
+    params.set("mcha", String(manualBonuses.Charisma));
 
     try {
       await navigator.clipboard.writeText(shareUrl.toString());
@@ -334,6 +365,32 @@ function StatGeneratorInner() {
     }
 
     setBgBonuses(nextBonuses);
+
+    const featFromUrl = params.get("feat");
+    setFeatBonusEnabled(featFromUrl === "1");
+
+    const toManualBonus = (val: string | null) => {
+      if (!val) return null;
+      const parsed = Number.parseInt(val, 10);
+      if (Number.isNaN(parsed)) return null;
+      return Math.max(0, Math.min(MANUAL_BONUS_MAX, parsed));
+    };
+
+    const nextManualBonuses = defaultManualBonuses();
+    const mstr = toManualBonus(params.get("mstr"));
+    const mdex = toManualBonus(params.get("mdex"));
+    const mcon = toManualBonus(params.get("mcon"));
+    const mint = toManualBonus(params.get("mint"));
+    const mwis = toManualBonus(params.get("mwis"));
+    const mcha = toManualBonus(params.get("mcha"));
+
+    if (mstr !== null) nextManualBonuses.Strength = mstr;
+    if (mdex !== null) nextManualBonuses.Dexterity = mdex;
+    if (mcon !== null) nextManualBonuses.Constitution = mcon;
+    if (mint !== null) nextManualBonuses.Intelligence = mint;
+    if (mwis !== null) nextManualBonuses.Wisdom = mwis;
+    if (mcha !== null) nextManualBonuses.Charisma = mcha;
+    setManualBonuses(nextManualBonuses);
   }, [bgBonusPool, clampedMax, clampedMin, location.search, minPurchasable]);
 
   const pointsColor =
@@ -457,6 +514,29 @@ function StatGeneratorInner() {
                   </Select>
                 </div>
 
+                <div className="flex items-center gap-2 shrink-0">
+                <TooltipProvider delay={100}>
+                          <Tooltip>
+                            <TooltipTrigger
+                              render={
+                                <span className="cursor-help border-b border-dashed border-muted-foreground">
+                                  Feat Bonus
+                                </span>
+                              }
+                            />
+                            <TooltipContent>
+                              <p>Manually add a bonus to ability scores granted by feats.</p>
+                            </TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
+                  <Switch
+                    size="sm"
+                    checked={featBonusEnabled}
+                    onCheckedChange={setFeatBonusEnabled}
+                    aria-label="Toggle feat bonus"
+                  />
+                </div>
+
                 {primaryStats.length > 0 && (
                   <p className="text-xs text-muted-foreground sm:ml-auto">
                     Primary:{" "}
@@ -490,6 +570,9 @@ function StatGeneratorInner() {
                           </Tooltip>
                         </TooltipProvider>
                       </th>
+                      {featBonusEnabled && (
+                        <th className="text-center pb-2">Manual Bonus</th>
+                      )}
                       <th className="text-center pb-2">Total</th>
                       <th className="text-center pb-2">
                         <TooltipProvider delay={100}>
@@ -513,7 +596,9 @@ function StatGeneratorInner() {
                     {ABILITIES.map((ability) => {
                       const score = scores[ability];
                       const bgBonus = bgBonuses[ability];
-                      const total = score + bgBonus;
+                      const manualBonus = manualBonuses[ability];
+                      const total =
+                        score + bgBonus + (featBonusEnabled ? manualBonus : 0);
                       const modifier = getModifier(total);
                       const isPrimary = primaryStats.includes(ability);
                       const isBgAbility = bgAbilities.includes(ability);
@@ -595,6 +680,22 @@ function StatGeneratorInner() {
                               )}
                             </div>
                           </td>
+
+                          {featBonusEnabled && (
+                            <td className="py-2 px-2">
+                              <div className="flex justify-center">
+                                <StepperInput
+                                  className="rounded-none w-28"
+                                  value={manualBonus}
+                                  min={0}
+                                  max={MANUAL_BONUS_MAX}
+                                  onChange={(val) =>
+                                    handleManualBonusChange(ability, val)
+                                  }
+                                />
+                              </div>
+                            </td>
+                          )}
 
                           {/* Total score badge */}
                           <td className="py-2 px-2 text-center">
