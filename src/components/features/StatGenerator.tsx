@@ -30,6 +30,7 @@ import {
   AbilityNameCell,
   CenteredCellContent,
   ModifierDisplay,
+  PoolStatus,
   StatGeneratorSelectorRow,
   TotalScoreDisplay,
 } from "@/components/features/StatGeneratorParts";
@@ -958,22 +959,20 @@ function StatGeneratorInner() {
 
                 <div className="flex items-center gap-6 text-sm font-medium flex-wrap">
                   {/* Background bonus pool */}
-                  <div>
-                    Background Points:{" "}
-                    <span className={`font-bold tabular-nums ${bgPoolColor}`}>
-                      {bgBonusRemaining}
-                    </span>
-                    <span className="text-muted-foreground">/{bgBonusPool}</span>
-                  </div>
+                  <PoolStatus
+                    label="Background Points:"
+                    value={bgBonusRemaining}
+                    max={bgBonusPool}
+                    valueClassName={bgPoolColor}
+                  />
 
                   {/* Point buy pool */}
-                  <div>
-                    Points remaining:{" "}
-                    <span className={`font-bold tabular-nums ${pointsColor}`}>
-                      {remaining}
-                    </span>
-                    <span className="text-muted-foreground">/{pointPool}</span>
-                  </div>
+                  <PoolStatus
+                    label="Points remaining:"
+                    value={remaining}
+                    max={pointPool}
+                    valueClassName={pointsColor}
+                  />
                 </div>
               </div>
 
@@ -1145,13 +1144,14 @@ function StatGeneratorInner() {
                             )}
 
                             <td className="py-2 px-2 text-center">
-                              <span className="inline-block w-10 text-center font-bold text-base">{total ?? "—"}</span>
+                              <TotalScoreDisplay value={total ?? "—"} />
                             </td>
 
                             <td className="py-2 pr-3 text-center rounded-r-md">
-                              <span className={`inline-block w-10 text-center text-sm font-semibold ${modifier !== null && modifier > 0 ? "text-[#00c93cff] dark:text-[#10ff58ff]" : modifier !== null && modifier < 0 ? "text-[#ff3d3d]" : "text-muted-foreground"}`}>
-                                {modifier === null ? "—" : formatModifier(modifier)}
-                              </span>
+                              <ModifierDisplay
+                                value={modifier === null ? "—" : formatModifier(modifier)}
+                                className={modifier !== null && modifier > 0 ? "text-[#00c93cff] dark:text-[#10ff58ff]" : modifier !== null && modifier < 0 ? "text-[#ff3d3d]" : "text-muted-foreground"}
+                              />
                             </td>
                           </tr>
                         );
@@ -1161,10 +1161,12 @@ function StatGeneratorInner() {
 
                   <div className="flex items-center justify-between mt-3 gap-3">
                     <div className="flex items-center gap-3">
-                      <div>
-                        Background Points: <span className={`font-bold tabular-nums ${bgPoolColor}`}>{bgBonusRemaining}</span>
-                        <span className="text-muted-foreground">/{bgBonusPool}</span>
-                      </div>
+                      <PoolStatus
+                        label="Background Points:"
+                        value={bgBonusRemaining}
+                        max={bgBonusPool}
+                        valueClassName={bgPoolColor}
+                      />
                     </div>
 
                     <div className="flex items-center gap-2">
@@ -1268,7 +1270,7 @@ function StatGeneratorInner() {
                           />
 
                           <td className="py-2 px-2">
-                            <div className="flex justify-center">
+                            <CenteredCellContent>
                               <Select
                                 value={score === null ? "" : String(score)}
                                 onValueChange={(val) =>
@@ -1298,11 +1300,11 @@ function StatGeneratorInner() {
                                   })}
                                 </SelectContent>
                               </Select>
-                            </div>
+                            </CenteredCellContent>
                           </td>
 
                           <td className="py-2 px-2">
-                            <div className="flex justify-center">
+                            <CenteredCellContent>
                               {showBgStepper ? (
                                 <StepperInput
                                   className="rounded-none w-28"
@@ -1318,12 +1320,12 @@ function StatGeneratorInner() {
                                   —
                                 </span>
                               )}
-                            </div>
+                            </CenteredCellContent>
                           </td>
 
                           {featBonusEnabled && (
                             <td className="py-2 px-2">
-                              <div className="flex justify-center">
+                              <CenteredCellContent>
                                 <StepperInput
                                   className="rounded-none w-28"
                                   value={manualBonus}
@@ -1333,27 +1335,23 @@ function StatGeneratorInner() {
                                     handleManualBonusChange(ability, val)
                                   }
                                 />
-                              </div>
+                              </CenteredCellContent>
                             </td>
                           )}
 
                           <td className="py-2 px-2 text-center">
-                            <span className="inline-block w-10 text-center font-bold text-base">
-                              {total ?? "—"}
-                            </span>
+                            <TotalScoreDisplay value={total ?? "—"} />
                           </td>
 
                           <td className="py-2 pr-3 text-center rounded-r-md">
-                            <span
-                              className={`inline-block w-10 text-center text-sm font-semibold ${modifier !== null && modifier > 0
+                            <ModifierDisplay
+                              value={modifier === null ? "—" : formatModifier(modifier)}
+                              className={modifier !== null && modifier > 0
                                 ? "text-[#00c93cff] dark:text-[#10ff58ff]"
                                 : modifier !== null && modifier < 0
                                   ? "text-[#ff3d3d]"
-                                  : "text-muted-foreground"
-                                }`}
-                            >
-                              {modifier === null ? "—" : formatModifier(modifier)}
-                            </span>
+                                  : "text-muted-foreground"}
+                            />
                           </td>
                         </tr>
                       );
@@ -1383,13 +1381,12 @@ function StatGeneratorInner() {
                 </div>
 
                 <div className="flex items-center gap-6 text-sm font-medium flex-wrap">
-                  <div>
-                    Background Points:{" "}
-                    <span className={`font-bold tabular-nums ${bgPoolColor}`}>
-                      {bgBonusRemaining}
-                    </span>
-                    <span className="text-muted-foreground">/{bgBonusPool}</span>
-                  </div>
+                  <PoolStatus
+                    label="Background Points:"
+                    value={bgBonusRemaining}
+                    max={bgBonusPool}
+                    valueClassName={bgPoolColor}
+                  />
                 </div>
               </div>
             </TabsContent>

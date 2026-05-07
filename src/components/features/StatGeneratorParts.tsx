@@ -190,3 +190,25 @@ export function ModifierDisplay({
     </span>
   );
 }
+
+export function PoolStatus({
+  label,
+  value,
+  max,
+  valueClassName,
+}: {
+  label: string;
+  value: number;
+  max: number;
+  valueClassName: string;
+}) {
+  return (
+    <div>
+      {label}{" "}
+      <span className={`font-bold tabular-nums ${valueClassName}`}>
+        {value}
+      </span>
+      <span className="text-muted-foreground">/{max}</span>
+    </div>
+  );
+}
