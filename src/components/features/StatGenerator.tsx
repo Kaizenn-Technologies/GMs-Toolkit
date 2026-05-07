@@ -1118,14 +1118,16 @@ function StatGeneratorInner() {
                 })}
               </div>
 
-              <div className="flex items-center gap-3">
+              <div className="flex items-center justify-between">
                 <Button onClick={rollAllStats}>Roll Stats</Button>
-                <Button variant="outline" onClick={handleAssignManually}>
-                  Assign manually
-                </Button>
-                <Button variant="outline" onClick={handleShuffleAssign}>
-                  Shuffle
-                </Button>
+                <div className="flex items-center gap-3">
+                  <Button variant="outline" onClick={handleAssignManually}>
+                    Assign manually
+                  </Button>
+                  <Button variant="outline" onClick={handleShuffleAssign}>
+                    Shuffle
+                  </Button>
+                </div>
               </div>
 
               {showAssignPanel && (
