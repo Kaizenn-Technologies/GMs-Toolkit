@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Star, RotateCcw, Settings, Copy, Check } from "lucide-react";
+import { RotateCcw, Settings, Copy, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useLocation, useNavigate } from "react-router-dom";
 import {
@@ -11,7 +11,6 @@ import {
 } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent } from "@/components/ui/card";
-import { Switch } from "@/components/ui/switch";
 import {
   Tooltip,
   TooltipContent,
@@ -27,6 +26,13 @@ import {
   SettingsOverlay,
   useSettings,
 } from "@/components/features/SettingsOverlay";
+import {
+  AbilityNameCell,
+  CenteredCellContent,
+  ModifierDisplay,
+  StatGeneratorSelectorRow,
+  TotalScoreDisplay,
+} from "@/components/features/StatGeneratorParts";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -767,83 +773,17 @@ function StatGeneratorInner() {
             {/* ── POINT BUY TAB ── */}
             <TabsContent value="pointbuy" className="space-y-6">
               {/* Class + Background selectors */}
-              <div className="flex flex-col sm:flex-row sm:items-center gap-3 flex-wrap">
-                {/* Class */}
-                <label className="text-sm font-semibold shrink-0 sm:w-28">
-                  Select Class:
-                </label>
-                <div className="flex-1 max-w-xs">
-                  <Select
-                    value={selectedClass}
-                    onValueChange={(val) => val && setSelectedClass(val)}
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {classNames.map((name) => (
-                        <SelectItem key={name} value={name}>
-                          {name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                {/* Background */}
-                <label className="text-sm font-semibold shrink-0">
-                  Background:
-                </label>
-                <div className="flex-1 max-w-xs">
-                  <Select
-                    value={selectedBackground}
-                    onValueChange={handleBackgroundChange}
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {backgroundNames.map((name) => (
-                        <SelectItem key={name} value={name}>
-                          {name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="flex items-center gap-2 shrink-0">
-                  <TooltipProvider delay={100}>
-                    <Tooltip>
-                      <TooltipTrigger
-                        render={
-                          <span className="cursor-help border-b border-dashed border-muted-foreground">
-                            Feat Bonus
-                          </span>
-                        }
-                      />
-                      <TooltipContent>
-                        <p>Manually add a bonus to ability scores granted by feats.</p>
-                      </TooltipContent>
-                    </Tooltip>
-                  </TooltipProvider>
-                  <Switch
-                    size="sm"
-                    checked={featBonusEnabled}
-                    onCheckedChange={setFeatBonusEnabled}
-                    aria-label="Toggle feat bonus"
-                  />
-                </div>
-
-                {primaryStats.length > 0 && (
-                  <p className="text-xs text-muted-foreground sm:ml-auto">
-                    Primary:{" "}
-                    <span className="font-semibold text-foreground">
-                      {primaryDisplay}
-                    </span>
-                  </p>
-                )}
-              </div>
+              <StatGeneratorSelectorRow
+                classValue={selectedClass}
+                onClassChange={setSelectedClass}
+                classOptions={classNames}
+                backgroundValue={selectedBackground}
+                onBackgroundChange={handleBackgroundChange}
+                backgroundOptions={backgroundNames}
+                featBonusEnabled={featBonusEnabled}
+                onFeatBonusChange={setFeatBonusEnabled}
+                primaryDisplay={primaryStats.length > 0 ? primaryDisplay : undefined}
+              />
 
               {/* Ability score table */}
               <div className="overflow-x-auto">
@@ -917,34 +857,16 @@ function StatGeneratorInner() {
                             }`}
                         >
                           {/* Ability name */}
-                          <td className="py-2 pl-3 pr-4 font-medium rounded-l-md">
-                            <div className="flex items-center gap-1.5">
-                              <span className="hidden sm:inline">{ability}</span>
-                              <span className="sm:hidden text-xs font-bold">
-                                {ABILITY_ABBR[ability]}
-                              </span>
-                              {isPrimary && (
-                                <TooltipProvider delay={100}>
-                                  <Tooltip>
-                                    <TooltipTrigger
-                                      render={
-                                        <span className="cursor-help">
-                                          <Star className="w-3.5 h-3.5 text-amber-500 fill-amber-500" />
-                                        </span>
-                                      }
-                                    />
-                                    <TooltipContent>
-                                      <p>Primary stat for {selectedClass}</p>
-                                    </TooltipContent>
-                                  </Tooltip>
-                                </TooltipProvider>
-                              )}
-                            </div>
-                          </td>
+                          <AbilityNameCell
+                            ability={ability}
+                            abilityAbbreviation={ABILITY_ABBR[ability]}
+                            isPrimary={isPrimary}
+                            primaryTooltip={`Primary stat for ${selectedClass}`}
+                          />
 
                           {/* Stepper — base score */}
                           <td className="py-2 px-2">
-                            <div className="flex justify-center">
+                            <CenteredCellContent>
                               <StepperInput
                                 className="rounded-none w-28"
                                 value={score}
@@ -954,12 +876,12 @@ function StatGeneratorInner() {
                                   handleScoreChange(ability, val)
                                 }
                               />
-                            </div>
+                            </CenteredCellContent>
                           </td>
 
                           {/* Stepper — background bonus */}
                           <td className="py-2 px-2">
-                            <div className="flex justify-center">
+                            <CenteredCellContent>
                               {showBgStepper ? (
                                 <StepperInput
                                   className="rounded-none w-28"
@@ -975,12 +897,12 @@ function StatGeneratorInner() {
                                   —
                                 </span>
                               )}
-                            </div>
+                            </CenteredCellContent>
                           </td>
 
                           {featBonusEnabled && (
                             <td className="py-2 px-2">
-                              <div className="flex justify-center">
+                              <CenteredCellContent>
                                 <StepperInput
                                   className="rounded-none w-28"
                                   value={manualBonus}
@@ -990,32 +912,25 @@ function StatGeneratorInner() {
                                     handleManualBonusChange(ability, val)
                                   }
                                 />
-                              </div>
+                              </CenteredCellContent>
                             </td>
                           )}
 
                           {/* Total score badge */}
                           <td className="py-2 px-2 text-center">
-                            <span
-                              className={`inline-block w-10 text-center font-bold text-base ${isAboveMax ? "text-amber-500" : ""
-                                }`}
-                            >
-                              {total}
-                            </span>
+                            <TotalScoreDisplay value={total} highlight={isAboveMax} />
                           </td>
 
                           {/* Modifier */}
                           <td className="py-2 pr-3 text-center rounded-r-md">
-                            <span
-                              className={`inline-block w-10 text-center text-sm font-semibold ${modifier > 0
+                            <ModifierDisplay
+                              value={formatModifier(modifier)}
+                              className={modifier > 0
                                 ? "text-[#00c93cff] dark:text-[#10ff58ff]"
                                 : modifier < 0
                                   ? "text-[#ff3d3d]"
-                                  : "text-muted-foreground"
-                                }`}
-                            >
-                              {formatModifier(modifier)}
-                            </span>
+                                  : "text-muted-foreground"}
+                            />
                           </td>
                         </tr>
                       );
@@ -1132,50 +1047,18 @@ function StatGeneratorInner() {
 
               {showAssignPanel && (
                 <div className="overflow-x-auto mt-6 pt-4 border-t">
-                  <div className="flex flex-col sm:flex-row sm:items-center gap-3 mb-3">
-                    <label className="text-sm font-semibold shrink-0 sm:w-28">Select Class:</label>
-                    <div className="flex-1 max-w-xs">
-                      <Select value={selectedStandardClass} onValueChange={(val) => val && setSelectedStandardClass(val)}>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Choose a class" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value={CHOOSE_STANDARD_CLASS} className="text-muted-foreground">Choose a class</SelectItem>
-                          {classNames.map((name) => (
-                            <SelectItem key={name} value={name}>{name}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-
-                    <label className="text-sm font-semibold shrink-0">Background:</label>
-                    <div className="flex-1 max-w-xs">
-                      <Select value={selectedBackground} onValueChange={handleBackgroundChange}>
-                        <SelectTrigger>
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {backgroundNames.map((name) => (
-                            <SelectItem key={name} value={name}>{name}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-
-                    <div className="flex items-center gap-2 shrink-0">
-                      <TooltipProvider delay={100}>
-                        <Tooltip>
-                          <TooltipTrigger render={<span className="cursor-help border-b border-dashed border-muted-foreground">Feat Bonus</span>} />
-                          <TooltipContent>
-                            <p>Manually add a bonus to ability scores granted by feats.</p>
-                          </TooltipContent>
-                        </Tooltip>
-                      </TooltipProvider>
-                      <Switch size="sm" checked={featBonusEnabled} onCheckedChange={setFeatBonusEnabled} aria-label="Toggle feat bonus" />
-                    </div>
-
-                    <p className="text-xs text-muted-foreground sm:ml-auto">Primary: <span className="font-semibold text-foreground">{primaryDisplay}</span></p>
-                  </div>
+                  <StatGeneratorSelectorRow
+                    classValue={selectedStandardClass}
+                    onClassChange={setSelectedStandardClass}
+                    classOptions={[CHOOSE_STANDARD_CLASS, ...classNames]}
+                    classPlaceholder={CHOOSE_STANDARD_CLASS}
+                    backgroundValue={selectedBackground}
+                    onBackgroundChange={handleBackgroundChange}
+                    backgroundOptions={backgroundNames}
+                    featBonusEnabled={featBonusEnabled}
+                    onFeatBonusChange={setFeatBonusEnabled}
+                    primaryDisplay={primaryDisplay}
+                  />
 
                   {/* background pool + share/reset moved to footer below table */}
                   <table className="w-full text-sm border-separate border-spacing-y-1">
@@ -1220,30 +1103,14 @@ function StatGeneratorInner() {
 
                         return (
                           <tr key={ability} className={`rounded-md transition-colors ${isPrimary ? "bg-primary/8 dark:bg-primary/10" : "hover:bg-muted/50"}`}>
-                            <td className="py-2 pl-3 pr-4 font-medium rounded-l-md">
-                              <div className="flex items-center gap-1.5">
-                                <span className="hidden sm:inline">{ability}</span>
-                                <span className="sm:hidden text-xs font-bold">{ABILITY_ABBR[ability]}</span>
-                                {isPrimary && (
-                                  <TooltipProvider delay={100}>
-                                    <Tooltip>
-                                      <TooltipTrigger
-                                        render={
-                                          <span className="cursor-help">
-                                            <Star className="w-3.5 h-3.5 text-amber-500 fill-amber-500" />
-                                          </span>
-                                        }
-                                      />
-                                      <TooltipContent>
-                                        <p>Primary stat for selected class</p>
-                                      </TooltipContent>
-                                    </Tooltip>
-                                  </TooltipProvider>
-                                )}
-                              </div>
-                            </td>
+                            <AbilityNameCell
+                              ability={ability}
+                              abilityAbbreviation={ABILITY_ABBR[ability]}
+                              isPrimary={isPrimary}
+                              primaryTooltip="Primary stat for selected class"
+                            />
                             <td className="py-2 px-2">
-                              <div className="flex justify-center">
+                              <CenteredCellContent>
                                 <Select value={score === null ? "" : String(score)} onValueChange={(val) => handleRolledAssignChange(ability, val)}>
                                   <SelectTrigger className="rounded-none w-28">
                                     <SelectValue placeholder="Select" />
@@ -1256,24 +1123,24 @@ function StatGeneratorInner() {
                                     ))}
                                   </SelectContent>
                                 </Select>
-                              </div>
+                              </CenteredCellContent>
                             </td>
 
                             <td className="py-2 px-2">
-                              <div className="flex justify-center">
+                              <CenteredCellContent>
                                 {isBgAbility ? (
                                   <StepperInput className="rounded-none w-28" value={bgBonus} min={0} max={BG_BONUS_MAX} onChange={(val) => handleBgBonusChange(ability, val)} />
                                 ) : (
                                   <span className="inline-block w-28 text-center text-muted-foreground/40 select-none">—</span>
                                 )}
-                              </div>
+                              </CenteredCellContent>
                             </td>
 
                             {featBonusEnabled && (
                               <td className="py-2 px-2">
-                                <div className="flex justify-center">
+                                <CenteredCellContent>
                                   <StepperInput className="rounded-none w-28" value={manualBonus} min={0} max={MANUAL_BONUS_MAX} onChange={(val) => handleManualBonusChange(ability, val)} />
-                                </div>
+                                </CenteredCellContent>
                               </td>
                             )}
 
@@ -1312,90 +1179,18 @@ function StatGeneratorInner() {
 
             {/* ── STANDARD ARRAY TAB ── */}
             <TabsContent value="standard" className="space-y-6">
-              <div className="flex flex-col sm:flex-row sm:items-center gap-3 flex-wrap">
-                <label className="text-sm font-semibold shrink-0 sm:w-28">
-                  Select Class:
-                </label>
-                <div className="flex-1 max-w-xs">
-                  <Select
-                    value={selectedStandardClass}
-                    onValueChange={handleStandardClassChange}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Choose a class" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem
-                        value={CHOOSE_STANDARD_CLASS}
-                        className="text-muted-foreground"
-                      >
-                        Choose a class
-                      </SelectItem>
-                      {classNames.map((name) => (
-                        <SelectItem key={name} value={name}>
-                          {name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <label className="text-sm font-semibold shrink-0">
-                  Background:
-                </label>
-                <div className="flex-1 max-w-xs">
-                  <Select
-                    value={selectedBackground}
-                    onValueChange={handleBackgroundChange}
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {backgroundNames.map((name) => (
-                        <SelectItem key={name} value={name}>
-                          {name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="flex items-center gap-2 shrink-0">
-                  <TooltipProvider delay={100}>
-                    <Tooltip>
-                      <TooltipTrigger
-                        render={
-                          <span className="cursor-help border-b border-dashed border-muted-foreground">
-                            Feat Bonus
-                          </span>
-                        }
-                      />
-                      <TooltipContent>
-                        <p>
-                          Manually add a bonus to ability scores granted by
-                          feats.
-                        </p>
-                      </TooltipContent>
-                    </Tooltip>
-                  </TooltipProvider>
-                  <Switch
-                    size="sm"
-                    checked={featBonusEnabled}
-                    onCheckedChange={setFeatBonusEnabled}
-                    aria-label="Toggle feat bonus"
-                  />
-                </div>
-
-                {primaryStats.length > 0 && (
-                  <p className="text-xs text-muted-foreground sm:ml-auto">
-                    Primary:{" "}
-                    <span className="font-semibold text-foreground">
-                      {primaryDisplay}
-                    </span>
-                  </p>
-                )}
-              </div>
+              <StatGeneratorSelectorRow
+                classValue={selectedStandardClass}
+                onClassChange={handleStandardClassChange}
+                classOptions={[CHOOSE_STANDARD_CLASS, ...classNames]}
+                classPlaceholder={CHOOSE_STANDARD_CLASS}
+                backgroundValue={selectedBackground}
+                onBackgroundChange={handleBackgroundChange}
+                backgroundOptions={backgroundNames}
+                featBonusEnabled={featBonusEnabled}
+                onFeatBonusChange={setFeatBonusEnabled}
+                primaryDisplay={primaryStats.length > 0 ? primaryDisplay : undefined}
+              />
 
               <div className="overflow-x-auto">
                 <table className="w-full text-sm border-separate border-spacing-y-1">
@@ -1463,36 +1258,14 @@ function StatGeneratorInner() {
                             : "hover:bg-muted/50"
                             }`}
                         >
-                          <td className="py-2 pl-3 pr-4 font-medium rounded-l-md">
-                            <div className="flex items-center gap-1.5">
-                              <span className="hidden sm:inline">{ability}</span>
-                              <span className="sm:hidden text-xs font-bold">
-                                {ABILITY_ABBR[ability]}
-                              </span>
-                              {isPrimary && (
-                                <TooltipProvider delay={100}>
-                                  <Tooltip>
-                                    <TooltipTrigger
-                                      render={
-                                        <span className="cursor-help">
-                                          <Star className="w-3.5 h-3.5 text-amber-500 fill-amber-500" />
-                                        </span>
-                                      }
-                                    />
-                                    <TooltipContent>
-                                      <p>
-                                        Primary stat for{" "}
-                                        {selectedStandardClass ===
-                                          CHOOSE_STANDARD_CLASS
-                                          ? "selected class"
-                                          : selectedStandardClass}
-                                      </p>
-                                    </TooltipContent>
-                                  </Tooltip>
-                                </TooltipProvider>
-                              )}
-                            </div>
-                          </td>
+                          <AbilityNameCell
+                            ability={ability}
+                            abilityAbbreviation={ABILITY_ABBR[ability]}
+                            isPrimary={isPrimary}
+                            primaryTooltip={`Primary stat for ${selectedStandardClass === CHOOSE_STANDARD_CLASS
+                              ? "selected class"
+                              : selectedStandardClass}`}
+                          />
 
                           <td className="py-2 px-2">
                             <div className="flex justify-center">

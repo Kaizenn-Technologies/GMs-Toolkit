@@ -16,6 +16,7 @@ import type { ClassSelection } from "@/types";
 import { classNames } from "@/lib/classes";
 import { calculateHP } from "@/lib/calculations";
 import { StepperInput } from "@/components/ui/stepper-input";
+import { HpBreakdown, HpTotalDisplay } from "@/components/features/HpCalculatorParts";
 
 const CUSTOM_CLASS_NAME = "Custom";
 const CUSTOM_HIT_DIE_OPTIONS = [6, 8, 10, 12] as const;
@@ -295,88 +296,20 @@ export function HpCalculator() {
                 </TabsList>
 
                 <TabsContent value="average" className="mt-6 space-y-6">
-                  <div className="p-2 pb-0">
-                    <div className="text-center">
-                      <div className="text-5xl font-bold mb-2">
-                        {result.totalHP}
-                      </div>
-                      <div className="text-sm text-muted-foreground font-medium">
-                        Total HP
-                      </div>
-                    </div>
-                  </div>
-
-                  <div>
-                    <div className="text-xs font-semibold text-muted-foreground mb-3">
-                      Breakdown:
-                    </div>
-                    <div className="text-xs font-mono bg-muted p-3 space-y-1">
-                      <TooltipProvider delay={100}>
-                        {result.breakdown.map((item, idx) => (
-                          <div key={idx} className="flex flex-col lg:flex-row">
-                            <span className="pr-2 flex-shrink-0">{item.label}:</span>
-                            <Tooltip>
-                              <TooltipTrigger className="cursor-help hover:text-foreground text-muted-foreground transition-colors text-left border-b border-dashed border-muted-foreground/50">
-                                {item.value}
-                              </TooltipTrigger>
-                              <TooltipContent>
-                                <p>{item.tooltip}</p>
-                              </TooltipContent>
-                            </Tooltip>
-                          </div>
-                        ))}
-                      </TooltipProvider>
-                    </div>
-                  </div>
+                  <HpTotalDisplay total={result.totalHP} />
+                  <HpBreakdown items={result.breakdown} />
                 </TabsContent>
 
                 <TabsContent value="rolled" className="mt-6 space-y-6" key={rolledKey}>
-                  <div className="p-2 pb-0">
-                    <div className="text-center">
-                      <TooltipProvider delay={100}>
-                        <Tooltip>
-                          <TooltipTrigger
-                            render={
-                              <div className={`cursor-help text-5xl font-bold mb-2 flex justify-center ${rollColorClass}`}>
-                                <div className="relative">
-                                  {rolledResult.totalHP}
-                                  {rollIcon}
-                                </div>
-                              </div>
-                            }
-                          />
-                          <TooltipContent>
-                            <p>Difference from average: {diff > 0 ? `+${diff}` : diff}</p>
-                          </TooltipContent>
-                        </Tooltip>
-                      </TooltipProvider>
-                      <div className="text-sm text-muted-foreground font-medium">
-                        Total HP
-                      </div>
-                    </div>
-                  </div>
+                  <HpTotalDisplay
+                    total={rolledResult.totalHP}
+                    valueClassName={rollColorClass}
+                    tooltip={`Difference from average: ${diff > 0 ? `+${diff}` : diff}`}
+                    icon={rollIcon}
+                  />
 
                   <div className="mb-2">
-                    <div className="text-xs font-semibold text-muted-foreground mb-3">
-                      Breakdown:
-                    </div>
-                    <div className="text-xs font-mono bg-muted p-3 space-y-1">
-                      <TooltipProvider delay={100}>
-                        {rolledResult.breakdown.map((item, idx) => (
-                          <div key={idx} className="flex flex-col lg:flex-row">
-                            <span className="pr-2 flex-shrink-0">{item.label}:</span>
-                            <Tooltip>
-                              <TooltipTrigger className="cursor-help hover:text-foreground text-muted-foreground transition-colors text-left border-b border-dashed border-muted-foreground/50">
-                                {item.value}
-                              </TooltipTrigger>
-                              <TooltipContent>
-                                <p>{item.tooltip}</p>
-                              </TooltipContent>
-                            </Tooltip>
-                          </div>
-                        ))}
-                      </TooltipProvider>
-                    </div>
+                    <HpBreakdown items={rolledResult.breakdown} />
                   </div>
 
                   <Button
