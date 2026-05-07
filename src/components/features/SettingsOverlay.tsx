@@ -12,7 +12,7 @@ import {
   useState,
   type ReactNode,
 } from "react";
-import { X, SlidersHorizontal, Dice5, RotateCcw } from "lucide-react";
+import { X, SlidersHorizontal, RotateCcw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { StepperInput } from "@/components/ui/stepper-input";

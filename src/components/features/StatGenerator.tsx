@@ -902,9 +902,11 @@ function StatGeneratorInner() {
                       const isBgAbility = bgAbilities.includes(ability);
                       const isAboveMax = score > clampedMax;
 
-                      // Only show the background stepper for abilities granted by
-                      // the selected background.
-                      const showBgStepper = isBgAbility;
+                      // Show background stepper based on the settings. When
+                      // `enforceAsiFromBackground` is true, only show for the
+                      // background's designated abilities; otherwise show for
+                      // every ability.
+                      const showBgStepper = enforceAsiFromBackground ? isBgAbility : true;
 
                       return (
                         <tr
@@ -1075,6 +1077,8 @@ function StatGeneratorInner() {
                   const box = rolledBoxes[ability];
                   const rolls = box?.rolls ?? [0, 0, 0, 0];
                   const total = box?.total ?? 0;
+                  const totalColorClass =
+                    total === 18 ? "text-amber-400" : total === 3 ? "text-red-500" : "";
                   const displayed = settings.roll?.sortDescending
                     ? [...rolls].sort((a, b) => b - a)
                     : rolls;
@@ -1087,7 +1091,7 @@ function StatGeneratorInner() {
                       <div className="text-sm text-muted-foreground mb-2">
                         {ability}
                       </div>
-                      <div className="text-3xl font-bold tabular-nums mb-2">{total}</div>
+                      <div className={`text-3xl font-bold tabular-nums mb-2 ${totalColorClass}`}>{total}</div>
                       <div className="text-sm text-muted-foreground/80">
                         {displayed.map((d, i) => {
                           const isLast = i === displayed.length - 1;
@@ -1447,10 +1451,7 @@ function StatGeneratorInner() {
                       const modifier = total === null ? null : getModifier(total);
                       const isPrimary = primaryStats.includes(ability);
                       const isBgAbility = bgAbilities.includes(ability);
-
-                      // Only show the background stepper for abilities granted by
-                      // the selected background.
-                      const showBgStepper = isBgAbility;
+                      const showBgStepper = enforceAsiFromBackground ? isBgAbility : true;
 
                       return (
                         <tr
