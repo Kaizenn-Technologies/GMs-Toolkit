@@ -131,6 +131,7 @@ function HpCalculatorInner() {
     setClassSelections(INITIAL_CLASS_SELECTIONS);
     setRolledValues(generateRolledValues(INITIAL_CLASS_SELECTIONS));
     setConModifier(0);
+    setRerollCountsByCombo({});
     setTough(false);
     setHillDwarf(false);
   };
@@ -448,7 +449,7 @@ function HpCalculatorInner() {
                               htmlFor="hillDwarf"
                               className="text-sm font-medium cursor-help border-b border-dashed border-muted-foreground/50"
                             >
-                              Hill Dwarf Lineage
+                              Dwarf Lineage
                             </label>
                           }
                         />
