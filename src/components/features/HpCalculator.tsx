@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { Plus, Trash2, RotateCw, Share2 } from "lucide-react";
+import { Plus, Trash2, RotateCw, Share2, RotateCcw, Settings, Copy, Check, Dices } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Select,
@@ -9,6 +9,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
@@ -33,6 +34,20 @@ function generateRolledValues(classSelections: ClassSelection[]): number[] {
   return calculateHP(classSelections, 0, false, false, false).rolls ?? [];
 }
 
+function buildClassComboKey(classSelections: ClassSelection[]): string {
+  const normalized = [...classSelections]
+    .map((selection) => {
+      const customDie =
+        selection.className === CUSTOM_CLASS_NAME
+          ? String(selection.customHitDie ?? CUSTOM_HIT_DIE_OPTIONS[0])
+          : "";
+      return `${selection.className}:${selection.level}:${customDie}`;
+    })
+    .sort();
+
+  return normalized.join("|");
+}
+
 function getInitialHpState() {
   const fallback = {
     classSelections: INITIAL_CLASS_SELECTIONS,
@@ -41,6 +56,8 @@ function getInitialHpState() {
     hillDwarf: false,
     activeTab: "average" as const,
     rolledValues: generateRolledValues(INITIAL_CLASS_SELECTIONS),
+    initialRerolls: 0,
+    sharedName: "",
   };
 
   try {
@@ -62,6 +79,8 @@ function getInitialHpState() {
       rolledValues: hasRolls
         ? decoded.rolls.map((entry) => entry.value)
         : generateRolledValues(classSelections),
+      initialRerolls: decoded.metadata?.rerolls ?? 0,
+      sharedName: decoded.metadata?.name ?? "",
     };
   } catch {
     return fallback;
@@ -77,6 +96,19 @@ export function HpCalculator() {
   const [activeTab, setActiveTab] = useState<"average" | "rolled">(initialState.activeTab);
   const [rolledValues, setRolledValues] = useState<number[]>(initialState.rolledValues);
   const [copied, setCopied] = useState(false);
+  const [advanceShareMenu, setAdvanceShareMenu] = useState(false);
+  const [showRollCounter, setShowRollCounter] = useState(true);
+  const initialComboKey = useMemo(
+    () => buildClassComboKey(initialState.classSelections),
+    [initialState.classSelections]
+  );
+  const [rerollCountsByCombo, setRerollCountsByCombo] = useState<Record<string, number>>(
+    initialState.initialRerolls > 0 ? { [initialComboKey]: initialState.initialRerolls } : {}
+  );
+  const currentComboKey = useMemo(() => buildClassComboKey(classSelections), [classSelections]);
+  const rerollCountForCurrentCombo = rerollCountsByCombo[currentComboKey] ?? 0;
+  const sharedNameFromLink = initialState.sharedName.trim();
+  const shouldShowMetaPanel = sharedNameFromLink.length > 0 || showRollCounter;
 
   const addClassSelection = () => {
     const newId = (Math.max(...classSelections.map((c) => parseInt(c.id)), 0) + 1).toString();
@@ -88,6 +120,14 @@ export function HpCalculator() {
     ];
     setClassSelections(nextSelections);
     setRolledValues(generateRolledValues(nextSelections));
+  };
+
+  const handleResetClassSelections = () => {
+    setClassSelections(INITIAL_CLASS_SELECTIONS);
+    setRolledValues(generateRolledValues(INITIAL_CLASS_SELECTIONS));
+    setConModifier(0);
+    setTough(false);
+    setHillDwarf(false);
   };
 
   const removeClassSelection = (id: string) => {
@@ -147,9 +187,13 @@ export function HpCalculator() {
   const handleRollAgain = () => {
     setActiveTab("rolled");
     setRolledValues(generateRolledValues(classSelections));
+    setRerollCountsByCombo((prev) => ({
+      ...prev,
+      [currentComboKey]: (prev[currentComboKey] ?? 0) + 1,
+    }));
   };
 
-  const buildShareableCoreData = (): string => {
+  const buildShareableCoreData = (name: string): string => {
     const encodedRolls =
       activeTab === "rolled"
         ? buildRollEntries(classSelections, rolledValues)
@@ -161,13 +205,28 @@ export function HpCalculator() {
       tough,
       hillDwarf,
       rolls: encodedRolls,
+      metadata: {
+        version: "v1",
+        unixTime: Math.floor(Date.now() / 1000),
+        rerolls: rerollCountForCurrentCombo,
+        name,
+      },
     });
   };
 
   const handleShareLink = async () => {
+    const promptedName = advanceShareMenu
+      ? window.prompt("Enter character name")?.trim()
+      : "";
+
+    if (advanceShareMenu && promptedName === undefined) {
+      return;
+    }
+    const characterName = promptedName ?? "";
+
     const shareUrl = new URL(window.location.href);
     shareUrl.search = "";
-    shareUrl.searchParams.set("core", buildShareableCoreData());
+    shareUrl.searchParams.set("core", buildShareableCoreData(characterName));
 
     try {
       await navigator.clipboard.writeText(shareUrl.toString());
@@ -187,7 +246,7 @@ export function HpCalculator() {
         </div>
         <Button variant="outline" size="sm" onClick={handleShareLink}>
           <Share2 className="w-4 h-4 mr-2" />
-          {copied ? "Shared" : "Share"}
+          {copied ? "Copied" : "Share"}
         </Button>
       </div>
 
@@ -297,18 +356,29 @@ export function HpCalculator() {
                 ))}
               </div>
 
+              <div className="flex flex-row gap-2 mb-4 justify-between">
+
               {/* Add Class Button */}
               <Button
                 onClick={addClassSelection}
                 variant="outline"
-                className="w-full"
+                className="m-0"
               >
                 <Plus className="w-4 h-4 mr-2" />
                 Add Another Class
               </Button>
+              <Button
+                onClick={handleResetClassSelections}
+                variant="outline"
+                className="m-0"
+              >
+                <RotateCcw className="w-3.5 h-3.5 mr-1.5" />
+                Reset
+              </Button>
+              </div>
 
               {/* CON Modifier & Feats */}
-              <div className="pt-2 border-t mt-6">
+              <div className="pt-2 border-t">
                 <div className="flex items-center gap-4 mb-4 mt-4">
                   <label className="text-sm font-semibold shrink-0">
                     Constitution Modifier:
@@ -369,6 +439,32 @@ export function HpCalculator() {
                         </TooltipContent>
                       </Tooltip>
                     </div>
+
+                    <div className="flex items-center justify-between gap-3 pt-1">
+                      <div className="space-y-0.5">
+                        <p className="text-sm font-medium">Advance Share Menu</p>
+                        <p className="text-xs text-muted-foreground">
+                          Prompt for character name before sharing.
+                        </p>
+                      </div>
+                      <Switch
+                        checked={advanceShareMenu}
+                        onCheckedChange={setAdvanceShareMenu}
+                      />
+                    </div>
+
+                    <div className="flex items-center justify-between gap-3 pt-1">
+                      <div className="space-y-0.5">
+                        <p className="text-sm font-medium">Show Roll Counter</p>
+                        <p className="text-xs text-muted-foreground">
+                          Show reroll count below the result tabs.
+                        </p>
+                      </div>
+                      <Switch
+                        checked={showRollCounter}
+                        onCheckedChange={setShowRollCounter}
+                      />
+                    </div>
                   </TooltipProvider>
                 </div>
               </div>
@@ -390,6 +486,8 @@ export function HpCalculator() {
                   <TabsTrigger value="rolled">Rolled</TabsTrigger>
                 </TabsList>
 
+
+
                 <TabsContent value="average" className="mt-6 space-y-6">
                   <HpTotalDisplay total={result.totalHP} />
                   <HpBreakdown items={result.breakdown} />
@@ -406,12 +504,26 @@ export function HpCalculator() {
                   <div className="mb-2">
                     <HpBreakdown items={rolledResult.breakdown} />
                   </div>
-
+                  {/* Meta Panel */}
+                {activeTab === "rolled" && shouldShowMetaPanel && (
+                  <div className="mt-3 mb-2 border border-border/70 bg-muted/40 px-3 py-2 text-sm">
+                    {sharedNameFromLink.length > 0 && (
+                      <p>
+                        Character: <span className="font-medium">{sharedNameFromLink}</span>
+                      </p>
+                    )}
+                    {showRollCounter && (
+                      <p>
+                        Rolls done: <span className="font-medium">{rerollCountForCurrentCombo}</span>
+                      </p>
+                    )}
+                  </div>
+                )}
                   <Button
                     onClick={handleRollAgain}
                     className="w-full"
                   >
-                    <RotateCw className="w-4 h-4 mr-2" />
+                    <Dices className="w-4 h-4 mr-2" />
                     Roll Again
                   </Button>
                 </TabsContent>

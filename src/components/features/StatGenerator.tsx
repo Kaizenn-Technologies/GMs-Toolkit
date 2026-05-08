@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { RotateCcw, Settings, Copy, Check } from "lucide-react";
+import { RotateCcw, Settings, Copy, Check, Share2 , Dices, Shuffle} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useLocation, useNavigate } from "react-router-dom";
 import {
@@ -843,12 +843,8 @@ function StatGeneratorInner() {
                     Reset
                   </Button>
                   <Button variant="outline" size="sm" onClick={handleShareLink}>
-                    {copied ? (
-                      <Check className="w-3.5 h-3.5 mr-1.5" />
-                    ) : (
-                      <Copy className="w-3.5 h-3.5 mr-1.5" />
-                    )}
-                    {copied ? "Shared" : "Share"}
+                  <Share2 className="w-4 h-4 mr-2" />
+                    {copied ? "Copied" : "Share"}
                   </Button>
                 </div>
 
@@ -928,12 +924,15 @@ function StatGeneratorInner() {
               </div>
 
               <div className="flex items-center justify-between">
-                <Button onClick={rollAllStats}>Roll Stats</Button>
+                <Button onClick={rollAllStats}>
+                <Dices className="w-4 h-4 mr-2" />
+                  Roll Stats</Button>
                 <div className="flex items-center gap-3">
                   <Button variant="outline" onClick={handleAssignManually}>
                     Assign manually
                   </Button>
                   <Button variant="outline" onClick={handleShuffleAssign}>
+                  <Shuffle className="w-4 h-4 mr-2" />
                     Shuffle
                   </Button>
                 </div>
@@ -1055,6 +1054,10 @@ function StatGeneratorInner() {
                   </table>
 
                   <div className="flex items-center justify-between mt-3 gap-3">
+                    <div className="flex items-center gap-2">
+                      <Button variant="outline" size="sm" onClick={handleShareAssigned}><Share2 className="w-4 h-4 mr-2" />{copied ? "Copied" : "Share"}</Button>
+                      <Button variant="outline" size="sm" onClick={handleAssignmentReset}><RotateCcw className="w-3.5 h-3.5 mr-1.5" />Reset</Button>
+                    </div>
                     <div className="flex items-center gap-3">
                       <PoolStatus
                         label="Background Points:"
@@ -1064,10 +1067,6 @@ function StatGeneratorInner() {
                       />
                     </div>
 
-                    <div className="flex items-center gap-2">
-                      <Button variant="outline" size="sm" onClick={handleShareAssigned}>{copied ? "Shared" : "Share"}</Button>
-                      <Button variant="outline" size="sm" onClick={handleAssignmentReset}><RotateCcw className="w-3.5 h-3.5 mr-1.5" />Reset</Button>
-                    </div>
                   </div>
 
                 </div>
@@ -1262,12 +1261,8 @@ function StatGeneratorInner() {
                     Reset
                   </Button>
                   <Button variant="outline" size="sm" onClick={handleShareLink}>
-                    {copied ? (
-                      <Check className="w-3.5 h-3.5 mr-1.5" />
-                    ) : (
-                      <Copy className="w-3.5 h-3.5 mr-1.5" />
-                    )}
-                    {copied ? "Shared" : "Share"}
+                    <Share2 className="w-4 h-4 mr-2" />
+                    {copied ? "Copied" : "Share"}
                   </Button>
                 </div>
 

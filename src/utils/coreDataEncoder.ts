@@ -26,6 +26,14 @@ export interface CoreDataInput {
     tough: boolean;
     hillDwarf: boolean;
     rolls?: RollEntry[];
+    metadata?: CoreMetadataInput;
+}
+
+export interface CoreMetadataInput {
+    version: string;
+    unixTime: number;
+    rerolls: number;
+    name?: string;
 }
 
 const CLASS_ORDER = [
@@ -104,6 +112,13 @@ function encodeRolls(rolls?: RollEntry[]): string {
     return `r${encoded}`;
 }
 
+function encodeMetadata(metadata?: CoreMetadataInput): string {
+    if (!metadata) return "";
+
+    const name = metadata.name ? encodeURIComponent(metadata.name) : "";
+    return `mv${metadata.version}u${metadata.unixTime}z${metadata.rerolls}n${name}`;
+}
+
 export function classSelectionsToClassInput(classSelections: ClassSelection[]): ClassInput[] {
     return classSelections.map((selection) => {
         if (selection.className === "Custom") {
@@ -152,7 +167,7 @@ export function buildRollEntries(
 }
 
 export function buildCoreData(input: CoreDataInput): string {
-    const { classes, conMod, tough, hillDwarf, rolls } = input;
+    const { classes, conMod, tough, hillDwarf, rolls, metadata } = input;
 
     const totalLevel = pad2(getTotalLevels(classes));
     const classData = encodeClasses(classes);
@@ -161,6 +176,7 @@ export function buildCoreData(input: CoreDataInput): string {
 
     const base = `${totalLevel}${classData}${con}${flags}`;
     const rollData = encodeRolls(rolls);
+    const metadataData = encodeMetadata(metadata);
 
-    return base + rollData;
+    return base + rollData + metadataData;
 }

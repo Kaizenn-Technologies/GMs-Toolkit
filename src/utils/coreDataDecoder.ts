@@ -27,6 +27,14 @@ export interface DecodedCoreData {
     tough: boolean;
     hillDwarf: boolean;
     rolls: DecodedRollEntry[];
+    metadata: DecodedCoreMetadata | null;
+}
+
+export interface DecodedCoreMetadata {
+    version: string;
+    unixTime: number;
+    rerolls: number;
+    name: string;
 }
 
 const CLASS_ORDER = [
@@ -148,6 +156,9 @@ export function parseCoreData(coreData: string): DecodedCoreData {
         i++; // skip 'r'
 
         while (i < coreData.length) {
+            if (coreData[i] === "m") {
+                break;
+            }
             const classId = coreData[i];
             i++;
 
@@ -161,6 +172,57 @@ export function parseCoreData(coreData: string): DecodedCoreData {
         }
     }
 
+    // 6. Metadata (optional)
+    let metadata: DecodedCoreMetadata | null = null;
+    if (coreData[i] === "m") {
+        i++; // skip 'm'
+        if (coreData[i] === "v") {
+            i++; // skip 'v'
+            const versionStart = i;
+            while (i < coreData.length && coreData[i] !== "u") {
+                i++;
+            }
+            const version = coreData.slice(versionStart, i);
+
+            let unixTime = 0;
+            if (coreData[i] === "u") {
+                i++; // skip 'u'
+                const unixStart = i;
+                while (i < coreData.length && coreData[i] !== "z") {
+                    i++;
+                }
+                const unixRaw = coreData.slice(unixStart, i);
+                const parsed = Number(unixRaw);
+                unixTime = Number.isFinite(parsed) ? parsed : 0;
+            }
+
+            let rerolls = 0;
+            if (coreData[i] === "z") {
+                i++; // skip 'z'
+                const rerollStart = i;
+                while (i < coreData.length && coreData[i] !== "n") {
+                    i++;
+                }
+                const rerollRaw = coreData.slice(rerollStart, i);
+                const parsed = Number(rerollRaw);
+                rerolls = Number.isFinite(parsed) ? parsed : 0;
+            }
+
+            let name = "";
+            if (coreData[i] === "n") {
+                i++; // skip 'n'
+                const nameRaw = coreData.slice(i);
+                try {
+                    name = decodeURIComponent(nameRaw);
+                } catch {
+                    name = nameRaw;
+                }
+            }
+
+            metadata = { version, unixTime, rerolls, name };
+        }
+    }
+
     return {
         totalLevel,
         classes: parsedClasses,
@@ -168,6 +230,7 @@ export function parseCoreData(coreData: string): DecodedCoreData {
         tough,
         hillDwarf,
         rolls,
+        metadata,
     };
 }
 
