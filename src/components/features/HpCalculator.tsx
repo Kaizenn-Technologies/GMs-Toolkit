@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { Plus, Trash2, RotateCw } from "lucide-react";
+import { useMemo, useState } from "react";
+import { Plus, Trash2, RotateCw, Share2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Select,
@@ -17,33 +17,84 @@ import { classNames } from "@/lib/classes";
 import { calculateHP } from "@/lib/calculations";
 import { StepperInput } from "@/components/ui/stepper-input";
 import { HpBreakdown, HpTotalDisplay } from "@/components/features/HpCalculatorParts";
+import {
+  buildCoreData,
+  buildRollEntries,
+  classSelectionsToClassInput,
+} from "@/utils/coreDataEncoder";
+import { decodedClassesToSelections, parseCoreData } from "@/utils/coreDataDecoder";
 
 const CUSTOM_CLASS_NAME = "Custom";
 const CUSTOM_HIT_DIE_OPTIONS = [6, 8, 10, 12] as const;
 const hpClassOptions = [CUSTOM_CLASS_NAME, ...classNames];
+const INITIAL_CLASS_SELECTIONS: ClassSelection[] = [{ id: "1", className: "Wizard", level: 1 }];
+
+function generateRolledValues(classSelections: ClassSelection[]): number[] {
+  return calculateHP(classSelections, 0, false, false, false).rolls ?? [];
+}
+
+function getInitialHpState() {
+  const fallback = {
+    classSelections: INITIAL_CLASS_SELECTIONS,
+    conModifier: 0,
+    tough: false,
+    hillDwarf: false,
+    activeTab: "average" as const,
+    rolledValues: generateRolledValues(INITIAL_CLASS_SELECTIONS),
+  };
+
+  try {
+    const params = new URLSearchParams(window.location.search);
+    const core = params.get("core");
+    if (!core) return fallback;
+
+    const decoded = parseCoreData(core);
+    const nextSelections = decodedClassesToSelections(decoded.classes);
+    const classSelections = nextSelections.length > 0 ? nextSelections : INITIAL_CLASS_SELECTIONS;
+    const hasRolls = decoded.rolls.length > 0;
+
+    return {
+      classSelections,
+      conModifier: decoded.conMod,
+      tough: decoded.tough,
+      hillDwarf: decoded.hillDwarf,
+      activeTab: hasRolls ? ("rolled" as const) : ("average" as const),
+      rolledValues: hasRolls
+        ? decoded.rolls.map((entry) => entry.value)
+        : generateRolledValues(classSelections),
+    };
+  } catch {
+    return fallback;
+  }
+}
 
 export function HpCalculator() {
-  const [classSelections, setClassSelections] = useState<ClassSelection[]>([
-    { id: "1", className: "Wizard", level: 1 },
-  ]);
-  const [conModifier, setConModifier] = useState(0);
-  const [tough, setTough] = useState(false);
-  const [hillDwarf, setHillDwarf] = useState(false);
-  const [rolledKey, setRolledKey] = useState(0);
+  const initialState = useMemo(() => getInitialHpState(), []);
+  const [classSelections, setClassSelections] = useState<ClassSelection[]>(initialState.classSelections);
+  const [conModifier, setConModifier] = useState(initialState.conModifier);
+  const [tough, setTough] = useState(initialState.tough);
+  const [hillDwarf, setHillDwarf] = useState(initialState.hillDwarf);
+  const [activeTab, setActiveTab] = useState<"average" | "rolled">(initialState.activeTab);
+  const [rolledValues, setRolledValues] = useState<number[]>(initialState.rolledValues);
+  const [copied, setCopied] = useState(false);
 
   const addClassSelection = () => {
     const newId = (Math.max(...classSelections.map((c) => parseInt(c.id)), 0) + 1).toString();
     const availableClass = hpClassOptions.find(name => !classSelections.some(c => c.className === name)) || "Wizard";
 
-    setClassSelections([
+    const nextSelections = [
       ...classSelections,
       { id: newId, className: availableClass, level: 1 },
-    ]);
+    ];
+    setClassSelections(nextSelections);
+    setRolledValues(generateRolledValues(nextSelections));
   };
 
   const removeClassSelection = (id: string) => {
     if (classSelections.length > 1) {
-      setClassSelections(classSelections.filter((c) => c.id !== id));
+      const nextSelections = classSelections.filter((c) => c.id !== id);
+      setClassSelections(nextSelections);
+      setRolledValues(generateRolledValues(nextSelections));
     }
   };
 
@@ -52,8 +103,7 @@ export function HpCalculator() {
     field: "className" | "level" | "customHitDie",
     value: string | number
   ) => {
-    setClassSelections(
-      classSelections.map((c) =>
+    const nextSelections = classSelections.map((c) =>
         c.id === id
           ? field === "className"
             ? {
@@ -66,12 +116,19 @@ export function HpCalculator() {
               }
             : { ...c, [field]: value }
           : c
-      )
     );
+    setClassSelections(nextSelections);
+    setRolledValues(generateRolledValues(nextSelections));
   };
 
-  const result = calculateHP(classSelections, conModifier, tough, hillDwarf, true);
-  const rolledResult = calculateHP(classSelections, conModifier, tough, hillDwarf, false);
+  const result = useMemo(
+    () => calculateHP(classSelections, conModifier, tough, hillDwarf, true),
+    [classSelections, conModifier, tough, hillDwarf]
+  );
+  const rolledResult = useMemo(
+    () => calculateHP(classSelections, conModifier, tough, hillDwarf, false, rolledValues),
+    [classSelections, conModifier, tough, hillDwarf, rolledValues]
+  );
 
   const diff = rolledResult.totalHP - result.totalHP;
   const threshold = Math.abs(conModifier) + (tough ? 2 : 0) + (hillDwarf ? 1 : 0);
@@ -88,7 +145,37 @@ export function HpCalculator() {
   }
 
   const handleRollAgain = () => {
-    setRolledKey((prev) => prev + 1);
+    setActiveTab("rolled");
+    setRolledValues(generateRolledValues(classSelections));
+  };
+
+  const buildShareableCoreData = (): string => {
+    const encodedRolls =
+      activeTab === "rolled"
+        ? buildRollEntries(classSelections, rolledValues)
+        : undefined;
+
+    return buildCoreData({
+      classes: classSelectionsToClassInput(classSelections),
+      conMod: conModifier,
+      tough,
+      hillDwarf,
+      rolls: encodedRolls,
+    });
+  };
+
+  const handleShareLink = async () => {
+    const shareUrl = new URL(window.location.href);
+    shareUrl.search = "";
+    shareUrl.searchParams.set("core", buildShareableCoreData());
+
+    try {
+      await navigator.clipboard.writeText(shareUrl.toString());
+      setCopied(true);
+      window.setTimeout(() => setCopied(false), 1500);
+    } catch {
+      // If clipboard permissions are blocked, fail quietly.
+    }
   };
 
   return (
@@ -98,6 +185,10 @@ export function HpCalculator() {
           <h1 className="text-4xl font-bold mb-2">D&D 5.5e Health Calculator</h1>
           <p className="text-muted-foreground">Calculate your character's hit points based on class, level, and modifiers.</p>
         </div>
+        <Button variant="outline" size="sm" onClick={handleShareLink}>
+          <Share2 className="w-4 h-4 mr-2" />
+          {copied ? "Shared" : "Share"}
+        </Button>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -289,7 +380,11 @@ export function HpCalculator() {
         <div>
           <Card>
             <CardContent className="">
-              <Tabs defaultValue="average" className="w-full">
+              <Tabs
+                value={activeTab}
+                onValueChange={(value) => setActiveTab(value as "average" | "rolled")}
+                className="w-full"
+              >
                 <TabsList className="grid w-full grid-cols-2">
                   <TabsTrigger value="average">Average</TabsTrigger>
                   <TabsTrigger value="rolled">Rolled</TabsTrigger>
@@ -300,7 +395,7 @@ export function HpCalculator() {
                   <HpBreakdown items={result.breakdown} />
                 </TabsContent>
 
-                <TabsContent value="rolled" className="mt-6 space-y-6" key={rolledKey}>
+                <TabsContent value="rolled" className="mt-6 space-y-6">
                   <HpTotalDisplay
                     total={rolledResult.totalHP}
                     valueClassName={rollColorClass}

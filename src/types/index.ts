@@ -78,6 +78,7 @@ export interface CalculationResult {
     hillDwarf: boolean;
     totalHP: number;
     breakdown: BreakdownItem[];
+    rolls?: number[];
 }
 
 export interface BreakdownItem {

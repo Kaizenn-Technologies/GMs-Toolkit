@@ -9,7 +9,8 @@ export const calculateHP = (
     conModifier: number,
     tough: boolean,
     hillDwarf: boolean,
-    useAverage: boolean = true
+    useAverage: boolean = true,
+    providedRolls?: number[]
 ): CalculationResult => {
     let totalHP = 0;
     const breakdown: BreakdownItem[] = [];
@@ -28,6 +29,8 @@ export const calculateHP = (
     });
 
     let characterLevel = 0;
+    let rollIndex = 0;
+    const usedRolls: number[] = [];
 
     sortedSelections.forEach((selection) => {
         const classData = classesMap[selection.className.toLowerCase()];
@@ -40,7 +43,6 @@ export const calculateHP = (
 
         for (let i = 1; i <= levels; i++) {
             characterLevel++;
-            let levelHP = 0;
             let rollValue = 0;
             const isFirstLevel = characterLevel === 1;
 
@@ -50,36 +52,54 @@ export const calculateHP = (
                 if (useAverage) {
                     rollValue = Math.ceil((hitDie + 1) / 2);
                 } else {
-                    rollValue = Math.floor(Math.random() * hitDie) + 1;
+                    const provided = providedRolls?.[rollIndex];
+                    if (typeof provided === "number" && Number.isFinite(provided)) {
+                        rollValue = Math.max(1, Math.min(hitDie, Math.floor(provided)));
+                    } else {
+                        rollValue = Math.floor(Math.random() * hitDie) + 1;
+                    }
+                    usedRolls.push(rollValue);
+                    rollIndex++;
                 }
             }
 
             const toughBonus = tough ? 2 : 0;
             const hillDwarfBonus = hillDwarf ? 1 : 0;
-            
-            levelHP = rollValue + conModifier + toughBonus + hillDwarfBonus;
+            const levelHP = rollValue + conModifier + toughBonus + hillDwarfBonus;
             totalHP += levelHP;
 
-            // Construct calculation string
-            const calcParts = [rollValue, conModifier];
-            if (tough) calcParts.push(2);
-            if (hillDwarf) calcParts.push(1);
-            
-            const calcString = calcParts.join("+");
+            // Keep negative CON at the end so we render e.g. 2+1-3 instead of 2+-3+1.
+            const positiveBonuses: number[] = [];
+            const positiveBonusLabels: string[] = [];
 
-            // Construct tooltip string
-            const tooltipParts = [isFirstLevel ? "Max HP" : "HP", "CON"];
-            if (tough) tooltipParts.push("Tough");
-            if (hillDwarf) tooltipParts.push("Hill Dwarf");
-            
-            const tooltipString = tooltipParts.join("+");
-
-            let valueStr = "";
-            if (isFirstLevel) {
-                valueStr = `(${calcString}) = ${levelHP}`;
-            } else {
-                valueStr = `${calcString} = ${levelHP}`;
+            if (tough) {
+                positiveBonuses.push(2);
+                positiveBonusLabels.push("Tough");
             }
+            if (hillDwarf) {
+                positiveBonuses.push(1);
+                positiveBonusLabels.push("Hill Dwarf");
+            }
+
+            const conAbs = Math.abs(conModifier);
+            const startsWithNegativeCon = conModifier < 0 && positiveBonuses.length === 0;
+            const basePart = startsWithNegativeCon ? `${rollValue}-${conAbs}` : `${rollValue}`;
+            const positivePart = positiveBonuses.length ? `+${positiveBonuses.join("+")}` : "";
+            const conPart = conModifier < 0
+                ? (startsWithNegativeCon ? "" : `-${conAbs}`)
+                : `+${conModifier}`;
+            const calcString = `${basePart}${positivePart}${conPart}`;
+
+            const tooltipBase = isFirstLevel ? "Max HP" : "HP";
+            const tooltipPositivePart = positiveBonusLabels.length
+                ? `+${positiveBonusLabels.join("+")}`
+                : "";
+            const tooltipConPart = conModifier < 0 ? "-CON" : "+CON";
+            const tooltipString = `${tooltipBase}${tooltipPositivePart}${tooltipConPart}`;
+
+            const valueStr = isFirstLevel
+                ? `(${calcString}) = ${levelHP}`
+                : `${calcString} = ${levelHP}`;
 
             breakdown.push({
                 label: `${selection.className} Level ${characterLevel}`,
@@ -96,5 +116,6 @@ export const calculateHP = (
         hillDwarf,
         totalHP,
         breakdown,
+        rolls: useAverage ? undefined : usedRolls,
     };
 };
