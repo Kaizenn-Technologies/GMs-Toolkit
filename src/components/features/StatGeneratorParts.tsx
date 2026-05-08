@@ -18,11 +18,11 @@ import type { Ability } from "@/types";
 
 interface StatGeneratorSelectorRowProps {
   classValue: string;
-  onClassChange: (value: string) => void;
+  onClassChange: (value: string | null) => void;
   classOptions: readonly string[];
   classPlaceholder?: string;
   backgroundValue: string;
-  onBackgroundChange: (value: string) => void;
+  onBackgroundChange: (value: string | null) => void;
   backgroundOptions: readonly string[];
   featBonusEnabled: boolean;
   onFeatBonusChange: (checked: boolean) => void;
