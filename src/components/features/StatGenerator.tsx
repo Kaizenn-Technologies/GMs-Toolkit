@@ -752,7 +752,11 @@ function StatGeneratorInner() {
               {/* Class + Background selectors */}
               <StatGeneratorSelectorRow
                 classValue={selectedClass}
-                onClassChange={setSelectedClass}
+                onClassChange={(value) => {
+                  if (value !== null) {
+                    setSelectedClass(value);
+                  }
+                }}
                 classOptions={classNames}
                 backgroundValue={selectedBackground}
                 onBackgroundChange={handleBackgroundChange}
@@ -920,7 +924,7 @@ function StatGeneratorInner() {
                     Reset
                   </Button>
                   <Button variant="outline" size="sm" onClick={handleShareLink}>
-                  <Share2 className="w-4 h-4 mr-2" />
+                    <Share2 className="w-4 h-4 mr-2" />
                     {copied ? "Copied" : "Share"}
                   </Button>
                 </div>
@@ -1002,14 +1006,14 @@ function StatGeneratorInner() {
 
               <div className="flex items-center justify-between">
                 <Button onClick={rollAllStats}>
-                <Dices className="w-4 h-4 mr-2" />
+                  <Dices className="w-4 h-4 mr-2" />
                   Roll Stats</Button>
                 <div className="flex items-center gap-3">
                   <Button variant="outline" onClick={handleAssignManually}>
                     Assign manually
                   </Button>
                   <Button variant="outline" onClick={handleShuffleAssign}>
-                  <Shuffle className="w-4 h-4 mr-2" />
+                    <Shuffle className="w-4 h-4 mr-2" />
                     Shuffle
                   </Button>
                 </div>
@@ -1019,7 +1023,11 @@ function StatGeneratorInner() {
                 <div className="overflow-x-auto mt-6 pt-4 border-t">
                   <StatGeneratorSelectorRow
                     classValue={selectedStandardClass}
-                    onClassChange={setSelectedStandardClass}
+                    onClassChange={(value) => {
+                      if (value !== null) {
+                        setSelectedStandardClass(value);
+                      }
+                    }}
                     classOptions={[CHOOSE_STANDARD_CLASS, ...classNames]}
                     classPlaceholder={CHOOSE_STANDARD_CLASS}
                     backgroundValue={selectedBackground}
