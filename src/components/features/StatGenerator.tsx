@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Star, RotateCcw, Settings, Copy, Check } from "lucide-react";
+import { RotateCcw, Settings, Share2, Dices, Shuffle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useLocation, useNavigate } from "react-router-dom";
 import {
@@ -11,7 +11,6 @@ import {
 } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent } from "@/components/ui/card";
-import { Switch } from "@/components/ui/switch";
 import {
   Tooltip,
   TooltipContent,
@@ -21,37 +20,45 @@ import {
 import { StepperInput } from "@/components/ui/stepper-input";
 import { classes, classNames } from "@/lib/classes";
 import { backgrounds, backgroundNames } from "@/lib/backgrounds";
+import {
+  ABILITIES,
+  ABILITY_ABBR,
+  createAbilityRecord,
+  formatModifier,
+  getModifier,
+  getModifierClass,
+  getPoolStatusClass,
+} from "@/lib/stat-generator";
+import {
+  backgroundBonusParamKeys,
+  manualBonusParamKeys,
+  parseClampedIntParam,
+  scoreParamKeys,
+  setAbilityParams,
+  setOptionalAbilityParams,
+} from "@/lib/stat-generator-url";
 import type { Ability, PrimaryStat } from "@/types";
 import {
   SettingsProvider,
   SettingsOverlay,
   useSettings,
 } from "@/components/features/SettingsOverlay";
+import {
+  AbilityNameCell,
+  CenteredCellContent,
+  ModifierDisplay,
+  PoolStatus,
+  StatGeneratorSelectorRow,
+  TotalScoreDisplay,
+} from "@/components/features/StatGeneratorParts";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
-
-const ABILITIES: Ability[] = [
-  "Strength",
-  "Dexterity",
-  "Constitution",
-  "Intelligence",
-  "Wisdom",
-  "Charisma",
-];
-
-const ABILITY_ABBR: Record<Ability, string> = {
-  Strength: "STR",
-  Dexterity: "DEX",
-  Constitution: "CON",
-  Intelligence: "INT",
-  Wisdom: "WIS",
-  Charisma: "CHA",
-};
 
 const BG_BONUS_MAX = 2;
 const MANUAL_BONUS_MAX = 20;
 const STANDARD_ARRAY_OPTIONS = [8, 10, 12, 13, 14, 15] as const;
 const CHOOSE_STANDARD_CLASS = "Choose a class";
+const ROLLED_POOL_PARAM = "rpool";
 const STAT_TAB_ROUTES = {
   pointbuy: "/stat-generator/pointbuy",
   roll: "/stat-generator/rolled",
@@ -104,14 +111,6 @@ function pointsUsed(
   );
 }
 
-function getModifier(score: number): number {
-  return Math.floor((score - 10) / 2);
-}
-
-function formatModifier(mod: number): string {
-  return mod >= 0 ? `+${mod}` : `${mod}`;
-}
-
 // ─── Primary stat helpers ─────────────────────────────────────────────────────
 
 function getPrimaryStatInfo(className: string): {
@@ -145,36 +144,15 @@ function getClassStandardArrayByName(className: string): number[] | null {
 // ─── Default scores ───────────────────────────────────────────────────────────
 
 function makeDefaultScores(defaultScore: number): Record<Ability, number> {
-  return {
-    Strength: defaultScore,
-    Dexterity: defaultScore,
-    Constitution: defaultScore,
-    Intelligence: defaultScore,
-    Wisdom: defaultScore,
-    Charisma: defaultScore,
-  };
+  return createAbilityRecord(defaultScore);
 }
 
 function defaultBgBonuses(): Record<Ability, number> {
-  return {
-    Strength: 0,
-    Dexterity: 0,
-    Constitution: 0,
-    Intelligence: 0,
-    Wisdom: 0,
-    Charisma: 0,
-  };
+  return createAbilityRecord(0);
 }
 
 function defaultManualBonuses(): Record<Ability, number> {
-  return {
-    Strength: 0,
-    Dexterity: 0,
-    Constitution: 0,
-    Intelligence: 0,
-    Wisdom: 0,
-    Charisma: 0,
-  };
+  return createAbilityRecord(0);
 }
 
 function makeScoresFromStandardArray(className: string): Record<Ability, number> {
@@ -193,14 +171,39 @@ function makeScoresFromStandardArray(className: string): Record<Ability, number>
 }
 
 function makeUnfilledStandardScores(): Record<Ability, number | null> {
-  return {
-    Strength: null,
-    Dexterity: null,
-    Constitution: null,
-    Intelligence: null,
-    Wisdom: null,
-    Charisma: null,
-  };
+  return createAbilityRecord<number | null>(null);
+}
+
+function encodeRolledPool(
+  rolledBoxes: Record<Ability, { rolls: number[]; total: number }>,
+): string {
+  return ABILITIES.map((ability) => rolledBoxes[ability].rolls.join(".")).join("_");
+}
+
+function decodeRolledPool(
+  raw: string,
+): Record<Ability, { rolls: number[]; total: number }> | null {
+  if (!raw) return null;
+  const chunks = raw.split("_");
+  if (chunks.length !== ABILITIES.length) return null;
+
+  const next = {} as Record<Ability, { rolls: number[]; total: number }>;
+  for (let index = 0; index < ABILITIES.length; index++) {
+    const ability = ABILITIES[index];
+    const rolls = chunks[index].split(".").map((value) => Number.parseInt(value, 10));
+    if (
+      rolls.length !== 4 ||
+      rolls.some((roll) => Number.isNaN(roll) || roll < 1 || roll > 6)
+    ) {
+      return null;
+    }
+
+    const sum = rolls.reduce((total, roll) => total + roll, 0);
+    const min = Math.min(...rolls);
+    next[ability] = { rolls, total: sum - min };
+  }
+
+  return next;
 }
 
 // ─── Inner component (consumes settings context) ──────────────────────────────
@@ -397,37 +400,10 @@ function StatGeneratorInner() {
         : selectedClass,
     );
     params.set("background", selectedBackground);
-    if (activeScores.Strength !== null) {
-      params.set("str", String(activeScores.Strength));
-    }
-    if (activeScores.Dexterity !== null) {
-      params.set("dex", String(activeScores.Dexterity));
-    }
-    if (activeScores.Constitution !== null) {
-      params.set("con", String(activeScores.Constitution));
-    }
-    if (activeScores.Intelligence !== null) {
-      params.set("int", String(activeScores.Intelligence));
-    }
-    if (activeScores.Wisdom !== null) {
-      params.set("wis", String(activeScores.Wisdom));
-    }
-    if (activeScores.Charisma !== null) {
-      params.set("cha", String(activeScores.Charisma));
-    }
-    params.set("bstr", String(bgBonuses.Strength));
-    params.set("bdex", String(bgBonuses.Dexterity));
-    params.set("bcon", String(bgBonuses.Constitution));
-    params.set("bint", String(bgBonuses.Intelligence));
-    params.set("bwis", String(bgBonuses.Wisdom));
-    params.set("bcha", String(bgBonuses.Charisma));
+    setOptionalAbilityParams(params, activeScores, scoreParamKeys);
+    setAbilityParams(params, bgBonuses, backgroundBonusParamKeys);
     params.set("feat", featBonusEnabled ? "1" : "0");
-    params.set("mstr", String(manualBonuses.Strength));
-    params.set("mdex", String(manualBonuses.Dexterity));
-    params.set("mcon", String(manualBonuses.Constitution));
-    params.set("mint", String(manualBonuses.Intelligence));
-    params.set("mwis", String(manualBonuses.Wisdom));
-    params.set("mcha", String(manualBonuses.Charisma));
+    setAbilityParams(params, manualBonuses, manualBonusParamKeys);
 
     try {
       await navigator.clipboard.writeText(shareUrl.toString());
@@ -462,20 +438,39 @@ function StatGeneratorInner() {
       setSelectedBackground(bgFromUrl);
     }
 
-    const toScore = (val: string | null) => {
-      if (!val) return null;
-      const parsed = Number.parseInt(val, 10);
-      if (Number.isNaN(parsed)) return null;
-      return Math.max(clampedMin, Math.min(clampedMax, parsed));
-    };
-
+    const scoreMinForTab = activeTab === "pointbuy" ? clampedMin : 3;
+    const scoreMaxForTab = activeTab === "pointbuy" ? clampedMax : 18;
     const nextScores = makeDefaultScores(minPurchasable);
-    const str = toScore(params.get("str"));
-    const dex = toScore(params.get("dex"));
-    const con = toScore(params.get("con"));
-    const int = toScore(params.get("int"));
-    const wis = toScore(params.get("wis"));
-    const cha = toScore(params.get("cha"));
+    const str = parseClampedIntParam(
+      params.get(scoreParamKeys.Strength),
+      scoreMinForTab,
+      scoreMaxForTab,
+    );
+    const dex = parseClampedIntParam(
+      params.get(scoreParamKeys.Dexterity),
+      scoreMinForTab,
+      scoreMaxForTab,
+    );
+    const con = parseClampedIntParam(
+      params.get(scoreParamKeys.Constitution),
+      scoreMinForTab,
+      scoreMaxForTab,
+    );
+    const int = parseClampedIntParam(
+      params.get(scoreParamKeys.Intelligence),
+      scoreMinForTab,
+      scoreMaxForTab,
+    );
+    const wis = parseClampedIntParam(
+      params.get(scoreParamKeys.Wisdom),
+      scoreMinForTab,
+      scoreMaxForTab,
+    );
+    const cha = parseClampedIntParam(
+      params.get(scoreParamKeys.Charisma),
+      scoreMinForTab,
+      scoreMaxForTab,
+    );
 
     if (str !== null) nextScores.Strength = str;
     if (dex !== null) nextScores.Dexterity = dex;
@@ -495,21 +490,28 @@ function StatGeneratorInner() {
       setStandardScores(nextScores);
     }
 
-    const toBgBonus = (val: string | null) => {
-      if (!val) return null;
-      const parsed = Number.parseInt(val, 10);
-      if (Number.isNaN(parsed)) return null;
-      return Math.max(0, Math.min(BG_BONUS_MAX, parsed));
-    };
+    if (activeTab === "roll") {
+      const decodedRolledPool = decodeRolledPool(params.get(ROLLED_POOL_PARAM) ?? "");
+      if (decodedRolledPool) {
+        setRolledBoxes(decodedRolledPool);
+      }
+
+      const hasAssignedStats = ABILITIES.some(
+        (ability) => params.get(scoreParamKeys[ability]) !== null,
+      );
+      if (decodedRolledPool || hasAssignedStats) {
+        setShowAssignPanel(true);
+      }
+    }
 
     const nextBonuses = defaultBgBonuses();
     let remainingBonusPool = bgBonusPool;
-    const bstr = toBgBonus(params.get("bstr"));
-    const bdex = toBgBonus(params.get("bdex"));
-    const bcon = toBgBonus(params.get("bcon"));
-    const bint = toBgBonus(params.get("bint"));
-    const bwis = toBgBonus(params.get("bwis"));
-    const bcha = toBgBonus(params.get("bcha"));
+    const bstr = parseClampedIntParam(params.get(backgroundBonusParamKeys.Strength), 0, BG_BONUS_MAX);
+    const bdex = parseClampedIntParam(params.get(backgroundBonusParamKeys.Dexterity), 0, BG_BONUS_MAX);
+    const bcon = parseClampedIntParam(params.get(backgroundBonusParamKeys.Constitution), 0, BG_BONUS_MAX);
+    const bint = parseClampedIntParam(params.get(backgroundBonusParamKeys.Intelligence), 0, BG_BONUS_MAX);
+    const bwis = parseClampedIntParam(params.get(backgroundBonusParamKeys.Wisdom), 0, BG_BONUS_MAX);
+    const bcha = parseClampedIntParam(params.get(backgroundBonusParamKeys.Charisma), 0, BG_BONUS_MAX);
 
     if (bstr !== null) {
       nextBonuses.Strength = Math.min(bstr, remainingBonusPool);
@@ -541,20 +543,13 @@ function StatGeneratorInner() {
     const featFromUrl = params.get("feat");
     setFeatBonusEnabled(featFromUrl === "1");
 
-    const toManualBonus = (val: string | null) => {
-      if (!val) return null;
-      const parsed = Number.parseInt(val, 10);
-      if (Number.isNaN(parsed)) return null;
-      return Math.max(0, Math.min(MANUAL_BONUS_MAX, parsed));
-    };
-
     const nextManualBonuses = defaultManualBonuses();
-    const mstr = toManualBonus(params.get("mstr"));
-    const mdex = toManualBonus(params.get("mdex"));
-    const mcon = toManualBonus(params.get("mcon"));
-    const mint = toManualBonus(params.get("mint"));
-    const mwis = toManualBonus(params.get("mwis"));
-    const mcha = toManualBonus(params.get("mcha"));
+    const mstr = parseClampedIntParam(params.get(manualBonusParamKeys.Strength), 0, MANUAL_BONUS_MAX);
+    const mdex = parseClampedIntParam(params.get(manualBonusParamKeys.Dexterity), 0, MANUAL_BONUS_MAX);
+    const mcon = parseClampedIntParam(params.get(manualBonusParamKeys.Constitution), 0, MANUAL_BONUS_MAX);
+    const mint = parseClampedIntParam(params.get(manualBonusParamKeys.Intelligence), 0, MANUAL_BONUS_MAX);
+    const mwis = parseClampedIntParam(params.get(manualBonusParamKeys.Wisdom), 0, MANUAL_BONUS_MAX);
+    const mcha = parseClampedIntParam(params.get(manualBonusParamKeys.Charisma), 0, MANUAL_BONUS_MAX);
 
     if (mstr !== null) nextManualBonuses.Strength = mstr;
     if (mdex !== null) nextManualBonuses.Dexterity = mdex;
@@ -658,17 +653,16 @@ function StatGeneratorInner() {
 
   const handleShareAssigned = async () => {
     const shareUrl = new URL(window.location.href);
-    shareUrl.pathname = STAT_TAB_ROUTES.standard;
+    shareUrl.pathname = STAT_TAB_ROUTES.roll;
     shareUrl.search = "";
     const params = shareUrl.searchParams;
     params.set("class", selectedStandardClass === CHOOSE_STANDARD_CLASS ? "" : selectedStandardClass);
     params.set("background", selectedBackground);
-    if (standardScores.Strength !== null) params.set("str", String(standardScores.Strength));
-    if (standardScores.Dexterity !== null) params.set("dex", String(standardScores.Dexterity));
-    if (standardScores.Constitution !== null) params.set("con", String(standardScores.Constitution));
-    if (standardScores.Intelligence !== null) params.set("int", String(standardScores.Intelligence));
-    if (standardScores.Wisdom !== null) params.set("wis", String(standardScores.Wisdom));
-    if (standardScores.Charisma !== null) params.set("cha", String(standardScores.Charisma));
+    setOptionalAbilityParams(params, standardScores, scoreParamKeys);
+    setAbilityParams(params, bgBonuses, backgroundBonusParamKeys);
+    params.set("feat", featBonusEnabled ? "1" : "0");
+    setAbilityParams(params, manualBonuses, manualBonusParamKeys);
+    params.set(ROLLED_POOL_PARAM, encodeRolledPool(rolledBoxes));
 
     try {
       await navigator.clipboard.writeText(shareUrl.toString());
@@ -677,19 +671,8 @@ function StatGeneratorInner() {
     } catch { }
   };
 
-  const pointsColor =
-    remaining < 0
-      ? "text-[#ff3d3d]"
-      : remaining === 0
-        ? "text-[#00c93cff] dark:text-[#10ff58ff]"
-        : "text-foreground";
-
-  const bgPoolColor =
-    bgBonusRemaining < 0
-      ? "text-[#ff3d3d]"
-      : bgBonusRemaining === 0
-        ? "text-[#00c93cff] dark:text-[#10ff58ff]"
-        : "text-foreground";
+  const pointsColor = getPoolStatusClass(remaining);
+  const bgPoolColor = getPoolStatusClass(bgBonusRemaining);
 
   return (
     <>
@@ -767,83 +750,17 @@ function StatGeneratorInner() {
             {/* ── POINT BUY TAB ── */}
             <TabsContent value="pointbuy" className="space-y-6">
               {/* Class + Background selectors */}
-              <div className="flex flex-col sm:flex-row sm:items-center gap-3 flex-wrap">
-                {/* Class */}
-                <label className="text-sm font-semibold shrink-0 sm:w-28">
-                  Select Class:
-                </label>
-                <div className="flex-1 max-w-xs">
-                  <Select
-                    value={selectedClass}
-                    onValueChange={(val) => val && setSelectedClass(val)}
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {classNames.map((name) => (
-                        <SelectItem key={name} value={name}>
-                          {name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                {/* Background */}
-                <label className="text-sm font-semibold shrink-0">
-                  Background:
-                </label>
-                <div className="flex-1 max-w-xs">
-                  <Select
-                    value={selectedBackground}
-                    onValueChange={handleBackgroundChange}
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {backgroundNames.map((name) => (
-                        <SelectItem key={name} value={name}>
-                          {name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="flex items-center gap-2 shrink-0">
-                  <TooltipProvider delay={100}>
-                    <Tooltip>
-                      <TooltipTrigger
-                        render={
-                          <span className="cursor-help border-b border-dashed border-muted-foreground">
-                            Feat Bonus
-                          </span>
-                        }
-                      />
-                      <TooltipContent>
-                        <p>Manually add a bonus to ability scores granted by feats.</p>
-                      </TooltipContent>
-                    </Tooltip>
-                  </TooltipProvider>
-                  <Switch
-                    size="sm"
-                    checked={featBonusEnabled}
-                    onCheckedChange={setFeatBonusEnabled}
-                    aria-label="Toggle feat bonus"
-                  />
-                </div>
-
-                {primaryStats.length > 0 && (
-                  <p className="text-xs text-muted-foreground sm:ml-auto">
-                    Primary:{" "}
-                    <span className="font-semibold text-foreground">
-                      {primaryDisplay}
-                    </span>
-                  </p>
-                )}
-              </div>
+              <StatGeneratorSelectorRow
+                classValue={selectedClass}
+                onClassChange={setSelectedClass}
+                classOptions={classNames}
+                backgroundValue={selectedBackground}
+                onBackgroundChange={handleBackgroundChange}
+                backgroundOptions={backgroundNames}
+                featBonusEnabled={featBonusEnabled}
+                onFeatBonusChange={setFeatBonusEnabled}
+                primaryDisplay={primaryStats.length > 0 ? primaryDisplay : undefined}
+              />
 
               {/* Ability score table */}
               <div className="overflow-x-auto">
@@ -917,34 +834,16 @@ function StatGeneratorInner() {
                             }`}
                         >
                           {/* Ability name */}
-                          <td className="py-2 pl-3 pr-4 font-medium rounded-l-md">
-                            <div className="flex items-center gap-1.5">
-                              <span className="hidden sm:inline">{ability}</span>
-                              <span className="sm:hidden text-xs font-bold">
-                                {ABILITY_ABBR[ability]}
-                              </span>
-                              {isPrimary && (
-                                <TooltipProvider delay={100}>
-                                  <Tooltip>
-                                    <TooltipTrigger
-                                      render={
-                                        <span className="cursor-help">
-                                          <Star className="w-3.5 h-3.5 text-amber-500 fill-amber-500" />
-                                        </span>
-                                      }
-                                    />
-                                    <TooltipContent>
-                                      <p>Primary stat for {selectedClass}</p>
-                                    </TooltipContent>
-                                  </Tooltip>
-                                </TooltipProvider>
-                              )}
-                            </div>
-                          </td>
+                          <AbilityNameCell
+                            ability={ability}
+                            abilityAbbreviation={ABILITY_ABBR[ability]}
+                            isPrimary={isPrimary}
+                            primaryTooltip={`Primary stat for ${selectedClass}`}
+                          />
 
                           {/* Stepper — base score */}
                           <td className="py-2 px-2">
-                            <div className="flex justify-center">
+                            <CenteredCellContent>
                               <StepperInput
                                 className="rounded-none w-28"
                                 value={score}
@@ -954,12 +853,12 @@ function StatGeneratorInner() {
                                   handleScoreChange(ability, val)
                                 }
                               />
-                            </div>
+                            </CenteredCellContent>
                           </td>
 
                           {/* Stepper — background bonus */}
                           <td className="py-2 px-2">
-                            <div className="flex justify-center">
+                            <CenteredCellContent>
                               {showBgStepper ? (
                                 <StepperInput
                                   className="rounded-none w-28"
@@ -975,12 +874,12 @@ function StatGeneratorInner() {
                                   —
                                 </span>
                               )}
-                            </div>
+                            </CenteredCellContent>
                           </td>
 
                           {featBonusEnabled && (
                             <td className="py-2 px-2">
-                              <div className="flex justify-center">
+                              <CenteredCellContent>
                                 <StepperInput
                                   className="rounded-none w-28"
                                   value={manualBonus}
@@ -990,32 +889,21 @@ function StatGeneratorInner() {
                                     handleManualBonusChange(ability, val)
                                   }
                                 />
-                              </div>
+                              </CenteredCellContent>
                             </td>
                           )}
 
                           {/* Total score badge */}
                           <td className="py-2 px-2 text-center">
-                            <span
-                              className={`inline-block w-10 text-center font-bold text-base ${isAboveMax ? "text-amber-500" : ""
-                                }`}
-                            >
-                              {total}
-                            </span>
+                            <TotalScoreDisplay value={total} highlight={isAboveMax} />
                           </td>
 
                           {/* Modifier */}
                           <td className="py-2 pr-3 text-center rounded-r-md">
-                            <span
-                              className={`inline-block w-10 text-center text-sm font-semibold ${modifier > 0
-                                ? "text-[#00c93cff] dark:text-[#10ff58ff]"
-                                : modifier < 0
-                                  ? "text-[#ff3d3d]"
-                                  : "text-muted-foreground"
-                                }`}
-                            >
-                              {formatModifier(modifier)}
-                            </span>
+                            <ModifierDisplay
+                              value={formatModifier(modifier)}
+                              className={getModifierClass(modifier)}
+                            />
                           </td>
                         </tr>
                       );
@@ -1032,33 +920,27 @@ function StatGeneratorInner() {
                     Reset
                   </Button>
                   <Button variant="outline" size="sm" onClick={handleShareLink}>
-                    {copied ? (
-                      <Check className="w-3.5 h-3.5 mr-1.5" />
-                    ) : (
-                      <Copy className="w-3.5 h-3.5 mr-1.5" />
-                    )}
-                    {copied ? "Shared" : "Share"}
+                  <Share2 className="w-4 h-4 mr-2" />
+                    {copied ? "Copied" : "Share"}
                   </Button>
                 </div>
 
                 <div className="flex items-center gap-6 text-sm font-medium flex-wrap">
                   {/* Background bonus pool */}
-                  <div>
-                    Background Points:{" "}
-                    <span className={`font-bold tabular-nums ${bgPoolColor}`}>
-                      {bgBonusRemaining}
-                    </span>
-                    <span className="text-muted-foreground">/{bgBonusPool}</span>
-                  </div>
+                  <PoolStatus
+                    label="Background Points:"
+                    value={bgBonusRemaining}
+                    max={bgBonusPool}
+                    valueClassName={bgPoolColor}
+                  />
 
                   {/* Point buy pool */}
-                  <div>
-                    Points remaining:{" "}
-                    <span className={`font-bold tabular-nums ${pointsColor}`}>
-                      {remaining}
-                    </span>
-                    <span className="text-muted-foreground">/{pointPool}</span>
-                  </div>
+                  <PoolStatus
+                    label="Points remaining:"
+                    value={remaining}
+                    max={pointPool}
+                    valueClassName={pointsColor}
+                  />
                 </div>
               </div>
 
@@ -1119,12 +1001,15 @@ function StatGeneratorInner() {
               </div>
 
               <div className="flex items-center justify-between">
-                <Button onClick={rollAllStats}>Roll Stats</Button>
+                <Button onClick={rollAllStats}>
+                <Dices className="w-4 h-4 mr-2" />
+                  Roll Stats</Button>
                 <div className="flex items-center gap-3">
                   <Button variant="outline" onClick={handleAssignManually}>
                     Assign manually
                   </Button>
                   <Button variant="outline" onClick={handleShuffleAssign}>
+                  <Shuffle className="w-4 h-4 mr-2" />
                     Shuffle
                   </Button>
                 </div>
@@ -1132,50 +1017,18 @@ function StatGeneratorInner() {
 
               {showAssignPanel && (
                 <div className="overflow-x-auto mt-6 pt-4 border-t">
-                  <div className="flex flex-col sm:flex-row sm:items-center gap-3 mb-3">
-                    <label className="text-sm font-semibold shrink-0 sm:w-28">Select Class:</label>
-                    <div className="flex-1 max-w-xs">
-                      <Select value={selectedStandardClass} onValueChange={(val) => val && setSelectedStandardClass(val)}>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Choose a class" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value={CHOOSE_STANDARD_CLASS} className="text-muted-foreground">Choose a class</SelectItem>
-                          {classNames.map((name) => (
-                            <SelectItem key={name} value={name}>{name}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-
-                    <label className="text-sm font-semibold shrink-0">Background:</label>
-                    <div className="flex-1 max-w-xs">
-                      <Select value={selectedBackground} onValueChange={handleBackgroundChange}>
-                        <SelectTrigger>
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {backgroundNames.map((name) => (
-                            <SelectItem key={name} value={name}>{name}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-
-                    <div className="flex items-center gap-2 shrink-0">
-                      <TooltipProvider delay={100}>
-                        <Tooltip>
-                          <TooltipTrigger render={<span className="cursor-help border-b border-dashed border-muted-foreground">Feat Bonus</span>} />
-                          <TooltipContent>
-                            <p>Manually add a bonus to ability scores granted by feats.</p>
-                          </TooltipContent>
-                        </Tooltip>
-                      </TooltipProvider>
-                      <Switch size="sm" checked={featBonusEnabled} onCheckedChange={setFeatBonusEnabled} aria-label="Toggle feat bonus" />
-                    </div>
-
-                    <p className="text-xs text-muted-foreground sm:ml-auto">Primary: <span className="font-semibold text-foreground">{primaryDisplay}</span></p>
-                  </div>
+                  <StatGeneratorSelectorRow
+                    classValue={selectedStandardClass}
+                    onClassChange={setSelectedStandardClass}
+                    classOptions={[CHOOSE_STANDARD_CLASS, ...classNames]}
+                    classPlaceholder={CHOOSE_STANDARD_CLASS}
+                    backgroundValue={selectedBackground}
+                    onBackgroundChange={handleBackgroundChange}
+                    backgroundOptions={backgroundNames}
+                    featBonusEnabled={featBonusEnabled}
+                    onFeatBonusChange={setFeatBonusEnabled}
+                    primaryDisplay={primaryDisplay}
+                  />
 
                   {/* background pool + share/reset moved to footer below table */}
                   <table className="w-full text-sm border-separate border-spacing-y-1">
@@ -1220,30 +1073,14 @@ function StatGeneratorInner() {
 
                         return (
                           <tr key={ability} className={`rounded-md transition-colors ${isPrimary ? "bg-primary/8 dark:bg-primary/10" : "hover:bg-muted/50"}`}>
-                            <td className="py-2 pl-3 pr-4 font-medium rounded-l-md">
-                              <div className="flex items-center gap-1.5">
-                                <span className="hidden sm:inline">{ability}</span>
-                                <span className="sm:hidden text-xs font-bold">{ABILITY_ABBR[ability]}</span>
-                                {isPrimary && (
-                                  <TooltipProvider delay={100}>
-                                    <Tooltip>
-                                      <TooltipTrigger
-                                        render={
-                                          <span className="cursor-help">
-                                            <Star className="w-3.5 h-3.5 text-amber-500 fill-amber-500" />
-                                          </span>
-                                        }
-                                      />
-                                      <TooltipContent>
-                                        <p>Primary stat for selected class</p>
-                                      </TooltipContent>
-                                    </Tooltip>
-                                  </TooltipProvider>
-                                )}
-                              </div>
-                            </td>
+                            <AbilityNameCell
+                              ability={ability}
+                              abilityAbbreviation={ABILITY_ABBR[ability]}
+                              isPrimary={isPrimary}
+                              primaryTooltip="Primary stat for selected class"
+                            />
                             <td className="py-2 px-2">
-                              <div className="flex justify-center">
+                              <CenteredCellContent>
                                 <Select value={score === null ? "" : String(score)} onValueChange={(val) => handleRolledAssignChange(ability, val)}>
                                   <SelectTrigger className="rounded-none w-28">
                                     <SelectValue placeholder="Select" />
@@ -1256,35 +1093,36 @@ function StatGeneratorInner() {
                                     ))}
                                   </SelectContent>
                                 </Select>
-                              </div>
+                              </CenteredCellContent>
                             </td>
 
                             <td className="py-2 px-2">
-                              <div className="flex justify-center">
+                              <CenteredCellContent>
                                 {isBgAbility ? (
                                   <StepperInput className="rounded-none w-28" value={bgBonus} min={0} max={BG_BONUS_MAX} onChange={(val) => handleBgBonusChange(ability, val)} />
                                 ) : (
                                   <span className="inline-block w-28 text-center text-muted-foreground/40 select-none">—</span>
                                 )}
-                              </div>
+                              </CenteredCellContent>
                             </td>
 
                             {featBonusEnabled && (
                               <td className="py-2 px-2">
-                                <div className="flex justify-center">
+                                <CenteredCellContent>
                                   <StepperInput className="rounded-none w-28" value={manualBonus} min={0} max={MANUAL_BONUS_MAX} onChange={(val) => handleManualBonusChange(ability, val)} />
-                                </div>
+                                </CenteredCellContent>
                               </td>
                             )}
 
                             <td className="py-2 px-2 text-center">
-                              <span className="inline-block w-10 text-center font-bold text-base">{total ?? "—"}</span>
+                              <TotalScoreDisplay value={total ?? "—"} />
                             </td>
 
                             <td className="py-2 pr-3 text-center rounded-r-md">
-                              <span className={`inline-block w-10 text-center text-sm font-semibold ${modifier !== null && modifier > 0 ? "text-[#00c93cff] dark:text-[#10ff58ff]" : modifier !== null && modifier < 0 ? "text-[#ff3d3d]" : "text-muted-foreground"}`}>
-                                {modifier === null ? "—" : formatModifier(modifier)}
-                              </span>
+                              <ModifierDisplay
+                                value={modifier === null ? "—" : formatModifier(modifier)}
+                                className={getModifierClass(modifier)}
+                              />
                             </td>
                           </tr>
                         );
@@ -1293,17 +1131,19 @@ function StatGeneratorInner() {
                   </table>
 
                   <div className="flex items-center justify-between mt-3 gap-3">
-                    <div className="flex items-center gap-3">
-                      <div>
-                        Background Points: <span className={`font-bold tabular-nums ${bgPoolColor}`}>{bgBonusRemaining}</span>
-                        <span className="text-muted-foreground">/{bgBonusPool}</span>
-                      </div>
-                    </div>
-
                     <div className="flex items-center gap-2">
-                      <Button variant="outline" size="sm" onClick={handleShareAssigned}>{copied ? "Shared" : "Share"}</Button>
+                      <Button variant="outline" size="sm" onClick={handleShareAssigned}><Share2 className="w-4 h-4 mr-2" />{copied ? "Copied" : "Share"}</Button>
                       <Button variant="outline" size="sm" onClick={handleAssignmentReset}><RotateCcw className="w-3.5 h-3.5 mr-1.5" />Reset</Button>
                     </div>
+                    <div className="flex items-center gap-3">
+                      <PoolStatus
+                        label="Background Points:"
+                        value={bgBonusRemaining}
+                        max={bgBonusPool}
+                        valueClassName={bgPoolColor}
+                      />
+                    </div>
+
                   </div>
 
                 </div>
@@ -1312,90 +1152,18 @@ function StatGeneratorInner() {
 
             {/* ── STANDARD ARRAY TAB ── */}
             <TabsContent value="standard" className="space-y-6">
-              <div className="flex flex-col sm:flex-row sm:items-center gap-3 flex-wrap">
-                <label className="text-sm font-semibold shrink-0 sm:w-28">
-                  Select Class:
-                </label>
-                <div className="flex-1 max-w-xs">
-                  <Select
-                    value={selectedStandardClass}
-                    onValueChange={handleStandardClassChange}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Choose a class" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem
-                        value={CHOOSE_STANDARD_CLASS}
-                        className="text-muted-foreground"
-                      >
-                        Choose a class
-                      </SelectItem>
-                      {classNames.map((name) => (
-                        <SelectItem key={name} value={name}>
-                          {name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <label className="text-sm font-semibold shrink-0">
-                  Background:
-                </label>
-                <div className="flex-1 max-w-xs">
-                  <Select
-                    value={selectedBackground}
-                    onValueChange={handleBackgroundChange}
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {backgroundNames.map((name) => (
-                        <SelectItem key={name} value={name}>
-                          {name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="flex items-center gap-2 shrink-0">
-                  <TooltipProvider delay={100}>
-                    <Tooltip>
-                      <TooltipTrigger
-                        render={
-                          <span className="cursor-help border-b border-dashed border-muted-foreground">
-                            Feat Bonus
-                          </span>
-                        }
-                      />
-                      <TooltipContent>
-                        <p>
-                          Manually add a bonus to ability scores granted by
-                          feats.
-                        </p>
-                      </TooltipContent>
-                    </Tooltip>
-                  </TooltipProvider>
-                  <Switch
-                    size="sm"
-                    checked={featBonusEnabled}
-                    onCheckedChange={setFeatBonusEnabled}
-                    aria-label="Toggle feat bonus"
-                  />
-                </div>
-
-                {primaryStats.length > 0 && (
-                  <p className="text-xs text-muted-foreground sm:ml-auto">
-                    Primary:{" "}
-                    <span className="font-semibold text-foreground">
-                      {primaryDisplay}
-                    </span>
-                  </p>
-                )}
-              </div>
+              <StatGeneratorSelectorRow
+                classValue={selectedStandardClass}
+                onClassChange={handleStandardClassChange}
+                classOptions={[CHOOSE_STANDARD_CLASS, ...classNames]}
+                classPlaceholder={CHOOSE_STANDARD_CLASS}
+                backgroundValue={selectedBackground}
+                onBackgroundChange={handleBackgroundChange}
+                backgroundOptions={backgroundNames}
+                featBonusEnabled={featBonusEnabled}
+                onFeatBonusChange={setFeatBonusEnabled}
+                primaryDisplay={primaryStats.length > 0 ? primaryDisplay : undefined}
+              />
 
               <div className="overflow-x-auto">
                 <table className="w-full text-sm border-separate border-spacing-y-1">
@@ -1463,39 +1231,17 @@ function StatGeneratorInner() {
                             : "hover:bg-muted/50"
                             }`}
                         >
-                          <td className="py-2 pl-3 pr-4 font-medium rounded-l-md">
-                            <div className="flex items-center gap-1.5">
-                              <span className="hidden sm:inline">{ability}</span>
-                              <span className="sm:hidden text-xs font-bold">
-                                {ABILITY_ABBR[ability]}
-                              </span>
-                              {isPrimary && (
-                                <TooltipProvider delay={100}>
-                                  <Tooltip>
-                                    <TooltipTrigger
-                                      render={
-                                        <span className="cursor-help">
-                                          <Star className="w-3.5 h-3.5 text-amber-500 fill-amber-500" />
-                                        </span>
-                                      }
-                                    />
-                                    <TooltipContent>
-                                      <p>
-                                        Primary stat for{" "}
-                                        {selectedStandardClass ===
-                                          CHOOSE_STANDARD_CLASS
-                                          ? "selected class"
-                                          : selectedStandardClass}
-                                      </p>
-                                    </TooltipContent>
-                                  </Tooltip>
-                                </TooltipProvider>
-                              )}
-                            </div>
-                          </td>
+                          <AbilityNameCell
+                            ability={ability}
+                            abilityAbbreviation={ABILITY_ABBR[ability]}
+                            isPrimary={isPrimary}
+                            primaryTooltip={`Primary stat for ${selectedStandardClass === CHOOSE_STANDARD_CLASS
+                              ? "selected class"
+                              : selectedStandardClass}`}
+                          />
 
                           <td className="py-2 px-2">
-                            <div className="flex justify-center">
+                            <CenteredCellContent>
                               <Select
                                 value={score === null ? "" : String(score)}
                                 onValueChange={(val) =>
@@ -1525,11 +1271,11 @@ function StatGeneratorInner() {
                                   })}
                                 </SelectContent>
                               </Select>
-                            </div>
+                            </CenteredCellContent>
                           </td>
 
                           <td className="py-2 px-2">
-                            <div className="flex justify-center">
+                            <CenteredCellContent>
                               {showBgStepper ? (
                                 <StepperInput
                                   className="rounded-none w-28"
@@ -1545,12 +1291,12 @@ function StatGeneratorInner() {
                                   —
                                 </span>
                               )}
-                            </div>
+                            </CenteredCellContent>
                           </td>
 
                           {featBonusEnabled && (
                             <td className="py-2 px-2">
-                              <div className="flex justify-center">
+                              <CenteredCellContent>
                                 <StepperInput
                                   className="rounded-none w-28"
                                   value={manualBonus}
@@ -1560,27 +1306,19 @@ function StatGeneratorInner() {
                                     handleManualBonusChange(ability, val)
                                   }
                                 />
-                              </div>
+                              </CenteredCellContent>
                             </td>
                           )}
 
                           <td className="py-2 px-2 text-center">
-                            <span className="inline-block w-10 text-center font-bold text-base">
-                              {total ?? "—"}
-                            </span>
+                            <TotalScoreDisplay value={total ?? "—"} />
                           </td>
 
                           <td className="py-2 pr-3 text-center rounded-r-md">
-                            <span
-                              className={`inline-block w-10 text-center text-sm font-semibold ${modifier !== null && modifier > 0
-                                ? "text-[#00c93cff] dark:text-[#10ff58ff]"
-                                : modifier !== null && modifier < 0
-                                  ? "text-[#ff3d3d]"
-                                  : "text-muted-foreground"
-                                }`}
-                            >
-                              {modifier === null ? "—" : formatModifier(modifier)}
-                            </span>
+                            <ModifierDisplay
+                              value={modifier === null ? "—" : formatModifier(modifier)}
+                              className={getModifierClass(modifier)}
+                            />
                           </td>
                         </tr>
                       );
@@ -1600,23 +1338,18 @@ function StatGeneratorInner() {
                     Reset
                   </Button>
                   <Button variant="outline" size="sm" onClick={handleShareLink}>
-                    {copied ? (
-                      <Check className="w-3.5 h-3.5 mr-1.5" />
-                    ) : (
-                      <Copy className="w-3.5 h-3.5 mr-1.5" />
-                    )}
-                    {copied ? "Shared" : "Share"}
+                    <Share2 className="w-4 h-4 mr-2" />
+                    {copied ? "Copied" : "Share"}
                   </Button>
                 </div>
 
                 <div className="flex items-center gap-6 text-sm font-medium flex-wrap">
-                  <div>
-                    Background Points:{" "}
-                    <span className={`font-bold tabular-nums ${bgPoolColor}`}>
-                      {bgBonusRemaining}
-                    </span>
-                    <span className="text-muted-foreground">/{bgBonusPool}</span>
-                  </div>
+                  <PoolStatus
+                    label="Background Points:"
+                    value={bgBonusRemaining}
+                    max={bgBonusPool}
+                    valueClassName={bgPoolColor}
+                  />
                 </div>
               </div>
             </TabsContent>
