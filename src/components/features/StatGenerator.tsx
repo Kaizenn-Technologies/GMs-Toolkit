@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { RotateCcw, Settings, Copy, Check, Share2 , Dices, Shuffle} from "lucide-react";
+import { RotateCcw, Settings, Share2, Dices, Shuffle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useLocation, useNavigate } from "react-router-dom";
 import {
@@ -58,6 +58,7 @@ const BG_BONUS_MAX = 2;
 const MANUAL_BONUS_MAX = 20;
 const STANDARD_ARRAY_OPTIONS = [8, 10, 12, 13, 14, 15] as const;
 const CHOOSE_STANDARD_CLASS = "Choose a class";
+const ROLLED_POOL_PARAM = "rpool";
 const STAT_TAB_ROUTES = {
   pointbuy: "/stat-generator/pointbuy",
   roll: "/stat-generator/rolled",
@@ -171,6 +172,38 @@ function makeScoresFromStandardArray(className: string): Record<Ability, number>
 
 function makeUnfilledStandardScores(): Record<Ability, number | null> {
   return createAbilityRecord<number | null>(null);
+}
+
+function encodeRolledPool(
+  rolledBoxes: Record<Ability, { rolls: number[]; total: number }>,
+): string {
+  return ABILITIES.map((ability) => rolledBoxes[ability].rolls.join(".")).join("_");
+}
+
+function decodeRolledPool(
+  raw: string,
+): Record<Ability, { rolls: number[]; total: number }> | null {
+  if (!raw) return null;
+  const chunks = raw.split("_");
+  if (chunks.length !== ABILITIES.length) return null;
+
+  const next = {} as Record<Ability, { rolls: number[]; total: number }>;
+  for (let index = 0; index < ABILITIES.length; index++) {
+    const ability = ABILITIES[index];
+    const rolls = chunks[index].split(".").map((value) => Number.parseInt(value, 10));
+    if (
+      rolls.length !== 4 ||
+      rolls.some((roll) => Number.isNaN(roll) || roll < 1 || roll > 6)
+    ) {
+      return null;
+    }
+
+    const sum = rolls.reduce((total, roll) => total + roll, 0);
+    const min = Math.min(...rolls);
+    next[ability] = { rolls, total: sum - min };
+  }
+
+  return next;
 }
 
 // ─── Inner component (consumes settings context) ──────────────────────────────
@@ -405,13 +438,39 @@ function StatGeneratorInner() {
       setSelectedBackground(bgFromUrl);
     }
 
+    const scoreMinForTab = activeTab === "pointbuy" ? clampedMin : 3;
+    const scoreMaxForTab = activeTab === "pointbuy" ? clampedMax : 18;
     const nextScores = makeDefaultScores(minPurchasable);
-    const str = parseClampedIntParam(params.get(scoreParamKeys.Strength), clampedMin, clampedMax);
-    const dex = parseClampedIntParam(params.get(scoreParamKeys.Dexterity), clampedMin, clampedMax);
-    const con = parseClampedIntParam(params.get(scoreParamKeys.Constitution), clampedMin, clampedMax);
-    const int = parseClampedIntParam(params.get(scoreParamKeys.Intelligence), clampedMin, clampedMax);
-    const wis = parseClampedIntParam(params.get(scoreParamKeys.Wisdom), clampedMin, clampedMax);
-    const cha = parseClampedIntParam(params.get(scoreParamKeys.Charisma), clampedMin, clampedMax);
+    const str = parseClampedIntParam(
+      params.get(scoreParamKeys.Strength),
+      scoreMinForTab,
+      scoreMaxForTab,
+    );
+    const dex = parseClampedIntParam(
+      params.get(scoreParamKeys.Dexterity),
+      scoreMinForTab,
+      scoreMaxForTab,
+    );
+    const con = parseClampedIntParam(
+      params.get(scoreParamKeys.Constitution),
+      scoreMinForTab,
+      scoreMaxForTab,
+    );
+    const int = parseClampedIntParam(
+      params.get(scoreParamKeys.Intelligence),
+      scoreMinForTab,
+      scoreMaxForTab,
+    );
+    const wis = parseClampedIntParam(
+      params.get(scoreParamKeys.Wisdom),
+      scoreMinForTab,
+      scoreMaxForTab,
+    );
+    const cha = parseClampedIntParam(
+      params.get(scoreParamKeys.Charisma),
+      scoreMinForTab,
+      scoreMaxForTab,
+    );
 
     if (str !== null) nextScores.Strength = str;
     if (dex !== null) nextScores.Dexterity = dex;
@@ -429,6 +488,20 @@ function StatGeneratorInner() {
       }
     } else {
       setStandardScores(nextScores);
+    }
+
+    if (activeTab === "roll") {
+      const decodedRolledPool = decodeRolledPool(params.get(ROLLED_POOL_PARAM) ?? "");
+      if (decodedRolledPool) {
+        setRolledBoxes(decodedRolledPool);
+      }
+
+      const hasAssignedStats = ABILITIES.some(
+        (ability) => params.get(scoreParamKeys[ability]) !== null,
+      );
+      if (decodedRolledPool || hasAssignedStats) {
+        setShowAssignPanel(true);
+      }
     }
 
     const nextBonuses = defaultBgBonuses();
@@ -580,12 +653,16 @@ function StatGeneratorInner() {
 
   const handleShareAssigned = async () => {
     const shareUrl = new URL(window.location.href);
-    shareUrl.pathname = STAT_TAB_ROUTES.standard;
+    shareUrl.pathname = STAT_TAB_ROUTES.roll;
     shareUrl.search = "";
     const params = shareUrl.searchParams;
     params.set("class", selectedStandardClass === CHOOSE_STANDARD_CLASS ? "" : selectedStandardClass);
     params.set("background", selectedBackground);
     setOptionalAbilityParams(params, standardScores, scoreParamKeys);
+    setAbilityParams(params, bgBonuses, backgroundBonusParamKeys);
+    params.set("feat", featBonusEnabled ? "1" : "0");
+    setAbilityParams(params, manualBonuses, manualBonusParamKeys);
+    params.set(ROLLED_POOL_PARAM, encodeRolledPool(rolledBoxes));
 
     try {
       await navigator.clipboard.writeText(shareUrl.toString());
