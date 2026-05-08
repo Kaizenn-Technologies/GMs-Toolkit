@@ -131,8 +131,15 @@ export function parseCoreData(coreData: string): DecodedCoreData {
     // Since flags are always exactly 2 digits and optional rolls begin with `r`,
     // take flags from the tail of the non-roll segment.
     const rollsIndex = coreData.indexOf("r", i);
+    const metadataIndex = coreData.indexOf("m", i);
     const afterConStart = i;
-    const nonRollEnd = rollsIndex === -1 ? coreData.length : rollsIndex;
+    let nonRollEnd = coreData.length;
+    if (rollsIndex !== -1) {
+        nonRollEnd = rollsIndex;
+    }
+    if (metadataIndex !== -1) {
+        nonRollEnd = Math.min(nonRollEnd, metadataIndex);
+    }
     const flagsStart = nonRollEnd - 2;
 
     if (flagsStart < afterConStart) {

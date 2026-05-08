@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { Plus, Trash2, RotateCw, Share2, RotateCcw, Settings, Copy, Check, Dices } from "lucide-react";
+import { Plus, Trash2, Share2, RotateCcw, Settings, Dices } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Select,
@@ -9,7 +9,6 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
@@ -24,6 +23,11 @@ import {
   classSelectionsToClassInput,
 } from "@/utils/coreDataEncoder";
 import { decodedClassesToSelections, parseCoreData } from "@/utils/coreDataDecoder";
+import {
+  SettingsOverlay,
+  SettingsProvider,
+  useSettings,
+} from "@/components/features/SettingsOverlay";
 
 const CUSTOM_CLASS_NAME = "Custom";
 const CUSTOM_HIT_DIE_OPTIONS = [6, 8, 10, 12] as const;
@@ -87,8 +91,9 @@ function getInitialHpState() {
   }
 }
 
-export function HpCalculator() {
+function HpCalculatorInner() {
   const initialState = useMemo(() => getInitialHpState(), []);
+  const { settings, openSettings } = useSettings();
   const [classSelections, setClassSelections] = useState<ClassSelection[]>(initialState.classSelections);
   const [conModifier, setConModifier] = useState(initialState.conModifier);
   const [tough, setTough] = useState(initialState.tough);
@@ -96,8 +101,8 @@ export function HpCalculator() {
   const [activeTab, setActiveTab] = useState<"average" | "rolled">(initialState.activeTab);
   const [rolledValues, setRolledValues] = useState<number[]>(initialState.rolledValues);
   const [copied, setCopied] = useState(false);
-  const [advanceShareMenu, setAdvanceShareMenu] = useState(false);
-  const [showRollCounter, setShowRollCounter] = useState(true);
+  const advanceShareMenu = settings.hp.advanceShareMenu;
+  const showRollCounter = settings.hp.showRollCounter;
   const initialComboKey = useMemo(
     () => buildClassComboKey(initialState.classSelections),
     [initialState.classSelections]
@@ -144,18 +149,18 @@ export function HpCalculator() {
     value: string | number
   ) => {
     const nextSelections = classSelections.map((c) =>
-        c.id === id
-          ? field === "className"
-            ? {
-                ...c,
-                className: value as string,
-                customHitDie:
-                  value === CUSTOM_CLASS_NAME
-                    ? (c.customHitDie ?? CUSTOM_HIT_DIE_OPTIONS[0])
-                    : undefined,
-              }
-            : { ...c, [field]: value }
-          : c
+      c.id === id
+        ? field === "className"
+          ? {
+            ...c,
+            className: value as string,
+            customHitDie:
+              value === CUSTOM_CLASS_NAME
+                ? (c.customHitDie ?? CUSTOM_HIT_DIE_OPTIONS[0])
+                : undefined,
+          }
+          : { ...c, [field]: value }
+        : c
     );
     setClassSelections(nextSelections);
     setRolledValues(generateRolledValues(nextSelections));
@@ -193,11 +198,16 @@ export function HpCalculator() {
     }));
   };
 
-  const buildShareableCoreData = (name: string): string => {
-    const encodedRolls =
-      activeTab === "rolled"
-        ? buildRollEntries(classSelections, rolledValues)
-        : undefined;
+  const buildShareableCoreData = ({
+    name,
+    includeRolls,
+  }: {
+    name: string;
+    includeRolls: boolean;
+  }): string => {
+    const encodedRolls = includeRolls
+      ? buildRollEntries(classSelections, rolledValues)
+      : undefined;
 
     return buildCoreData({
       classes: classSelectionsToClassInput(classSelections),
@@ -214,19 +224,26 @@ export function HpCalculator() {
     });
   };
 
-  const handleShareLink = async () => {
-    const promptedName = advanceShareMenu
+  const handleShareLink = async (shareMode: "average" | "rolled") => {
+    const shouldPromptForName = shareMode === "rolled" && advanceShareMenu;
+    const promptedName = shouldPromptForName
       ? window.prompt("Enter character name")?.trim()
       : "";
 
-    if (advanceShareMenu && promptedName === undefined) {
+    if (shouldPromptForName && promptedName === undefined) {
       return;
     }
     const characterName = promptedName ?? "";
 
     const shareUrl = new URL(window.location.href);
     shareUrl.search = "";
-    shareUrl.searchParams.set("core", buildShareableCoreData(characterName));
+    shareUrl.searchParams.set(
+      "core",
+      buildShareableCoreData({
+        name: characterName,
+        includeRolls: shareMode === "rolled",
+      })
+    );
 
     try {
       await navigator.clipboard.writeText(shareUrl.toString());
@@ -244,10 +261,11 @@ export function HpCalculator() {
           <h1 className="text-4xl font-bold mb-2">D&D 5.5e Health Calculator</h1>
           <p className="text-muted-foreground">Calculate your character's hit points based on class, level, and modifiers.</p>
         </div>
-        <Button variant="outline" size="sm" onClick={handleShareLink}>
-          <Share2 className="w-4 h-4 mr-2" />
-          {copied ? "Copied" : "Share"}
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button variant="ghost" size="icon" aria-label="Open settings" onClick={openSettings}>
+            <Settings className="w-5 h-5" />
+          </Button>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -346,7 +364,7 @@ export function HpCalculator() {
                       <Button
                         variant="ghost"
                         size="icon"
-                        className="shrink-0 mb-[1px]"
+                        className="shrink-0 mb-px"
                         onClick={() => removeClassSelection(selection.id)}
                       >
                         <Trash2 className="w-4 h-4" />
@@ -358,23 +376,23 @@ export function HpCalculator() {
 
               <div className="flex flex-row gap-2 mb-4 justify-between">
 
-              {/* Add Class Button */}
-              <Button
-                onClick={addClassSelection}
-                variant="outline"
-                className="m-0"
-              >
-                <Plus className="w-4 h-4 mr-2" />
-                Add Another Class
-              </Button>
-              <Button
-                onClick={handleResetClassSelections}
-                variant="outline"
-                className="m-0"
-              >
-                <RotateCcw className="w-3.5 h-3.5 mr-1.5" />
-                Reset
-              </Button>
+                {/* Add Class Button */}
+                <Button
+                  onClick={addClassSelection}
+                  variant="outline"
+                  className="m-0"
+                >
+                  <Plus className="w-4 h-4 mr-2" />
+                  Add Another Class
+                </Button>
+                <Button
+                  onClick={handleResetClassSelections}
+                  variant="outline"
+                  className="m-0"
+                >
+                  <RotateCcw className="w-3.5 h-3.5 mr-1.5" />
+                  Reset
+                </Button>
               </div>
 
               {/* CON Modifier & Feats */}
@@ -440,31 +458,6 @@ export function HpCalculator() {
                       </Tooltip>
                     </div>
 
-                    <div className="flex items-center justify-between gap-3 pt-1">
-                      <div className="space-y-0.5">
-                        <p className="text-sm font-medium">Advance Share Menu</p>
-                        <p className="text-xs text-muted-foreground">
-                          Prompt for character name before sharing.
-                        </p>
-                      </div>
-                      <Switch
-                        checked={advanceShareMenu}
-                        onCheckedChange={setAdvanceShareMenu}
-                      />
-                    </div>
-
-                    <div className="flex items-center justify-between gap-3 pt-1">
-                      <div className="space-y-0.5">
-                        <p className="text-sm font-medium">Show Roll Counter</p>
-                        <p className="text-xs text-muted-foreground">
-                          Show reroll count below the result tabs.
-                        </p>
-                      </div>
-                      <Switch
-                        checked={showRollCounter}
-                        onCheckedChange={setShowRollCounter}
-                      />
-                    </div>
                   </TooltipProvider>
                 </div>
               </div>
@@ -491,6 +484,15 @@ export function HpCalculator() {
                 <TabsContent value="average" className="mt-6 space-y-6">
                   <HpTotalDisplay total={result.totalHP} />
                   <HpBreakdown items={result.breakdown} />
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleShareLink("average")}
+                    className="w-full m-0"
+                  >
+                      <Share2 className=" w-4 h-4 mr-2" />
+                      {copied ? "Copied" : "Share"}
+                  </Button>
                 </TabsContent>
 
                 <TabsContent value="rolled" className="mt-6 space-y-6">
@@ -505,33 +507,48 @@ export function HpCalculator() {
                     <HpBreakdown items={rolledResult.breakdown} />
                   </div>
                   {/* Meta Panel */}
-                {activeTab === "rolled" && shouldShowMetaPanel && (
-                  <div className="mt-3 mb-2 border border-border/70 bg-muted/40 px-3 py-2 text-sm">
-                    {sharedNameFromLink.length > 0 && (
-                      <p>
-                        Character: <span className="font-medium">{sharedNameFromLink}</span>
-                      </p>
-                    )}
-                    {showRollCounter && (
-                      <p>
-                        Rolls done: <span className="font-medium">{rerollCountForCurrentCombo}</span>
-                      </p>
-                    )}
+                  {activeTab === "rolled" && shouldShowMetaPanel && (
+                    <div className="mt-3 mb-2 border border-border/70 bg-muted/40 px-3 py-2 text-sm">
+                      {sharedNameFromLink.length > 0 && (
+                        <p>
+                          Character: <span className="font-medium">{sharedNameFromLink}</span>
+                        </p>
+                      )}
+                      {showRollCounter && (
+                        <p>
+                          Rolls done: <span className="font-medium">{rerollCountForCurrentCombo}</span>
+                        </p>
+                      )}
+                    </div>
+                  )}
+                  <div className="flex flex-col gap-2 mt-4">
+                    <Button
+                      onClick={handleRollAgain}
+                      className="w-full m-0"
+                    >
+                      <Dices className="w-4 h-4 mr-2" />
+                      Roll Again
+                    </Button>
+                    <Button variant="outline" size="sm" onClick={() => handleShareLink("rolled")}>
+                      <Share2 className="w-4 h-4 mr-2" />
+                      {copied ? "Copied" : "Share"}
+                    </Button>
                   </div>
-                )}
-                  <Button
-                    onClick={handleRollAgain}
-                    className="w-full"
-                  >
-                    <Dices className="w-4 h-4 mr-2" />
-                    Roll Again
-                  </Button>
                 </TabsContent>
               </Tabs>
             </CardContent>
           </Card>
         </div>
       </div>
+      <SettingsOverlay enabledTabs={["hp"]} />
     </>
+  );
+}
+
+export function HpCalculator() {
+  return (
+    <SettingsProvider>
+      <HpCalculatorInner />
+    </SettingsProvider>
   );
 }

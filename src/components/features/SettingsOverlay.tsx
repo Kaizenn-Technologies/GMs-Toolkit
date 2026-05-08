@@ -40,12 +40,18 @@ export interface PointBuySettings {
 export interface AppSettings {
   pointBuy: PointBuySettings;
   roll: RollSettings;
+  hp: HpSettings;
 }
 
 export interface RollSettings {
   rerollOnes: boolean;
   sortDescending: boolean;
   colorDice: boolean;
+}
+
+export interface HpSettings {
+  advanceShareMenu: boolean;
+  showRollCounter: boolean;
 }
 
 // ─── Defaults ─────────────────────────────────────────────────────────────────
@@ -64,13 +70,21 @@ export const DEFAULT_ROLL_SETTINGS: RollSettings = {
   colorDice: true,
 };
 
+export const DEFAULT_HP_SETTINGS: HpSettings = {
+  advanceShareMenu: false,
+  showRollCounter: true,
+};
+
 // ─── Context ──────────────────────────────────────────────────────────────────
 
 interface SettingsContextValue {
   settings: AppSettings;
   updatePointBuy: (patch: Partial<PointBuySettings>) => void;
   updateRoll: (patch: Partial<RollSettings>) => void;
+  updateHp: (patch: Partial<HpSettings>) => void;
   resetPointBuy: () => void;
+  resetRoll: () => void;
+  resetHp: () => void;
   isOpen: boolean;
   openSettings: () => void;
   closeSettings: () => void;
@@ -82,6 +96,7 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
   const [settings, setSettings] = useState<AppSettings>({
     pointBuy: { ...DEFAULT_POINT_BUY_SETTINGS },
     roll: { ...DEFAULT_ROLL_SETTINGS },
+    hp: { ...DEFAULT_HP_SETTINGS },
   });
   const [isOpen, setIsOpen] = useState(false);
 
@@ -97,10 +112,28 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
       roll: { ...prev.roll, ...patch },
     }));
 
+  const updateHp = (patch: Partial<HpSettings>) =>
+    setSettings((prev) => ({
+      ...prev,
+      hp: { ...prev.hp, ...patch },
+    }));
+
   const resetPointBuy = () =>
     setSettings((prev) => ({
       ...prev,
       pointBuy: { ...DEFAULT_POINT_BUY_SETTINGS },
+    }));
+
+  const resetRoll = () =>
+    setSettings((prev) => ({
+      ...prev,
+      roll: { ...DEFAULT_ROLL_SETTINGS },
+    }));
+
+  const resetHp = () =>
+    setSettings((prev) => ({
+      ...prev,
+      hp: { ...DEFAULT_HP_SETTINGS },
     }));
 
   return (
@@ -109,7 +142,10 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
         settings,
         updatePointBuy,
         updateRoll,
+        updateHp,
         resetPointBuy,
+        resetRoll,
+        resetHp,
         isOpen,
         openSettings: () => setIsOpen(true),
         closeSettings: () => setIsOpen(false),
@@ -248,8 +284,30 @@ function PointBuySettingsPanel() {
 
 // ─── Overlay ──────────────────────────────────────────────────────────────────
 
-export function SettingsOverlay() {
-  const { isOpen, closeSettings, resetPointBuy, settings, updateRoll } = useSettings();
+type SettingsTabKey = "pointbuy" | "roll" | "standard" | "hp";
+
+interface SettingsOverlayProps {
+  enabledTabs?: SettingsTabKey[];
+}
+
+export function SettingsOverlay({
+  enabledTabs = ["pointbuy", "roll", "standard"],
+}: SettingsOverlayProps) {
+  const {
+    isOpen,
+    closeSettings,
+    resetPointBuy,
+    resetRoll,
+    resetHp,
+    settings,
+    updateRoll,
+    updateHp,
+  } = useSettings();
+  const defaultTab = enabledTabs[0] ?? "pointbuy";
+  const shouldShowPointBuy = enabledTabs.includes("pointbuy");
+  const shouldShowRoll = enabledTabs.includes("roll");
+  const shouldShowStandard = enabledTabs.includes("standard");
+  const shouldShowHp = enabledTabs.includes("hp");
 
   if (!isOpen) return null;
 
@@ -288,68 +346,121 @@ export function SettingsOverlay() {
 
         {/* Tabbed body */}
         <div className="flex-1 overflow-y-auto">
-          <Tabs defaultValue="pointbuy" className="h-full flex flex-col">
+          <Tabs defaultValue={defaultTab} className="h-full flex flex-col">
             <div className="px-6 pt-4 shrink-0">
-              <TabsList className="grid w-full grid-cols-3">
-                <TabsTrigger value="pointbuy" className="gap-1.5">
-                  Point Buy
-                </TabsTrigger>
-                <TabsTrigger value="roll" className="gap-1.5">
-                  Roll
-                </TabsTrigger>
-                <TabsTrigger value="standard" className="gap-1.5">
-                  Standard
-                </TabsTrigger>
+              <TabsList
+                className={`grid w-full ${
+                  enabledTabs.length <= 1
+                    ? "grid-cols-1"
+                    : enabledTabs.length === 2
+                      ? "grid-cols-2"
+                      : enabledTabs.length === 3
+                        ? "grid-cols-3"
+                        : "grid-cols-4"
+                }`}
+              >
+                {shouldShowPointBuy && (
+                  <TabsTrigger value="pointbuy" className="gap-1.5">
+                    Point Buy
+                  </TabsTrigger>
+                )}
+                {shouldShowRoll && (
+                  <TabsTrigger value="roll" className="gap-1.5">
+                    Roll
+                  </TabsTrigger>
+                )}
+                {shouldShowStandard && (
+                  <TabsTrigger value="standard" className="gap-1.5">
+                    Standard
+                  </TabsTrigger>
+                )}
+                {shouldShowHp && (
+                  <TabsTrigger value="hp" className="gap-1.5">
+                    HP
+                  </TabsTrigger>
+                )}
               </TabsList>
             </div>
 
             {/* Point Buy */}
-            <TabsContent value="pointbuy" className="flex-1 px-6 pb-6 mt-0 pt-2">
-              <PointBuySettingsPanel />
-            </TabsContent>
+            {shouldShowPointBuy && (
+              <TabsContent value="pointbuy" className="flex-1 px-6 pb-6 mt-0 pt-2">
+                <PointBuySettingsPanel />
+              </TabsContent>
+            )}
 
             {/* Roll settings */}
-            <TabsContent value="roll" className="flex-1 px-6 pb-6 mt-0 pt-2">
-              <div className="space-y-2">
-                <SettingRow
-                  label="Reroll 1s"
-                  description="If enabled, any die that comes up 1 will be rerolled once."
-                >
-                  <Switch
-                    checked={settings.roll.rerollOnes}
-                    onCheckedChange={(v) => updateRoll({ rerollOnes: v })}
-                  />
-                </SettingRow>
+            {shouldShowRoll && (
+              <TabsContent value="roll" className="flex-1 px-6 pb-6 mt-0 pt-2">
+                <div className="space-y-2">
+                  <SettingRow
+                    label="Reroll 1s"
+                    description="If enabled, any die that comes up 1 will be rerolled once."
+                  >
+                    <Switch
+                      checked={settings.roll.rerollOnes}
+                      onCheckedChange={(v) => updateRoll({ rerollOnes: v })}
+                    />
+                  </SettingRow>
 
-                <SettingRow
-                  label="Sort dice roll"
-                  description="Display dice in descending order when enabled."
-                >
-                  <Switch
-                    checked={settings.roll.sortDescending}
-                    onCheckedChange={(v) => updateRoll({ sortDescending: v })}
-                  />
-                </SettingRow>
+                  <SettingRow
+                    label="Sort dice roll"
+                    description="Display dice in descending order when enabled."
+                  >
+                    <Switch
+                      checked={settings.roll.sortDescending}
+                      onCheckedChange={(v) => updateRoll({ sortDescending: v })}
+                    />
+                  </SettingRow>
 
-                <SettingRow
-                  label="Color dice roll"
-                  description="Highlight 1s in red and 6s in green in the dice display."
-                >
-                  <Switch
-                    checked={settings.roll.colorDice}
-                    onCheckedChange={(v) => updateRoll({ colorDice: v })}
-                  />
-                </SettingRow>
-              </div>
-            </TabsContent>
+                  <SettingRow
+                    label="Color dice roll"
+                    description="Highlight 1s in red and 6s in green in the dice display."
+                  >
+                    <Switch
+                      checked={settings.roll.colorDice}
+                      onCheckedChange={(v) => updateRoll({ colorDice: v })}
+                    />
+                  </SettingRow>
+                </div>
+              </TabsContent>
+            )}
 
             {/* Standard — placeholder */}
-            <TabsContent value="standard" className="flex-1 px-6 pb-6 mt-0 pt-2">
-              <div className="flex flex-col items-center justify-center h-48 gap-3 text-muted-foreground">
-                <span className="text-4xl opacity-30">📋</span>
-                <p className="text-sm">Standard Array settings — coming soon!</p>
-              </div>
-            </TabsContent>
+            {shouldShowStandard && (
+              <TabsContent value="standard" className="flex-1 px-6 pb-6 mt-0 pt-2">
+                <div className="flex flex-col items-center justify-center h-48 gap-3 text-muted-foreground">
+                  <span className="text-4xl opacity-30">📋</span>
+                  <p className="text-sm">Standard Array settings — coming soon!</p>
+                </div>
+              </TabsContent>
+            )}
+
+            {shouldShowHp && (
+              <TabsContent value="hp" className="flex-1 px-6 pb-6 mt-0 pt-2">
+                <div className="space-y-2">
+                  <SettingRow
+                    label="Advance Share Menu"
+                    description="Prompt for character name before copying a share link."
+                  >
+                    <Switch
+                      checked={settings.hp.advanceShareMenu}
+                      onCheckedChange={(v) => updateHp({ advanceShareMenu: v })}
+                    />
+                  </SettingRow>
+
+                  <SettingRow
+                    label="Show Roll Counter"
+                    description="Show reroll count in the rolled result panel."
+                  >
+                    <Switch
+                      checked={settings.hp.showRollCounter}
+                      onCheckedChange={(v) => updateHp({ showRollCounter: v })}
+                    />
+                  </SettingRow>
+                </div>
+              </TabsContent>
+            )}
           </Tabs>
         </div>
 
@@ -360,8 +471,9 @@ export function SettingsOverlay() {
             size="sm"
             className="text-muted-foreground hover:text-foreground"
             onClick={() => {
-              resetPointBuy();
-              updateRoll({ rerollOnes: DEFAULT_ROLL_SETTINGS.rerollOnes, sortDescending: DEFAULT_ROLL_SETTINGS.sortDescending, colorDice: DEFAULT_ROLL_SETTINGS.colorDice });
+              if (shouldShowPointBuy) resetPointBuy();
+              if (shouldShowRoll) resetRoll();
+              if (shouldShowHp) resetHp();
             }}
           >
             <RotateCcw className="w-3.5 h-3.5 mr-1.5" />
