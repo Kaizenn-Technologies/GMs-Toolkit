@@ -20,6 +20,23 @@ import {
 import { StepperInput } from "@/components/ui/stepper-input";
 import { classes, classNames } from "@/lib/classes";
 import { backgrounds, backgroundNames } from "@/lib/backgrounds";
+import {
+  ABILITIES,
+  ABILITY_ABBR,
+  createAbilityRecord,
+  formatModifier,
+  getModifier,
+  getModifierClass,
+  getPoolStatusClass,
+} from "@/lib/stat-generator";
+import {
+  backgroundBonusParamKeys,
+  manualBonusParamKeys,
+  parseClampedIntParam,
+  scoreParamKeys,
+  setAbilityParams,
+  setOptionalAbilityParams,
+} from "@/lib/stat-generator-url";
 import type { Ability, PrimaryStat } from "@/types";
 import {
   SettingsProvider,
@@ -36,24 +53,6 @@ import {
 } from "@/components/features/StatGeneratorParts";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
-
-const ABILITIES: Ability[] = [
-  "Strength",
-  "Dexterity",
-  "Constitution",
-  "Intelligence",
-  "Wisdom",
-  "Charisma",
-];
-
-const ABILITY_ABBR: Record<Ability, string> = {
-  Strength: "STR",
-  Dexterity: "DEX",
-  Constitution: "CON",
-  Intelligence: "INT",
-  Wisdom: "WIS",
-  Charisma: "CHA",
-};
 
 const BG_BONUS_MAX = 2;
 const MANUAL_BONUS_MAX = 20;
@@ -111,14 +110,6 @@ function pointsUsed(
   );
 }
 
-function getModifier(score: number): number {
-  return Math.floor((score - 10) / 2);
-}
-
-function formatModifier(mod: number): string {
-  return mod >= 0 ? `+${mod}` : `${mod}`;
-}
-
 // ─── Primary stat helpers ─────────────────────────────────────────────────────
 
 function getPrimaryStatInfo(className: string): {
@@ -152,36 +143,15 @@ function getClassStandardArrayByName(className: string): number[] | null {
 // ─── Default scores ───────────────────────────────────────────────────────────
 
 function makeDefaultScores(defaultScore: number): Record<Ability, number> {
-  return {
-    Strength: defaultScore,
-    Dexterity: defaultScore,
-    Constitution: defaultScore,
-    Intelligence: defaultScore,
-    Wisdom: defaultScore,
-    Charisma: defaultScore,
-  };
+  return createAbilityRecord(defaultScore);
 }
 
 function defaultBgBonuses(): Record<Ability, number> {
-  return {
-    Strength: 0,
-    Dexterity: 0,
-    Constitution: 0,
-    Intelligence: 0,
-    Wisdom: 0,
-    Charisma: 0,
-  };
+  return createAbilityRecord(0);
 }
 
 function defaultManualBonuses(): Record<Ability, number> {
-  return {
-    Strength: 0,
-    Dexterity: 0,
-    Constitution: 0,
-    Intelligence: 0,
-    Wisdom: 0,
-    Charisma: 0,
-  };
+  return createAbilityRecord(0);
 }
 
 function makeScoresFromStandardArray(className: string): Record<Ability, number> {
@@ -200,14 +170,7 @@ function makeScoresFromStandardArray(className: string): Record<Ability, number>
 }
 
 function makeUnfilledStandardScores(): Record<Ability, number | null> {
-  return {
-    Strength: null,
-    Dexterity: null,
-    Constitution: null,
-    Intelligence: null,
-    Wisdom: null,
-    Charisma: null,
-  };
+  return createAbilityRecord<number | null>(null);
 }
 
 // ─── Inner component (consumes settings context) ──────────────────────────────
@@ -404,37 +367,10 @@ function StatGeneratorInner() {
         : selectedClass,
     );
     params.set("background", selectedBackground);
-    if (activeScores.Strength !== null) {
-      params.set("str", String(activeScores.Strength));
-    }
-    if (activeScores.Dexterity !== null) {
-      params.set("dex", String(activeScores.Dexterity));
-    }
-    if (activeScores.Constitution !== null) {
-      params.set("con", String(activeScores.Constitution));
-    }
-    if (activeScores.Intelligence !== null) {
-      params.set("int", String(activeScores.Intelligence));
-    }
-    if (activeScores.Wisdom !== null) {
-      params.set("wis", String(activeScores.Wisdom));
-    }
-    if (activeScores.Charisma !== null) {
-      params.set("cha", String(activeScores.Charisma));
-    }
-    params.set("bstr", String(bgBonuses.Strength));
-    params.set("bdex", String(bgBonuses.Dexterity));
-    params.set("bcon", String(bgBonuses.Constitution));
-    params.set("bint", String(bgBonuses.Intelligence));
-    params.set("bwis", String(bgBonuses.Wisdom));
-    params.set("bcha", String(bgBonuses.Charisma));
+    setOptionalAbilityParams(params, activeScores, scoreParamKeys);
+    setAbilityParams(params, bgBonuses, backgroundBonusParamKeys);
     params.set("feat", featBonusEnabled ? "1" : "0");
-    params.set("mstr", String(manualBonuses.Strength));
-    params.set("mdex", String(manualBonuses.Dexterity));
-    params.set("mcon", String(manualBonuses.Constitution));
-    params.set("mint", String(manualBonuses.Intelligence));
-    params.set("mwis", String(manualBonuses.Wisdom));
-    params.set("mcha", String(manualBonuses.Charisma));
+    setAbilityParams(params, manualBonuses, manualBonusParamKeys);
 
     try {
       await navigator.clipboard.writeText(shareUrl.toString());
@@ -469,20 +405,13 @@ function StatGeneratorInner() {
       setSelectedBackground(bgFromUrl);
     }
 
-    const toScore = (val: string | null) => {
-      if (!val) return null;
-      const parsed = Number.parseInt(val, 10);
-      if (Number.isNaN(parsed)) return null;
-      return Math.max(clampedMin, Math.min(clampedMax, parsed));
-    };
-
     const nextScores = makeDefaultScores(minPurchasable);
-    const str = toScore(params.get("str"));
-    const dex = toScore(params.get("dex"));
-    const con = toScore(params.get("con"));
-    const int = toScore(params.get("int"));
-    const wis = toScore(params.get("wis"));
-    const cha = toScore(params.get("cha"));
+    const str = parseClampedIntParam(params.get(scoreParamKeys.Strength), clampedMin, clampedMax);
+    const dex = parseClampedIntParam(params.get(scoreParamKeys.Dexterity), clampedMin, clampedMax);
+    const con = parseClampedIntParam(params.get(scoreParamKeys.Constitution), clampedMin, clampedMax);
+    const int = parseClampedIntParam(params.get(scoreParamKeys.Intelligence), clampedMin, clampedMax);
+    const wis = parseClampedIntParam(params.get(scoreParamKeys.Wisdom), clampedMin, clampedMax);
+    const cha = parseClampedIntParam(params.get(scoreParamKeys.Charisma), clampedMin, clampedMax);
 
     if (str !== null) nextScores.Strength = str;
     if (dex !== null) nextScores.Dexterity = dex;
@@ -502,21 +431,14 @@ function StatGeneratorInner() {
       setStandardScores(nextScores);
     }
 
-    const toBgBonus = (val: string | null) => {
-      if (!val) return null;
-      const parsed = Number.parseInt(val, 10);
-      if (Number.isNaN(parsed)) return null;
-      return Math.max(0, Math.min(BG_BONUS_MAX, parsed));
-    };
-
     const nextBonuses = defaultBgBonuses();
     let remainingBonusPool = bgBonusPool;
-    const bstr = toBgBonus(params.get("bstr"));
-    const bdex = toBgBonus(params.get("bdex"));
-    const bcon = toBgBonus(params.get("bcon"));
-    const bint = toBgBonus(params.get("bint"));
-    const bwis = toBgBonus(params.get("bwis"));
-    const bcha = toBgBonus(params.get("bcha"));
+    const bstr = parseClampedIntParam(params.get(backgroundBonusParamKeys.Strength), 0, BG_BONUS_MAX);
+    const bdex = parseClampedIntParam(params.get(backgroundBonusParamKeys.Dexterity), 0, BG_BONUS_MAX);
+    const bcon = parseClampedIntParam(params.get(backgroundBonusParamKeys.Constitution), 0, BG_BONUS_MAX);
+    const bint = parseClampedIntParam(params.get(backgroundBonusParamKeys.Intelligence), 0, BG_BONUS_MAX);
+    const bwis = parseClampedIntParam(params.get(backgroundBonusParamKeys.Wisdom), 0, BG_BONUS_MAX);
+    const bcha = parseClampedIntParam(params.get(backgroundBonusParamKeys.Charisma), 0, BG_BONUS_MAX);
 
     if (bstr !== null) {
       nextBonuses.Strength = Math.min(bstr, remainingBonusPool);
@@ -548,20 +470,13 @@ function StatGeneratorInner() {
     const featFromUrl = params.get("feat");
     setFeatBonusEnabled(featFromUrl === "1");
 
-    const toManualBonus = (val: string | null) => {
-      if (!val) return null;
-      const parsed = Number.parseInt(val, 10);
-      if (Number.isNaN(parsed)) return null;
-      return Math.max(0, Math.min(MANUAL_BONUS_MAX, parsed));
-    };
-
     const nextManualBonuses = defaultManualBonuses();
-    const mstr = toManualBonus(params.get("mstr"));
-    const mdex = toManualBonus(params.get("mdex"));
-    const mcon = toManualBonus(params.get("mcon"));
-    const mint = toManualBonus(params.get("mint"));
-    const mwis = toManualBonus(params.get("mwis"));
-    const mcha = toManualBonus(params.get("mcha"));
+    const mstr = parseClampedIntParam(params.get(manualBonusParamKeys.Strength), 0, MANUAL_BONUS_MAX);
+    const mdex = parseClampedIntParam(params.get(manualBonusParamKeys.Dexterity), 0, MANUAL_BONUS_MAX);
+    const mcon = parseClampedIntParam(params.get(manualBonusParamKeys.Constitution), 0, MANUAL_BONUS_MAX);
+    const mint = parseClampedIntParam(params.get(manualBonusParamKeys.Intelligence), 0, MANUAL_BONUS_MAX);
+    const mwis = parseClampedIntParam(params.get(manualBonusParamKeys.Wisdom), 0, MANUAL_BONUS_MAX);
+    const mcha = parseClampedIntParam(params.get(manualBonusParamKeys.Charisma), 0, MANUAL_BONUS_MAX);
 
     if (mstr !== null) nextManualBonuses.Strength = mstr;
     if (mdex !== null) nextManualBonuses.Dexterity = mdex;
@@ -670,12 +585,7 @@ function StatGeneratorInner() {
     const params = shareUrl.searchParams;
     params.set("class", selectedStandardClass === CHOOSE_STANDARD_CLASS ? "" : selectedStandardClass);
     params.set("background", selectedBackground);
-    if (standardScores.Strength !== null) params.set("str", String(standardScores.Strength));
-    if (standardScores.Dexterity !== null) params.set("dex", String(standardScores.Dexterity));
-    if (standardScores.Constitution !== null) params.set("con", String(standardScores.Constitution));
-    if (standardScores.Intelligence !== null) params.set("int", String(standardScores.Intelligence));
-    if (standardScores.Wisdom !== null) params.set("wis", String(standardScores.Wisdom));
-    if (standardScores.Charisma !== null) params.set("cha", String(standardScores.Charisma));
+    setOptionalAbilityParams(params, standardScores, scoreParamKeys);
 
     try {
       await navigator.clipboard.writeText(shareUrl.toString());
@@ -684,19 +594,8 @@ function StatGeneratorInner() {
     } catch { }
   };
 
-  const pointsColor =
-    remaining < 0
-      ? "text-[#ff3d3d]"
-      : remaining === 0
-        ? "text-[#00c93cff] dark:text-[#10ff58ff]"
-        : "text-foreground";
-
-  const bgPoolColor =
-    bgBonusRemaining < 0
-      ? "text-[#ff3d3d]"
-      : bgBonusRemaining === 0
-        ? "text-[#00c93cff] dark:text-[#10ff58ff]"
-        : "text-foreground";
+  const pointsColor = getPoolStatusClass(remaining);
+  const bgPoolColor = getPoolStatusClass(bgBonusRemaining);
 
   return (
     <>
@@ -926,11 +825,7 @@ function StatGeneratorInner() {
                           <td className="py-2 pr-3 text-center rounded-r-md">
                             <ModifierDisplay
                               value={formatModifier(modifier)}
-                              className={modifier > 0
-                                ? "text-[#00c93cff] dark:text-[#10ff58ff]"
-                                : modifier < 0
-                                  ? "text-[#ff3d3d]"
-                                  : "text-muted-foreground"}
+                              className={getModifierClass(modifier)}
                             />
                           </td>
                         </tr>
@@ -1150,7 +1045,7 @@ function StatGeneratorInner() {
                             <td className="py-2 pr-3 text-center rounded-r-md">
                               <ModifierDisplay
                                 value={modifier === null ? "—" : formatModifier(modifier)}
-                                className={modifier !== null && modifier > 0 ? "text-[#00c93cff] dark:text-[#10ff58ff]" : modifier !== null && modifier < 0 ? "text-[#ff3d3d]" : "text-muted-foreground"}
+                                className={getModifierClass(modifier)}
                               />
                             </td>
                           </tr>
@@ -1346,11 +1241,7 @@ function StatGeneratorInner() {
                           <td className="py-2 pr-3 text-center rounded-r-md">
                             <ModifierDisplay
                               value={modifier === null ? "—" : formatModifier(modifier)}
-                              className={modifier !== null && modifier > 0
-                                ? "text-[#00c93cff] dark:text-[#10ff58ff]"
-                                : modifier !== null && modifier < 0
-                                  ? "text-[#ff3d3d]"
-                                  : "text-muted-foreground"}
+                              className={getModifierClass(modifier)}
                             />
                           </td>
                         </tr>
