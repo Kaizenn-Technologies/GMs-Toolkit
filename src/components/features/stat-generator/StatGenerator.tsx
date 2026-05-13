@@ -54,7 +54,7 @@ function StatGeneratorInner() {
     settings,
     location,
     navigate,
-    pb,
+
     activeTab,
     selectedClass,
     setSelectedClass,
@@ -72,8 +72,7 @@ function StatGeneratorInner() {
     showAssignPanel,
     remaining,
     pointPool,
-    minPurchasable,
-    maxPurchasable,
+
     clampedMin,
     clampedMax,
     bgBonusRemaining,
