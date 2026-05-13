@@ -151,7 +151,56 @@ function StatGeneratorInner() {
                 primaryDisplay={primaryStats.length > 0 ? primaryDisplay : undefined}
               />
 
-              <div className="overflow-x-auto">
+              {/* Mobile: 2-col card grid */}
+              <div className="grid grid-cols-2 gap-2 md:hidden">
+                {ABILITIES.map((ability) => {
+                  const score = scores[ability];
+                  const bgBonus = bgBonuses[ability];
+                  const manualBonus = manualBonuses[ability];
+                  const total = score + bgBonus + (featBonusEnabled ? manualBonus : 0);
+                  const modifier = getModifier(total);
+                  const isPrimary = primaryStats.includes(ability);
+                  const isBgAbility = bgAbilities.includes(ability);
+                  const isAboveMax = score > clampedMax;
+                  const showBgStepper = enforceAsiFromBackground ? isBgAbility : true;
+                  return (
+                    <div key={ability} className={`rounded-lg border p-3 transition-colors flex flex-col h-full ${isPrimary ? "border-primary/40 bg-primary/8 dark:bg-primary/10" : "border-border bg-card"}`}>
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center gap-1">
+                          <span className="text-sm font-bold">{ABILITY_ABBR[ability]}</span>
+                          {isPrimary && <span className="text-primary text-xs">★</span>}
+                        </div>
+                        <span className={`text-sm font-bold tabular-nums ${getModifierClass(modifier)}`}>{formatModifier(modifier)}</span>
+                      </div>
+                      <div className="flex-1 space-y-2">
+                        <div>
+                          <p className="text-[10px] uppercase tracking-wide text-muted-foreground mb-1">Score</p>
+                          <StepperInput className="rounded-none w-full" value={score} min={clampedMin} max={clampedMax} onChange={(val) => handleScoreChange(ability, val)} />
+                        </div>
+                        {showBgStepper && (
+                          <div>
+                            <p className="text-[10px] uppercase tracking-wide text-muted-foreground mb-1">BG Bonus</p>
+                            <StepperInput className="rounded-none w-full" value={bgBonus} min={0} max={BG_BONUS_MAX} onChange={(val) => handleBgBonusChange(ability, val)} />
+                          </div>
+                        )}
+                        {featBonusEnabled && (
+                          <div>
+                            <p className="text-[10px] uppercase tracking-wide text-muted-foreground mb-1">Feat</p>
+                            <StepperInput className="rounded-none w-full" value={manualBonus} min={0} max={MANUAL_BONUS_MAX} onChange={(val) => handleManualBonusChange(ability, val)} />
+                          </div>
+                        )}
+                      </div>
+                      <div className="flex items-center justify-between pt-1.5 border-t border-border/50 mt-2">
+                        <span className="text-[10px] text-muted-foreground uppercase">Total</span>
+                        <TotalScoreDisplay value={total} highlight={isAboveMax} />
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* Desktop: Table */}
+              <div className="hidden md:block overflow-x-auto">
                 <table className="w-full text-sm border-separate border-spacing-y-1">
                   <thead>
                     <tr className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
@@ -291,13 +340,13 @@ function StatGeneratorInner() {
                 </table>
               </div>
 
-              <div className="flex items-center justify-between pt-2 border-t gap-4 flex-wrap">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between pt-2 border-t gap-3">
                 <div className="flex items-center gap-2">
                   <ResetButton onClick={handleReset} />
                   <ShareButton onClick={handleShareLink} copied={copied} />
                 </div>
 
-                <div className="flex items-center gap-6 text-sm font-medium flex-wrap">
+                <div className="flex flex-wrap items-center gap-3 sm:gap-6 text-sm font-medium">
                   <PoolStatus
                     label="Background Points:"
                     value={bgBonusRemaining}
@@ -369,19 +418,18 @@ function StatGeneratorInner() {
                 })}
               </div>
 
-              <div className="flex items-center justify-between">
+              <div className="flex flex-wrap items-center gap-2">
                 <Button onClick={rollAllStats}>
                   <Dices className="w-4 h-4 mr-2" />
-                  Roll Stats</Button>
-                <div className="flex items-center gap-3">
-                  <Button variant="outline" onClick={handleAssignManually}>
-                    Assign manually
-                  </Button>
-                  <Button variant="outline" onClick={handleShuffleAssign}>
-                    <Shuffle className="w-4 h-4 mr-2" />
-                    Shuffle
-                  </Button>
-                </div>
+                  Roll Stats
+                </Button>
+                <Button variant="outline" onClick={handleAssignManually}>
+                  Assign manually
+                </Button>
+                <Button variant="outline" onClick={handleShuffleAssign}>
+                  <Shuffle className="w-4 h-4 mr-2" />
+                  Shuffle
+                </Button>
               </div>
 
               {showAssignPanel && (
@@ -403,6 +451,67 @@ function StatGeneratorInner() {
                     primaryDisplay={primaryDisplay}
                   />
 
+                  {/* Mobile: card grid */}
+                  <div className="grid grid-cols-2 gap-2 md:hidden">
+                    {ABILITIES.map((ability) => {
+                      const score = standardScores[ability];
+                      const bgBonus = bgBonuses[ability];
+                      const manualBonus = manualBonuses[ability];
+                      const total = score === null ? null : score + bgBonus + (featBonusEnabled ? manualBonus : 0);
+                      const modifier = total === null ? null : getModifier(total);
+                      const isBgAbility = bgAbilities.includes(ability);
+                      const isPrimary = primaryStats.includes(ability);
+                      const pool = getRolledTotals();
+                      const availablePool = pool.slice().sort((a, b) => b - a);
+                      ABILITIES.forEach((ab) => {
+                        if (ab === ability) return;
+                        const assigned = standardScores[ab];
+                        if (assigned === null) return;
+                        const idx = availablePool.indexOf(assigned);
+                        if (idx !== -1) availablePool.splice(idx, 1);
+                      });
+                      if (score !== null && availablePool.indexOf(score) === -1) availablePool.push(score);
+                      return (
+                        <div key={ability} className={`rounded-lg border p-3 transition-colors flex flex-col h-full ${isPrimary ? "border-primary/40 bg-primary/8 dark:bg-primary/10" : "border-border bg-card"}`}>
+                          <div className="flex items-center justify-between mb-2">
+                            <div className="flex items-center gap-1">
+                              <span className="text-sm font-bold">{ABILITY_ABBR[ability]}</span>
+                              {isPrimary && <span className="text-primary text-xs">★</span>}
+                            </div>
+                            <span className={`text-sm font-bold tabular-nums ${getModifierClass(modifier)}`}>{modifier === null ? "—" : formatModifier(modifier)}</span>
+                          </div>
+                          <div className="flex-1 space-y-2">
+                            <div>
+                              <p className="text-[10px] uppercase tracking-wide text-muted-foreground mb-1">Score</p>
+                              <Select value={score === null ? "" : String(score)} onValueChange={(val) => handleRolledAssignChange(ability, val)}>
+                                <SelectTrigger className="rounded-none w-full"><SelectValue placeholder="—" /></SelectTrigger>
+                                <SelectContent>{availablePool.map((opt, idx) => <SelectItem key={`${opt}-${idx}`} value={String(opt)}>{opt}</SelectItem>)}</SelectContent>
+                              </Select>
+                            </div>
+                            {isBgAbility && (
+                              <div>
+                                <p className="text-[10px] uppercase tracking-wide text-muted-foreground mb-1">BG Bonus</p>
+                                <StepperInput className="rounded-none w-full" value={bgBonus} min={0} max={BG_BONUS_MAX} onChange={(val) => handleBgBonusChange(ability, val)} />
+                              </div>
+                            )}
+                            {featBonusEnabled && (
+                              <div>
+                                <p className="text-[10px] uppercase tracking-wide text-muted-foreground mb-1">Feat</p>
+                                <StepperInput className="rounded-none w-full" value={manualBonus} min={0} max={MANUAL_BONUS_MAX} onChange={(val) => handleManualBonusChange(ability, val)} />
+                              </div>
+                            )}
+                          </div>
+                          <div className="flex items-center justify-between pt-1.5 border-t border-border/50 mt-2">
+                            <span className="text-[10px] text-muted-foreground uppercase">Total</span>
+                            <TotalScoreDisplay value={total ?? "—"} />
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                  {/* Desktop: Table */}
+                  <div className="hidden md:block">
                   <table className="w-full text-sm border-separate border-spacing-y-1">
                     <thead>
                       <tr className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
@@ -496,8 +605,9 @@ function StatGeneratorInner() {
                       })}
                     </tbody>
                   </table>
+                  </div>
 
-                  <div className="flex items-center justify-between mt-3 gap-3">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between mt-3 gap-3">
                     <div className="flex items-center gap-2">
                       <ShareButton onClick={handleShareAssigned} copied={copied} />
                       <ResetButton onClick={handleAssignmentReset} />
@@ -529,7 +639,82 @@ function StatGeneratorInner() {
                 primaryDisplay={primaryStats.length > 0 ? primaryDisplay : undefined}
               />
 
-              <div className="overflow-x-auto">
+              {/* Mobile: card grid */}
+              <div className="grid grid-cols-2 gap-2 md:hidden">
+                {ABILITIES.map((ability) => {
+                  const score = standardScores[ability];
+                  const bgBonus = bgBonuses[ability];
+                  const manualBonus = manualBonuses[ability];
+                  const total = score === null ? null : score + bgBonus + (featBonusEnabled ? manualBonus : 0);
+                  const modifier = total === null ? null : getModifier(total);
+                  const isPrimary = primaryStats.includes(ability);
+                  const isBgAbility = bgAbilities.includes(ability);
+                  const showBgStepper = enforceAsiFromBackground ? isBgAbility : true;
+
+                  return (
+                    <div key={ability} className={`rounded-lg border p-3 transition-colors flex flex-col h-full ${isPrimary ? "border-primary/40 bg-primary/8 dark:bg-primary/10" : "border-border bg-card"}`}>
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center gap-1">
+                          <span className="text-sm font-bold">{ABILITY_ABBR[ability]}</span>
+                          {isPrimary && <span className="text-primary text-xs">★</span>}
+                        </div>
+                        <span className={`text-sm font-bold tabular-nums ${getModifierClass(modifier)}`}>{modifier === null ? "—" : formatModifier(modifier)}</span>
+                      </div>
+                      <div className="flex-1 space-y-2">
+                        <div>
+                          <p className="text-[10px] uppercase tracking-wide text-muted-foreground mb-1">Score</p>
+                          <Select
+                            value={score === null ? "" : String(score)}
+                            onValueChange={(val) => handleStandardScoreChange(ability, val)}
+                          >
+                            <SelectTrigger className="rounded-none w-full">
+                              <SelectValue placeholder="—" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {STANDARD_ARRAY_OPTIONS.map((option) => {
+                                const inUseByOtherAbility = ABILITIES.some(
+                                  (ab) =>
+                                    ab !== ability &&
+                                    standardScores[ab] !== null &&
+                                    standardScores[ab] === option,
+                                );
+                                return (
+                                  <SelectItem
+                                    key={option}
+                                    value={String(option)}
+                                    disabled={inUseByOtherAbility}
+                                  >
+                                    {option}
+                                  </SelectItem>
+                                );
+                              })}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        {showBgStepper && (
+                          <div>
+                            <p className="text-[10px] uppercase tracking-wide text-muted-foreground mb-1">BG Bonus</p>
+                            <StepperInput className="rounded-none w-full" value={bgBonus} min={0} max={BG_BONUS_MAX} onChange={(val) => handleBgBonusChange(ability, val)} />
+                          </div>
+                        )}
+                        {featBonusEnabled && (
+                          <div>
+                            <p className="text-[10px] uppercase tracking-wide text-muted-foreground mb-1">Feat</p>
+                            <StepperInput className="rounded-none w-full" value={manualBonus} min={0} max={MANUAL_BONUS_MAX} onChange={(val) => handleManualBonusChange(ability, val)} />
+                          </div>
+                        )}
+                      </div>
+                      <div className="flex items-center justify-between pt-1.5 border-t border-border/50 mt-2">
+                        <span className="text-[10px] text-muted-foreground uppercase">Total</span>
+                        <TotalScoreDisplay value={total ?? "—"} />
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* Desktop: Table */}
+              <div className="hidden md:block overflow-x-auto">
                 <table className="w-full text-sm border-separate border-spacing-y-1">
                   <thead>
                     <tr className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
@@ -691,13 +876,13 @@ function StatGeneratorInner() {
                 </table>
               </div>
 
-              <div className="flex items-center justify-between pt-2 border-t gap-4 flex-wrap">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between pt-2 border-t gap-3">
                 <div className="flex items-center gap-2">
                   <ResetButton onClick={handleStandardReset} />
                   <ShareButton onClick={handleShareLink} copied={copied} />
                 </div>
 
-                <div className="flex items-center gap-6 text-sm font-medium flex-wrap">
+                <div className="flex flex-wrap items-center gap-3 sm:gap-6 text-sm font-medium">
                   <PoolStatus
                     label="Background Points:"
                     value={bgBonusRemaining}

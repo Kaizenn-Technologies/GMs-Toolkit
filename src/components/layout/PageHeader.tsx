@@ -10,12 +10,12 @@ interface PageHeaderProps {
 
 export function PageHeader({ title, description, onSettingsClick }: PageHeaderProps) {
   return (
-    <div className="flex justify-between items-start mb-8">
+    <div className="flex justify-between items-start mb-5 sm:mb-8 gap-2">
       <div>
-        <h1 className="text-4xl font-bold mb-2">{title}</h1>
-        <p className="text-muted-foreground">{description}</p>
+        <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold mb-1 sm:mb-2 leading-tight">{title}</h1>
+        <p className="text-muted-foreground text-xs sm:text-sm">{description}</p>
       </div>
-      <div className="flex items-center gap-1 mt-1">
+      <div className="flex items-center gap-1 mt-0.5 shrink-0">
         <TooltipProvider delay={100}>
           <Tooltip>
             <TooltipTrigger
