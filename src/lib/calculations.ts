@@ -1,8 +1,8 @@
 import type { ClassSelection, CalculationResult, BreakdownItem, ClassData } from "@/types";
 import { classes } from "./classes";
+import { CUSTOM_CLASS_NAME } from "./constants";
 
 const classesMap = classes as Record<string, ClassData>;
-const CUSTOM_CLASS_NAME = "Custom";
 
 export const calculateHP = (
     classSelections: ClassSelection[],
@@ -43,7 +43,7 @@ export const calculateHP = (
 
         for (let i = 1; i <= levels; i++) {
             characterLevel++;
-            let rollValue = 0;
+            let rollValue: number;
             const isFirstLevel = characterLevel === 1;
 
             if (isFirstLevel) {

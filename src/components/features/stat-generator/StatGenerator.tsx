@@ -1,7 +1,5 @@
-import { useEffect, useRef, useState } from "react";
-import { RotateCcw, Settings, Share2, Dices, Shuffle } from "lucide-react";
+import { Dices, Shuffle } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { useLocation, useNavigate } from "react-router-dom";
 import {
   Select,
   SelectContent,
@@ -18,712 +16,101 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { StepperInput } from "@/components/ui/stepper-input";
-import { classes, classNames } from "@/lib/classes";
-import { backgrounds, backgroundNames } from "@/lib/backgrounds";
+import { classNames } from "@/lib/classes";
+import { backgroundNames } from "@/lib/backgrounds";
 import {
   ABILITIES,
   ABILITY_ABBR,
-  createAbilityRecord,
   formatModifier,
   getModifier,
   getModifierClass,
   getPoolStatusClass,
 } from "@/lib/stat-generator";
-import {
-  backgroundBonusParamKeys,
-  manualBonusParamKeys,
-  parseClampedIntParam,
-  scoreParamKeys,
-  setAbilityParams,
-  setOptionalAbilityParams,
-} from "@/lib/stat-generator-url";
-import type { Ability, PrimaryStat } from "@/types";
-import {
-  SettingsProvider,
-  SettingsOverlay,
-  useSettings,
-} from "@/components/features/SettingsOverlay";
+import { SettingsOverlay } from "@/components/features/SettingsOverlay";
+import { SettingsProvider } from "@/contexts/SettingsContext";
+import { PageHeader } from "@/components/layout/PageHeader";
+import { ResetButton, ShareButton } from "@/components/ui/action-buttons";
+
+import { StatGeneratorSelectorRow } from "./StatGeneratorSelectorRow";
 import {
   AbilityNameCell,
   CenteredCellContent,
   ModifierDisplay,
   PoolStatus,
-  StatGeneratorSelectorRow,
   TotalScoreDisplay,
-} from "@/components/features/StatGeneratorParts";
-
-// ─── Constants ────────────────────────────────────────────────────────────────
-
-const BG_BONUS_MAX = 2;
-const MANUAL_BONUS_MAX = 20;
-const STANDARD_ARRAY_OPTIONS = [8, 10, 12, 13, 14, 15] as const;
-const CHOOSE_STANDARD_CLASS = "Choose a class";
-const ROLLED_POOL_PARAM = "rpool";
-const STAT_TAB_ROUTES = {
-  pointbuy: "/stat-generator/pointbuy",
-  roll: "/stat-generator/rolled",
-  standard: "/stat-generator/standard-array",
-} as const;
-
-// ─── Point-cost helpers ───────────────────────────────────────────────────────
-
-/**
- * Returns the *cumulative* point cost to bring a stat from minPurchasable to
- * the given score (positive = points spent, negative = points gained).
- *
- * Cost table (relative to minPurchasable):
- *   +0–+5  → 1 pt per increment
- *   +6–+7  → 2 pt per increment  (i.e., scores 14–15 when min=8)
- *   +8+    → 3 pt per increment
- *
- * Going below minPurchasable:
- *   -1, -2 → gain 1 pt per decrement
- *   -3, -4 → gain 2 pt per decrement
- *   -5+    → gain 3 pt per decrement
- */
-function cumulativeCost(score: number, minPurchasable: number): number {
-  let cost = 0;
-  if (score >= minPurchasable) {
-    for (let s = minPurchasable + 1; s <= score; s++) {
-      const delta = s - minPurchasable;
-      if (delta <= 5) cost += 1;
-      else if (delta <= 7) cost += 2;
-      else cost += 3;
-    }
-  } else {
-    for (let s = minPurchasable - 1; s >= score; s--) {
-      const delta = minPurchasable - s;
-      if (delta <= 2) cost -= 1;
-      else if (delta <= 4) cost -= 2;
-      else cost -= 3;
-    }
-  }
-  return cost;
-}
-
-function pointsUsed(
-  scores: Record<Ability, number>,
-  minPurchasable: number,
-): number {
-  return ABILITIES.reduce(
-    (total, ab) => total + cumulativeCost(scores[ab], minPurchasable),
-    0,
-  );
-}
-
-// ─── Primary stat helpers ─────────────────────────────────────────────────────
-
-function getPrimaryStatInfo(className: string): {
-  type: PrimaryStat["type"];
-  abilities: Ability[];
-} {
-  const entry = Object.values(classes).find((c) => c.name === className);
-  if (!entry) return { type: "single", abilities: [] };
-  const ps = entry.primaryStat;
-  if (ps.type === "single") return { type: ps.type, abilities: [ps.value] };
-  if (ps.type === "multiple") return { type: ps.type, abilities: ps.values };
-  if (ps.type === "choice") return { type: ps.type, abilities: ps.options };
-  return { type: "single", abilities: [] };
-}
-
-// ─── Background helpers ───────────────────────────────────────────────────────
-
-function getBackgroundByName(name: string) {
-  return Object.values(backgrounds).find((b) => b.name === name) ?? null;
-}
-
-function getBackgroundAbilities(bgName: string): Ability[] {
-  return getBackgroundByName(bgName)?.abilityScores ?? [];
-}
-
-function getClassStandardArrayByName(className: string): number[] | null {
-  const entry = Object.values(classes).find((c) => c.name === className);
-  return entry?.standardArray ?? null;
-}
-
-// ─── Default scores ───────────────────────────────────────────────────────────
-
-function makeDefaultScores(defaultScore: number): Record<Ability, number> {
-  return createAbilityRecord(defaultScore);
-}
-
-function defaultBgBonuses(): Record<Ability, number> {
-  return createAbilityRecord(0);
-}
-
-function defaultManualBonuses(): Record<Ability, number> {
-  return createAbilityRecord(0);
-}
-
-function makeScoresFromStandardArray(className: string): Record<Ability, number> {
-  const classArray = getClassStandardArrayByName(className);
-  const fallback = [...STANDARD_ARRAY_OPTIONS].sort((a, b) => b - a);
-  const arrayToUse =
-    classArray && classArray.length === ABILITIES.length ? classArray : fallback;
-
-  return ABILITIES.reduce(
-    (acc, ability, index) => {
-      acc[ability] = arrayToUse[index];
-      return acc;
-    },
-    {} as Record<Ability, number>,
-  );
-}
-
-function makeUnfilledStandardScores(): Record<Ability, number | null> {
-  return createAbilityRecord<number | null>(null);
-}
-
-function encodeRolledPool(
-  rolledBoxes: Record<Ability, { rolls: number[]; total: number }>,
-): string {
-  return ABILITIES.map((ability) => rolledBoxes[ability].rolls.join(".")).join("_");
-}
-
-function decodeRolledPool(
-  raw: string,
-): Record<Ability, { rolls: number[]; total: number }> | null {
-  if (!raw) return null;
-  const chunks = raw.split("_");
-  if (chunks.length !== ABILITIES.length) return null;
-
-  const next = {} as Record<Ability, { rolls: number[]; total: number }>;
-  for (let index = 0; index < ABILITIES.length; index++) {
-    const ability = ABILITIES[index];
-    const rolls = chunks[index].split(".").map((value) => Number.parseInt(value, 10));
-    if (
-      rolls.length !== 4 ||
-      rolls.some((roll) => Number.isNaN(roll) || roll < 1 || roll > 6)
-    ) {
-      return null;
-    }
-
-    const sum = rolls.reduce((total, roll) => total + roll, 0);
-    const min = Math.min(...rolls);
-    next[ability] = { rolls, total: sum - min };
-  }
-
-  return next;
-}
-
-// ─── Inner component (consumes settings context) ──────────────────────────────
+} from "./StatDisplayComponents";
+import {
+  useStatGenerator,
+  BG_BONUS_MAX,
+  MANUAL_BONUS_MAX,
+  STANDARD_ARRAY_OPTIONS,
+  CHOOSE_STANDARD_CLASS,
+  STAT_TAB_ROUTES,
+} from "./useStatGenerator";
 
 function StatGeneratorInner() {
-  const { settings, openSettings } = useSettings();
-  const location = useLocation();
-  const navigate = useNavigate();
-  const hasHydratedFromUrl = useRef(false);
-  const pb = settings.pointBuy;
-
   const {
-    pointPool,
-    maxPurchasable,
-    minPurchasable,
-    bgBonusPool,
-    enforceAsiFromBackground,
-  } = pb;
-
-  const [selectedClass, setSelectedClass] = useState<string>("Wizard");
-  const [selectedBackground, setSelectedBackground] = useState<string>("Sage");
-  const [scores, setScores] = useState<Record<Ability, number>>(
-    makeDefaultScores(minPurchasable),
-  );
-  const [selectedStandardClass, setSelectedStandardClass] =
-    useState<string>(CHOOSE_STANDARD_CLASS);
-  const [standardScores, setStandardScores] = useState<
-    Record<Ability, number | null>
-  >(
-    makeScoresFromStandardArray("Wizard"),
-  );
-  const [bgBonuses, setBgBonuses] = useState<Record<Ability, number>>(
-    defaultBgBonuses(),
-  );
-  const [featBonusEnabled, setFeatBonusEnabled] = useState(false);
-  const [manualBonuses, setManualBonuses] = useState<Record<Ability, number>>(
-    defaultManualBonuses(),
-  );
-  const [copied, setCopied] = useState(false);
-  // Rolled stats state
-  const [rolledBoxes, setRolledBoxes] = useState<
-    Record<Ability, { rolls: number[]; total: number }>
-  >(() =>
-    ABILITIES.reduce((acc, ability) => {
-      acc[ability] = { rolls: [0, 0, 0, 0], total: 0 };
-      return acc;
-    }, {} as Record<Ability, { rolls: number[]; total: number }>),
-  );
-  const [showAssignPanel, setShowAssignPanel] = useState(false);
-
-  const activeTab: "pointbuy" | "roll" | "standard" =
-    location.pathname === STAT_TAB_ROUTES.standard
-      ? "standard"
-      : location.pathname === STAT_TAB_ROUTES.roll
-        ? "roll"
-        : "pointbuy";
-
-  const spent = pointsUsed(scores, minPurchasable);
-  const remaining = pointPool - spent;
-
-  const activeClassForPrimary =
-    // If on Standard tab with no class chosen, don't highlight
-    activeTab === "standard" && selectedStandardClass === CHOOSE_STANDARD_CLASS
-      ? ""
-      : // Use selected standard class when on Standard tab
-      activeTab === "standard"
-        ? selectedStandardClass
-        : // When assigning rolled stats, use the class selected in the
-        // assignment UI so the primary highlight updates while assigning
-        activeTab === "roll" && showAssignPanel
-          ? selectedStandardClass
-          : // Otherwise use the main selected class (point buy / default)
-          selectedClass;
-  const primaryStatInfo = getPrimaryStatInfo(activeClassForPrimary);
-  const primaryStats = primaryStatInfo.abilities;
-  const primaryDisplay =
-    primaryStats.length === 0
-      ? ""
-      : primaryStatInfo.type === "choice"
-        ? primaryStats.join(" or ")
-        : primaryStatInfo.type === "multiple"
-          ? primaryStats.join(" & ")
-          : primaryStats[0];
-  const bgAbilities = getBackgroundAbilities(selectedBackground);
-
-  const bgBonusSpent = ABILITIES.reduce((sum, ab) => sum + bgBonuses[ab], 0);
-  const bgBonusRemaining = bgBonusPool - bgBonusSpent;
-
-  // Clamp scores to current settings whenever they change
-  const clampedMax = Math.max(minPurchasable, maxPurchasable);
-  const clampedMin = Math.min(minPurchasable, maxPurchasable);
-
-  const handleScoreChange = (ability: Ability, newScore: number) => {
-    const clamped = Math.max(3, Math.min(18, newScore));
-    const tentativeScores = { ...scores, [ability]: clamped };
-    const tentativeSpent = pointsUsed(tentativeScores, minPurchasable);
-
-    if (tentativeSpent <= pointPool || clamped < scores[ability]) {
-      setScores(tentativeScores);
-    }
-  };
-
-  const handleBgBonusChange = (ability: Ability, newVal: number) => {
-    const clamped = Math.max(0, Math.min(BG_BONUS_MAX, newVal));
-    const tentativeBonuses = { ...bgBonuses, [ability]: clamped };
-    const tentativeSpent = ABILITIES.reduce(
-      (sum, ab) => sum + tentativeBonuses[ab],
-      0,
-    );
-
-    if (tentativeSpent <= bgBonusPool || clamped < bgBonuses[ability]) {
-      setBgBonuses(tentativeBonuses);
-    }
-  };
-
-  const handleReset = () => {
-    setScores(makeDefaultScores(minPurchasable));
-    setBgBonuses(defaultBgBonuses());
-    setFeatBonusEnabled(false);
-    setManualBonuses(defaultManualBonuses());
-  };
-
-  const handleBackgroundChange = (val: string | null) => {
-    if (!val) return;
-    setSelectedBackground(val);
-    setBgBonuses(defaultBgBonuses());
-  };
-
-  const handleStandardClassChange = (val: string | null) => {
-    if (!val) return;
-    setSelectedStandardClass(val);
-    if (val === CHOOSE_STANDARD_CLASS) {
-      setStandardScores(makeUnfilledStandardScores());
-      return;
-    }
-    setStandardScores(makeScoresFromStandardArray(val));
-  };
-
-  const handleStandardScoreChange = (
-    ability: Ability,
-    selectedValue: string | null,
-  ) => {
-    if (!selectedValue) return;
-    const nextScore = Number.parseInt(selectedValue, 10);
-    if (!STANDARD_ARRAY_OPTIONS.includes(nextScore as (typeof STANDARD_ARRAY_OPTIONS)[number])) {
-      return;
-    }
-
-    const duplicateAbility = ABILITIES.find(
-      (ab) => ab !== ability && standardScores[ab] === nextScore,
-    );
-
-    if (duplicateAbility) {
-      setStandardScores((prev) => ({
-        ...prev,
-        [duplicateAbility]: prev[ability],
-        [ability]: nextScore,
-      }));
-      return;
-    }
-
-    setStandardScores((prev) => ({ ...prev, [ability]: nextScore }));
-  };
-
-  const handleStandardReset = () => {
-    if (selectedStandardClass === CHOOSE_STANDARD_CLASS) {
-      setStandardScores(makeUnfilledStandardScores());
-    } else {
-      setStandardScores(makeScoresFromStandardArray(selectedStandardClass));
-    }
-    setBgBonuses(defaultBgBonuses());
-    setFeatBonusEnabled(false);
-    setManualBonuses(defaultManualBonuses());
-  };
-
-  const handleManualBonusChange = (ability: Ability, newVal: number) => {
-    const clamped = Math.max(0, Math.min(MANUAL_BONUS_MAX, newVal));
-    setManualBonuses((prev) => ({ ...prev, [ability]: clamped }));
-  };
-
-  const handleShareLink = async () => {
-    const shareUrl = new URL(window.location.href);
-    shareUrl.pathname = STAT_TAB_ROUTES[activeTab];
-    shareUrl.search = "";
-
-    const activeScores = activeTab === "standard" ? standardScores : scores;
-    const params = shareUrl.searchParams;
-    params.set(
-      "class",
-      activeTab === "standard"
-        ? selectedStandardClass === CHOOSE_STANDARD_CLASS
-          ? ""
-          : selectedStandardClass
-        : selectedClass,
-    );
-    params.set("background", selectedBackground);
-    setOptionalAbilityParams(params, activeScores, scoreParamKeys);
-    setAbilityParams(params, bgBonuses, backgroundBonusParamKeys);
-    params.set("feat", featBonusEnabled ? "1" : "0");
-    setAbilityParams(params, manualBonuses, manualBonusParamKeys);
-
-    try {
-      await navigator.clipboard.writeText(shareUrl.toString());
-      setCopied(true);
-      window.setTimeout(() => setCopied(false), 1500);
-    } catch {
-      // If clipboard permissions are blocked, fail quietly.
-    }
-  };
-
-  useEffect(() => {
-    if (hasHydratedFromUrl.current) return;
-    hasHydratedFromUrl.current = true;
-
-    const params = new URLSearchParams(location.search);
-    if (!params.toString()) {
-      if (activeTab === "standard") {
-        setSelectedStandardClass(CHOOSE_STANDARD_CLASS);
-        setStandardScores(makeUnfilledStandardScores());
-      }
-      return;
-    }
-
-    const classFromUrl = params.get("class");
-    if (classFromUrl && classNames.includes(classFromUrl)) {
-      setSelectedClass(classFromUrl);
-      setSelectedStandardClass(classFromUrl);
-    }
-
-    const bgFromUrl = params.get("background");
-    if (bgFromUrl && backgroundNames.includes(bgFromUrl)) {
-      setSelectedBackground(bgFromUrl);
-    }
-
-    const scoreMinForTab = activeTab === "pointbuy" ? clampedMin : 3;
-    const scoreMaxForTab = activeTab === "pointbuy" ? clampedMax : 18;
-    const nextScores = makeDefaultScores(minPurchasable);
-    const str = parseClampedIntParam(
-      params.get(scoreParamKeys.Strength),
-      scoreMinForTab,
-      scoreMaxForTab,
-    );
-    const dex = parseClampedIntParam(
-      params.get(scoreParamKeys.Dexterity),
-      scoreMinForTab,
-      scoreMaxForTab,
-    );
-    const con = parseClampedIntParam(
-      params.get(scoreParamKeys.Constitution),
-      scoreMinForTab,
-      scoreMaxForTab,
-    );
-    const int = parseClampedIntParam(
-      params.get(scoreParamKeys.Intelligence),
-      scoreMinForTab,
-      scoreMaxForTab,
-    );
-    const wis = parseClampedIntParam(
-      params.get(scoreParamKeys.Wisdom),
-      scoreMinForTab,
-      scoreMaxForTab,
-    );
-    const cha = parseClampedIntParam(
-      params.get(scoreParamKeys.Charisma),
-      scoreMinForTab,
-      scoreMaxForTab,
-    );
-
-    if (str !== null) nextScores.Strength = str;
-    if (dex !== null) nextScores.Dexterity = dex;
-    if (con !== null) nextScores.Constitution = con;
-    if (int !== null) nextScores.Intelligence = int;
-    if (wis !== null) nextScores.Wisdom = wis;
-    if (cha !== null) nextScores.Charisma = cha;
-    setScores(nextScores);
-    if (activeTab === "standard") {
-      if (classFromUrl && classNames.includes(classFromUrl)) {
-        setStandardScores(nextScores);
-      } else {
-        setSelectedStandardClass(CHOOSE_STANDARD_CLASS);
-        setStandardScores(makeUnfilledStandardScores());
-      }
-    } else {
-      setStandardScores(nextScores);
-    }
-
-    if (activeTab === "roll") {
-      const decodedRolledPool = decodeRolledPool(params.get(ROLLED_POOL_PARAM) ?? "");
-      if (decodedRolledPool) {
-        setRolledBoxes(decodedRolledPool);
-      }
-
-      const hasAssignedStats = ABILITIES.some(
-        (ability) => params.get(scoreParamKeys[ability]) !== null,
-      );
-      if (decodedRolledPool || hasAssignedStats) {
-        setShowAssignPanel(true);
-      }
-    }
-
-    const nextBonuses = defaultBgBonuses();
-    let remainingBonusPool = bgBonusPool;
-    const bstr = parseClampedIntParam(params.get(backgroundBonusParamKeys.Strength), 0, BG_BONUS_MAX);
-    const bdex = parseClampedIntParam(params.get(backgroundBonusParamKeys.Dexterity), 0, BG_BONUS_MAX);
-    const bcon = parseClampedIntParam(params.get(backgroundBonusParamKeys.Constitution), 0, BG_BONUS_MAX);
-    const bint = parseClampedIntParam(params.get(backgroundBonusParamKeys.Intelligence), 0, BG_BONUS_MAX);
-    const bwis = parseClampedIntParam(params.get(backgroundBonusParamKeys.Wisdom), 0, BG_BONUS_MAX);
-    const bcha = parseClampedIntParam(params.get(backgroundBonusParamKeys.Charisma), 0, BG_BONUS_MAX);
-
-    if (bstr !== null) {
-      nextBonuses.Strength = Math.min(bstr, remainingBonusPool);
-      remainingBonusPool -= nextBonuses.Strength;
-    }
-    if (bdex !== null) {
-      nextBonuses.Dexterity = Math.min(bdex, remainingBonusPool);
-      remainingBonusPool -= nextBonuses.Dexterity;
-    }
-    if (bcon !== null) {
-      nextBonuses.Constitution = Math.min(bcon, remainingBonusPool);
-      remainingBonusPool -= nextBonuses.Constitution;
-    }
-    if (bint !== null) {
-      nextBonuses.Intelligence = Math.min(bint, remainingBonusPool);
-      remainingBonusPool -= nextBonuses.Intelligence;
-    }
-    if (bwis !== null) {
-      nextBonuses.Wisdom = Math.min(bwis, remainingBonusPool);
-      remainingBonusPool -= nextBonuses.Wisdom;
-    }
-    if (bcha !== null) {
-      nextBonuses.Charisma = Math.min(bcha, remainingBonusPool);
-      remainingBonusPool -= nextBonuses.Charisma;
-    }
-
-    setBgBonuses(nextBonuses);
-
-    const featFromUrl = params.get("feat");
-    setFeatBonusEnabled(featFromUrl === "1");
-
-    const nextManualBonuses = defaultManualBonuses();
-    const mstr = parseClampedIntParam(params.get(manualBonusParamKeys.Strength), 0, MANUAL_BONUS_MAX);
-    const mdex = parseClampedIntParam(params.get(manualBonusParamKeys.Dexterity), 0, MANUAL_BONUS_MAX);
-    const mcon = parseClampedIntParam(params.get(manualBonusParamKeys.Constitution), 0, MANUAL_BONUS_MAX);
-    const mint = parseClampedIntParam(params.get(manualBonusParamKeys.Intelligence), 0, MANUAL_BONUS_MAX);
-    const mwis = parseClampedIntParam(params.get(manualBonusParamKeys.Wisdom), 0, MANUAL_BONUS_MAX);
-    const mcha = parseClampedIntParam(params.get(manualBonusParamKeys.Charisma), 0, MANUAL_BONUS_MAX);
-
-    if (mstr !== null) nextManualBonuses.Strength = mstr;
-    if (mdex !== null) nextManualBonuses.Dexterity = mdex;
-    if (mcon !== null) nextManualBonuses.Constitution = mcon;
-    if (mint !== null) nextManualBonuses.Intelligence = mint;
-    if (mwis !== null) nextManualBonuses.Wisdom = mwis;
-    if (mcha !== null) nextManualBonuses.Charisma = mcha;
-    setManualBonuses(nextManualBonuses);
-  }, [
+    openSettings,
+    settings,
+    location,
+    navigate,
+    pb,
     activeTab,
-    bgBonusPool,
-    clampedMax,
-    clampedMin,
-    location.search,
+    selectedClass,
+    setSelectedClass,
+    selectedBackground,
+    scores,
+    selectedStandardClass,
+    setSelectedStandardClass,
+    standardScores,
+    bgBonuses,
+    featBonusEnabled,
+    setFeatBonusEnabled,
+    manualBonuses,
+    copied,
+    rolledBoxes,
+    showAssignPanel,
+    remaining,
+    pointPool,
     minPurchasable,
-  ]);
-
-  // --- Roll helpers ---
-  const rollDie = () => Math.floor(Math.random() * 6) + 1;
-
-  const computeTotalFromRolls = (rolls: number[]) => {
-    if (!rolls.length) return 0;
-    const sum = rolls.reduce((s, v) => s + v, 0);
-    const min = Math.min(...rolls);
-    return sum - min;
-  };
-
-  const rollAllStats = () => {
-    const next: Record<Ability, { rolls: number[]; total: number }> = {} as any;
-    ABILITIES.forEach((ability) => {
-      let rolls = Array.from({ length: 4 }, () => rollDie());
-      if (settings.roll?.rerollOnes) {
-        rolls = rolls.map((r) => (r === 1 ? rollDie() : r));
-      }
-      const total = computeTotalFromRolls(rolls);
-      next[ability] = { rolls, total };
-    });
-    setRolledBoxes(next);
-    setShowAssignPanel(false);
-  };
-
-  const getRolledTotals = () => ABILITIES.map((ab) => rolledBoxes[ab].total);
-
-  const handleShuffleAssign = () => {
-    const totals = getRolledTotals();
-    const shuffled = totals.slice().sort(() => 0.5 - Math.random());
-    const next = ABILITIES.reduce((acc, ability, idx) => {
-      acc[ability] = shuffled[idx];
-      return acc;
-    }, {} as Record<Ability, number | null>);
-    setStandardScores(next);
-    setShowAssignPanel(true);
-  };
-
-  const handleAssignManually = () => {
-    setStandardScores(makeUnfilledStandardScores());
-    setShowAssignPanel(true);
-  };
-
-  const handleRolledAssignChange = (ability: Ability, selectedValue: string | null) => {
-    if (!selectedValue) return;
-    const nextScore = Number.parseInt(selectedValue, 10);
-    // Count how many times this roll value exists in the pool
-    const pool = getRolledTotals();
-    const poolCount = pool.filter((p) => p === nextScore).length;
-
-    // Count how many other abilities (excluding the current) already use it
-    const usedByOthers = ABILITIES.filter(
-      (ab) => ab !== ability && standardScores[ab] === nextScore,
-    ).length;
-
-    // If there are remaining instances in the pool, just assign without
-    // touching the other ability that already has the same value.
-    if (usedByOthers < poolCount) {
-      setStandardScores((prev) => ({ ...prev, [ability]: nextScore }));
-      return;
-    }
-
-    // Otherwise no free instance exists — fall back to swapping with the
-    // first ability that currently holds the value so the selection stays
-    // consistent with available rolls.
-    const duplicateAbility = ABILITIES.find(
-      (ab) => ab !== ability && standardScores[ab] === nextScore,
-    );
-
-    if (duplicateAbility) {
-      setStandardScores((prev) => ({
-        ...prev,
-        [duplicateAbility]: prev[ability],
-        [ability]: nextScore,
-      }));
-      return;
-    }
-
-    setStandardScores((prev) => ({ ...prev, [ability]: nextScore }));
-  };
-
-  const handleAssignmentReset = () => {
-    setStandardScores(makeUnfilledStandardScores());
-  };
-
-  const handleShareAssigned = async () => {
-    const shareUrl = new URL(window.location.href);
-    shareUrl.pathname = STAT_TAB_ROUTES.roll;
-    shareUrl.search = "";
-    const params = shareUrl.searchParams;
-    params.set("class", selectedStandardClass === CHOOSE_STANDARD_CLASS ? "" : selectedStandardClass);
-    params.set("background", selectedBackground);
-    setOptionalAbilityParams(params, standardScores, scoreParamKeys);
-    setAbilityParams(params, bgBonuses, backgroundBonusParamKeys);
-    params.set("feat", featBonusEnabled ? "1" : "0");
-    setAbilityParams(params, manualBonuses, manualBonusParamKeys);
-    params.set(ROLLED_POOL_PARAM, encodeRolledPool(rolledBoxes));
-
-    try {
-      await navigator.clipboard.writeText(shareUrl.toString());
-      setCopied(true);
-      window.setTimeout(() => setCopied(false), 1500);
-    } catch { }
-  };
+    maxPurchasable,
+    clampedMin,
+    clampedMax,
+    bgBonusRemaining,
+    bgBonusPool,
+    primaryStats,
+    primaryDisplay,
+    bgAbilities,
+    enforceAsiFromBackground,
+    handleScoreChange,
+    handleBgBonusChange,
+    handleReset,
+    handleBackgroundChange,
+    handleStandardClassChange,
+    handleStandardScoreChange,
+    handleStandardReset,
+    handleManualBonusChange,
+    handleShareLink,
+    rollAllStats,
+    getRolledTotals,
+    handleShuffleAssign,
+    handleAssignManually,
+    handleRolledAssignChange,
+    handleAssignmentReset,
+    handleShareAssigned,
+  } = useStatGenerator();
 
   const pointsColor = getPoolStatusClass(remaining);
   const bgPoolColor = getPoolStatusClass(bgBonusRemaining);
 
   return (
     <>
-      {/* ── Page Header ── */}
-      <div className="flex justify-between items-start mb-8">
-        <div>
-          <h1 className="text-4xl font-bold mb-2">D&D 5.5e Stat Generator</h1>
-          <p className="text-muted-foreground">
-            Generate ability scores using Point Buy, dice rolls, or the Standard
-            Array.
-          </p>
-        </div>
+      <PageHeader
+        title="D&D 5.5e Stat Generator"
+        description="Generate ability scores using Point Buy, dice rolls, or the Standard Array."
+        onSettingsClick={openSettings}
+      />
 
-        {/* Book + Settings icons */}
-        <div className="flex items-center gap-1 mt-1">
-          <TooltipProvider delay={100}>
-            {/* <Tooltip>
-              <TooltipTrigger
-                render={
-                  <Button variant="ghost" size="icon" disabled>
-                    <BookOpen className="w-5 h-5" />
-                  </Button>
-                }
-              />
-              <TooltipContent>
-                <p>Rules (coming soon)</p>
-              </TooltipContent>
-            </Tooltip> */}
-
-            <Tooltip>
-              <TooltipTrigger
-                render={
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    aria-label="Open settings"
-                    onClick={openSettings}
-                  >
-                    <Settings className="w-5 h-5" />
-                  </Button>
-                }
-              />
-              <TooltipContent>
-                <p>Settings</p>
-              </TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
-        </div>
-      </div>
-
-      {/* ── Main Card with Tabs ── */}
       <Card>
         <CardContent className="pt-2">
           <Tabs
@@ -747,9 +134,7 @@ function StatGeneratorInner() {
               <TabsTrigger value="standard">Standard Array</TabsTrigger>
             </TabsList>
 
-            {/* ── POINT BUY TAB ── */}
             <TabsContent value="pointbuy" className="space-y-6">
-              {/* Class + Background selectors */}
               <StatGeneratorSelectorRow
                 classValue={selectedClass}
                 onClassChange={(value) => {
@@ -757,7 +142,8 @@ function StatGeneratorInner() {
                     setSelectedClass(value);
                   }
                 }}
-                classOptions={classNames}
+                classOptions={[CHOOSE_STANDARD_CLASS, ...classNames]}
+                classPlaceholder={CHOOSE_STANDARD_CLASS}
                 backgroundValue={selectedBackground}
                 onBackgroundChange={handleBackgroundChange}
                 backgroundOptions={backgroundNames}
@@ -766,7 +152,6 @@ function StatGeneratorInner() {
                 primaryDisplay={primaryStats.length > 0 ? primaryDisplay : undefined}
               />
 
-              {/* Ability score table */}
               <div className="overflow-x-auto">
                 <table className="w-full text-sm border-separate border-spacing-y-1">
                   <thead>
@@ -823,10 +208,6 @@ function StatGeneratorInner() {
                       const isBgAbility = bgAbilities.includes(ability);
                       const isAboveMax = score > clampedMax;
 
-                      // Show background stepper based on the settings. When
-                      // `enforceAsiFromBackground` is true, only show for the
-                      // background's designated abilities; otherwise show for
-                      // every ability.
                       const showBgStepper = enforceAsiFromBackground ? isBgAbility : true;
 
                       return (
@@ -837,7 +218,6 @@ function StatGeneratorInner() {
                             : "hover:bg-muted/50"
                             }`}
                         >
-                          {/* Ability name */}
                           <AbilityNameCell
                             ability={ability}
                             abilityAbbreviation={ABILITY_ABBR[ability]}
@@ -845,7 +225,6 @@ function StatGeneratorInner() {
                             primaryTooltip={`Primary stat for ${selectedClass}`}
                           />
 
-                          {/* Stepper — base score */}
                           <td className="py-2 px-2">
                             <CenteredCellContent>
                               <StepperInput
@@ -860,7 +239,6 @@ function StatGeneratorInner() {
                             </CenteredCellContent>
                           </td>
 
-                          {/* Stepper — background bonus */}
                           <td className="py-2 px-2">
                             <CenteredCellContent>
                               {showBgStepper ? (
@@ -897,12 +275,10 @@ function StatGeneratorInner() {
                             </td>
                           )}
 
-                          {/* Total score badge */}
                           <td className="py-2 px-2 text-center">
                             <TotalScoreDisplay value={total} highlight={isAboveMax} />
                           </td>
 
-                          {/* Modifier */}
                           <td className="py-2 pr-3 text-center rounded-r-md">
                             <ModifierDisplay
                               value={formatModifier(modifier)}
@@ -916,21 +292,13 @@ function StatGeneratorInner() {
                 </table>
               </div>
 
-              {/* Footer row: Reset + Points counters */}
               <div className="flex items-center justify-between pt-2 border-t gap-4 flex-wrap">
                 <div className="flex items-center gap-2">
-                  <Button variant="outline" size="sm" onClick={handleReset}>
-                    <RotateCcw className="w-3.5 h-3.5 mr-1.5" />
-                    Reset
-                  </Button>
-                  <Button variant="outline" size="sm" onClick={handleShareLink}>
-                    <Share2 className="w-4 h-4 mr-2" />
-                    {copied ? "Copied" : "Share"}
-                  </Button>
+                  <ResetButton onClick={handleReset} />
+                  <ShareButton onClick={handleShareLink} copied={copied} />
                 </div>
 
                 <div className="flex items-center gap-6 text-sm font-medium flex-wrap">
-                  {/* Background bonus pool */}
                   <PoolStatus
                     label="Background Points:"
                     value={bgBonusRemaining}
@@ -938,7 +306,6 @@ function StatGeneratorInner() {
                     valueClassName={bgPoolColor}
                   />
 
-                  {/* Point buy pool */}
                   <PoolStatus
                     label="Points remaining:"
                     value={remaining}
@@ -956,7 +323,6 @@ function StatGeneratorInner() {
               )}
             </TabsContent>
 
-            {/* ── ROLL TAB ── */}
             <TabsContent value="roll" className="space-y-6">
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 {ABILITIES.map((ability) => {
@@ -1038,7 +404,6 @@ function StatGeneratorInner() {
                     primaryDisplay={primaryDisplay}
                   />
 
-                  {/* background pool + share/reset moved to footer below table */}
                   <table className="w-full text-sm border-separate border-spacing-y-1">
                     <thead>
                       <tr className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
@@ -1058,11 +423,6 @@ function StatGeneratorInner() {
                         const total = score === null ? null : score + bgBonus + (featBonusEnabled ? manualBonus : 0);
                         const modifier = total === null ? null : getModifier(total);
 
-                        // Build a per-ability available pool: remove one instance for
-                        // each value already assigned to *other* abilities so the
-                        // dropdown shows only the remaining rolls. Keep the
-                        // current ability's value available so it doesn't disappear
-                        // while selected.
                         const pool = getRolledTotals();
                         const availablePool = pool.slice().sort((a, b) => b - a);
                         ABILITIES.forEach((ab) => {
@@ -1140,8 +500,8 @@ function StatGeneratorInner() {
 
                   <div className="flex items-center justify-between mt-3 gap-3">
                     <div className="flex items-center gap-2">
-                      <Button variant="outline" size="sm" onClick={handleShareAssigned}><Share2 className="w-4 h-4 mr-2" />{copied ? "Copied" : "Share"}</Button>
-                      <Button variant="outline" size="sm" onClick={handleAssignmentReset}><RotateCcw className="w-3.5 h-3.5 mr-1.5" />Reset</Button>
+                      <ShareButton onClick={handleShareAssigned} copied={copied} />
+                      <ResetButton onClick={handleAssignmentReset} />
                     </div>
                     <div className="flex items-center gap-3">
                       <PoolStatus
@@ -1151,14 +511,11 @@ function StatGeneratorInner() {
                         valueClassName={bgPoolColor}
                       />
                     </div>
-
                   </div>
-
                 </div>
               )}
             </TabsContent>
 
-            {/* ── STANDARD ARRAY TAB ── */}
             <TabsContent value="standard" className="space-y-6">
               <StatGeneratorSelectorRow
                 classValue={selectedStandardClass}
@@ -1337,18 +694,8 @@ function StatGeneratorInner() {
 
               <div className="flex items-center justify-between pt-2 border-t gap-4 flex-wrap">
                 <div className="flex items-center gap-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={handleStandardReset}
-                  >
-                    <RotateCcw className="w-3.5 h-3.5 mr-1.5" />
-                    Reset
-                  </Button>
-                  <Button variant="outline" size="sm" onClick={handleShareLink}>
-                    <Share2 className="w-4 h-4 mr-2" />
-                    {copied ? "Copied" : "Share"}
-                  </Button>
+                  <ResetButton onClick={handleStandardReset} />
+                  <ShareButton onClick={handleShareLink} copied={copied} />
                 </div>
 
                 <div className="flex items-center gap-6 text-sm font-medium flex-wrap">
@@ -1365,13 +712,10 @@ function StatGeneratorInner() {
         </CardContent>
       </Card>
 
-      {/* ── Settings overlay ── */}
       <SettingsOverlay />
     </>
   );
 }
-
-// ─── Public export (wraps provider) ──────────────────────────────────────────
 
 export function StatGenerator() {
   return (
