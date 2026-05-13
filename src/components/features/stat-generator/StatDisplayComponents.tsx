@@ -22,7 +22,7 @@ export function AbilityNameCell({
   primaryTooltip,
 }: AbilityNameCellProps) {
   return (
-    <td className="py-2 pl-3 pr-4 font-medium rounded-l-md">
+    <td className="py-3 pl-4 pr-6 font-medium rounded-none">
       <div className="flex items-center gap-1.5">
         <span className="hidden sm:inline">{ability}</span>
         <span className="sm:hidden text-xs font-bold">{abilityAbbreviation}</span>
@@ -60,7 +60,7 @@ export function TotalScoreDisplay({
 }) {
   return (
     <span
-      className={`inline-block w-10 text-center font-bold text-base ${highlight ? "text-amber-500" : ""}`}
+      className={`inline-block w-12 text-center font-bold text-lg tabular-nums ${highlight ? "text-amber-500" : "text-foreground"}`}
     >
       {value}
     </span>
@@ -75,7 +75,7 @@ export function ModifierDisplay({
   className: string;
 }) {
   return (
-    <span className={`inline-block w-10 text-center text-sm font-semibold ${className}`}>
+    <span className={`inline-block w-12 text-center text-base font-bold tabular-nums ${className}`}>
       {value}
     </span>
   );
@@ -93,12 +93,13 @@ export function PoolStatus({
   valueClassName: string;
 }) {
   return (
-    <div>
-      {label}{" "}
-      <span className={`font-bold tabular-nums ${valueClassName}`}>
-        {value}
-      </span>
-      <span className="text-muted-foreground">/{max}</span>
+    <div className="flex items-center gap-2 bg-muted/40 px-3 py-1.5 rounded-none border border-border/50 shadow-sm">
+      <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">{label}</span>
+      <div className="flex items-center font-bold tabular-nums">
+        <span className={valueClassName}>{value}</span>
+        <span className="text-muted-foreground/60 mx-0.5">/</span>
+        <span className="text-muted-foreground">{max}</span>
+      </div>
     </div>
   );
 }

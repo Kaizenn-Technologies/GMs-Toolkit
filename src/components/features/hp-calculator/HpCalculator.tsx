@@ -63,98 +63,94 @@ function HpCalculatorInner() {
         {/* INPUT SECTION */}
         <div>
           <Card>
-            <CardContent className=" space-y-6">
+            <CardContent className="space-y-6">
               <p className="text-xl font-semibold text-center pb-2 pt-6">Class Picker</p>
               {/* Class Selections */}
               <div className="space-y-4">
                 {classSelections.map((selection, index) => (
-                  <div key={selection.id} className="flex items-end gap-3">
-                    <div className="flex-1">
-                      <label className="text-xs font-medium text-muted-foreground mb-2 block">
-                        Class {index + 1}
-                      </label>
-                      <Select
-                        value={selection.className}
-                        onValueChange={(value) =>
-                          value && updateClassSelection(selection.id, "className", value)
-                        }
-                      >
-                        <SelectTrigger>
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {hpClassOptions.map((className) => {
-                            const isSelected = classSelections.some(c => c.className === className && c.id !== selection.id);
-                            return (
-                              <SelectItem key={className} value={className} disabled={isSelected}>
-                                {className}
-                              </SelectItem>
-                            );
-                          })}
-                        </SelectContent>
-                      </Select>
-                    </div>
-
-                    {selection.className === CUSTOM_CLASS_NAME && (
-                      <div className="w-32 shrink-0">
-                        <label className="text-xs font-medium text-muted-foreground mb-2 block">
-                          Hit Die
-                        </label>
+                  <div key={selection.id} className="space-y-2">
+                    <label className="text-xs font-medium text-muted-foreground block">
+                      Class {index + 1}
+                    </label>
+                    <div className="flex items-center gap-2">
+                      <div className="flex-1 min-w-0">
                         <Select
-                          value={`d${selection.customHitDie ?? CUSTOM_HIT_DIE_OPTIONS[0]}`}
-                          onValueChange={(value) => {
-                            if (!value) return;
-                            updateClassSelection(selection.id, "customHitDie", Number(value.replace("d", "")));
-                          }}
+                          value={selection.className}
+                          onValueChange={(value) =>
+                            value && updateClassSelection(selection.id, "className", value)
+                          }
                         >
                           <SelectTrigger>
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent>
-                            {CUSTOM_HIT_DIE_OPTIONS.map((die) => (
-                              <SelectItem key={die} value={`d${die}`}>
-                                {`d${die}`}
-                              </SelectItem>
-                            ))}
+                            {hpClassOptions.map((className) => {
+                              const isSelected = classSelections.some(c => c.className === className && c.id !== selection.id);
+                              return (
+                                <SelectItem key={className} value={className} disabled={isSelected}>
+                                  {className}
+                                </SelectItem>
+                              );
+                            })}
                           </SelectContent>
                         </Select>
                       </div>
-                    )}
 
-                    <div className="w-32 shrink-0">
-                      <label className="text-xs font-medium text-muted-foreground mb-2 block">
-                        Level
-                      </label>
-                      <StepperInput
-                        className="rounded-none"
-                        min={classSelections.length > 1 ? 0 : 1}
-                        max={20}
-                        value={selection.level}
-                        onChange={(val) => {
-                          if (val === 0) {
-                            removeClassSelection(selection.id);
-                          } else {
-                            updateClassSelection(selection.id, "level", val);
-                          }
-                        }}
-                      />
+                      {selection.className === CUSTOM_CLASS_NAME && (
+                        <div className="w-32 shrink-0">
+                          <Select
+                            value={`d${selection.customHitDie ?? CUSTOM_HIT_DIE_OPTIONS[0]}`}
+                            onValueChange={(value) => {
+                              if (!value) return;
+                              updateClassSelection(selection.id, "customHitDie", Number(value.replace("d", "")));
+                            }}
+                          >
+                            <SelectTrigger>
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {CUSTOM_HIT_DIE_OPTIONS.map((die) => (
+                                <SelectItem key={die} value={`d${die}`}>
+                                  {`d${die}`}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      )}
+
+                      <div className="w-32 shrink-0">
+                        <StepperInput
+                          className="rounded-none"
+                          min={classSelections.length > 1 ? 0 : 1}
+                          max={20}
+                          value={selection.level}
+                          onChange={(val) => {
+                            if (val === 0) {
+                              removeClassSelection(selection.id);
+                            } else {
+                              updateClassSelection(selection.id, "level", val);
+                            }
+                          }}
+                        />
+                      </div>
+
+                      {classSelections.length > 1 && (
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="shrink-0"
+                          onClick={() => removeClassSelection(selection.id)}
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      )}
                     </div>
-
-                    {classSelections.length > 1 && (
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="shrink-0 mb-px"
-                        onClick={() => removeClassSelection(selection.id)}
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </Button>
-                    )}
                   </div>
                 ))}
               </div>
 
-              <div className="flex flex-row gap-2 mb-4 justify-between">
+              <div className="flex flex-wrap gap-2 mb-4">
                 <Button onClick={addClassSelection} variant="outline" className="m-0">
                   <Plus className="w-4 h-4 mr-2" />
                   Add Another Class
@@ -164,8 +160,8 @@ function HpCalculatorInner() {
 
               {/* CON Modifier & Feats */}
               <div className="pt-2 border-t">
-                <div className="flex items-center gap-4 mb-4 mt-4">
-                  <label className="text-sm font-semibold shrink-0">
+                <div className="flex flex-wrap items-center gap-3 mb-4 mt-4">
+                  <label className="text-sm font-semibold">
                     Constitution Modifier:
                   </label>
                   <div className="w-32">
