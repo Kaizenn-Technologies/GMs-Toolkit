@@ -97,7 +97,7 @@ function HpCalculatorInner() {
                       </div>
 
                       {selection.className === CUSTOM_CLASS_NAME && (
-                        <div className="w-24 sm:w-28 shrink-0">
+                        <div className="w-32 shrink-0">
                           <Select
                             value={`d${selection.customHitDie ?? CUSTOM_HIT_DIE_OPTIONS[0]}`}
                             onValueChange={(value) => {
@@ -119,7 +119,7 @@ function HpCalculatorInner() {
                         </div>
                       )}
 
-                      <div className="w-24 sm:w-28 shrink-0">
+                      <div className="w-32 shrink-0">
                         <StepperInput
                           className="rounded-none"
                           min={classSelections.length > 1 ? 0 : 1}

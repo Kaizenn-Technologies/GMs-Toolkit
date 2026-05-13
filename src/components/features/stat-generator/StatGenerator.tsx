@@ -164,7 +164,7 @@ function StatGeneratorInner() {
                   const isAboveMax = score > clampedMax;
                   const showBgStepper = enforceAsiFromBackground ? isBgAbility : true;
                   return (
-                    <div key={ability} className={`rounded-lg border p-3 transition-colors flex flex-col h-full ${isPrimary ? "border-primary/40 bg-primary/8 dark:bg-primary/10" : "border-border bg-card"}`}>
+                    <div key={ability} className={`rounded-none border p-3 transition-colors flex flex-col h-full ${isPrimary ? "border-primary/40 bg-primary/8 dark:bg-primary/10" : "border-border bg-card"}`}>
                       <div className="flex items-center justify-between mb-2">
                         <div className="flex items-center gap-1">
                           <span className="text-sm font-bold">{ABILITY_ABBR[ability]}</span>
@@ -200,19 +200,19 @@ function StatGeneratorInner() {
               </div>
 
               {/* Desktop: Table */}
-              <div className="hidden md:block overflow-x-auto">
-                <table className="w-full text-sm border-separate border-spacing-y-1">
+              <div className="hidden md:block border border-border/60 rounded-none overflow-hidden bg-card/30">
+                <table className="w-full text-sm border-collapse">
                   <thead>
-                    <tr className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
-                      <th className="text-left pb-2 pl-2">Ability</th>
-                      <th className="text-center pb-2">Score</th>
-                      <th className="text-center pb-2">
+                    <tr className="bg-muted/50 text-[10px] font-bold text-muted-foreground uppercase tracking-widest border-b border-border/50">
+                      <th className="text-left py-3 pl-4">Ability</th>
+                      <th className="text-center py-3">Score</th>
+                      <th className="text-center py-3">
                         <TooltipProvider delay={100}>
                           <Tooltip>
                             <TooltipTrigger
                               render={
-                                <span className="cursor-help border-b border-dashed border-muted-foreground">
-                                  Background Bonus
+                                <span className="cursor-help border-b border-dashed border-muted-foreground/50">
+                                  Background
                                 </span>
                               }
                             />
@@ -223,15 +223,15 @@ function StatGeneratorInner() {
                         </TooltipProvider>
                       </th>
                       {featBonusEnabled && (
-                        <th className="text-center pb-2">Feat Bonus</th>
+                        <th className="text-center py-3">Feat Bonus</th>
                       )}
-                      <th className="text-center pb-2">Total</th>
-                      <th className="text-center pb-2">
+                      <th className="text-center py-3">Total</th>
+                      <th className="text-center py-3 pr-4">
                         <TooltipProvider delay={100}>
                           <Tooltip>
                             <TooltipTrigger
                               render={
-                                <span className="cursor-help border-b border-dashed border-muted-foreground">
+                                <span className="cursor-help border-b border-dashed border-muted-foreground/50">
                                   Modifier
                                 </span>
                               }
@@ -244,7 +244,7 @@ function StatGeneratorInner() {
                       </th>
                     </tr>
                   </thead>
-                  <tbody>
+                  <tbody className="divide-y divide-border/30">
                     {ABILITIES.map((ability) => {
                       const score = scores[ability];
                       const bgBonus = bgBonuses[ability];
@@ -261,9 +261,9 @@ function StatGeneratorInner() {
                       return (
                         <tr
                           key={ability}
-                          className={`rounded-md transition-colors ${isPrimary
-                            ? "bg-primary/8 dark:bg-primary/10"
-                            : "hover:bg-muted/50"
+                          className={`transition-colors ${isPrimary
+                            ? "bg-primary/5 dark:bg-primary/10"
+                            : "hover:bg-muted/30"
                             }`}
                         >
                           <AbilityNameCell
@@ -273,10 +273,10 @@ function StatGeneratorInner() {
                             primaryTooltip={`Primary stat for ${selectedClass}`}
                           />
 
-                          <td className="py-2 px-2">
+                          <td className="py-3 px-2">
                             <CenteredCellContent>
                               <StepperInput
-                                className="rounded-none w-28"
+                                className="rounded-none w-28 bg-background/50"
                                 value={score}
                                 min={clampedMin}
                                 max={clampedMax}
@@ -287,11 +287,11 @@ function StatGeneratorInner() {
                             </CenteredCellContent>
                           </td>
 
-                          <td className="py-2 px-2">
+                          <td className="py-3 px-2">
                             <CenteredCellContent>
                               {showBgStepper ? (
                                 <StepperInput
-                                  className="rounded-none w-28"
+                                  className="rounded-none w-28 bg-background/50"
                                   value={bgBonus}
                                   min={0}
                                   max={BG_BONUS_MAX}
@@ -300,7 +300,7 @@ function StatGeneratorInner() {
                                   }
                                 />
                               ) : (
-                                <span className="inline-block w-28 text-center text-muted-foreground/40 select-none">
+                                <span className="inline-block w-28 text-center text-muted-foreground/30 select-none font-medium">
                                   —
                                 </span>
                               )}
@@ -308,10 +308,10 @@ function StatGeneratorInner() {
                           </td>
 
                           {featBonusEnabled && (
-                            <td className="py-2 px-2">
+                            <td className="py-3 px-2">
                               <CenteredCellContent>
                                 <StepperInput
-                                  className="rounded-none w-28"
+                                  className="rounded-none w-28 bg-background/50"
                                   value={manualBonus}
                                   min={0}
                                   max={MANUAL_BONUS_MAX}
@@ -323,11 +323,11 @@ function StatGeneratorInner() {
                             </td>
                           )}
 
-                          <td className="py-2 px-2 text-center">
+                          <td className="py-3 px-2 text-center">
                             <TotalScoreDisplay value={total} highlight={isAboveMax} />
                           </td>
 
-                          <td className="py-2 pr-3 text-center rounded-r-md">
+                          <td className="py-3 pr-4 text-center rounded-none">
                             <ModifierDisplay
                               value={formatModifier(modifier)}
                               className={getModifierClass(modifier)}
@@ -340,22 +340,22 @@ function StatGeneratorInner() {
                 </table>
               </div>
 
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between pt-2 border-t gap-3">
-                <div className="flex items-center gap-2">
-                  <ResetButton onClick={handleReset} />
-                  <ShareButton onClick={handleShareLink} copied={copied} />
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between pt-6 mt-2 gap-4 border-t border-border/40">
+                <div className="flex items-center gap-3">
+                  <ResetButton onClick={handleReset} className="shadow-sm hover:shadow-md transition-all" />
+                  <ShareButton onClick={handleShareLink} copied={copied} className="shadow-sm hover:shadow-md transition-all" />
                 </div>
 
-                <div className="flex flex-wrap items-center gap-3 sm:gap-6 text-sm font-medium">
+                <div className="flex flex-wrap items-center gap-3 sm:gap-4">
                   <PoolStatus
-                    label="Background Points:"
+                    label="Background"
                     value={bgBonusRemaining}
                     max={bgBonusPool}
                     valueClassName={bgPoolColor}
                   />
 
                   <PoolStatus
-                    label="Points remaining:"
+                    label="Points"
                     value={remaining}
                     max={pointPool}
                     valueClassName={pointsColor}
@@ -372,7 +372,7 @@ function StatGeneratorInner() {
             </TabsContent>
 
             <TabsContent value="roll" className="space-y-6">
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <div className=" grid grid-cols-2 sm:grid-cols-3 gap-3">
                 {ABILITIES.map((ability) => {
                   const box = rolledBoxes[ability];
                   const rolls = box?.rolls ?? [0, 0, 0, 0];
@@ -386,26 +386,28 @@ function StatGeneratorInner() {
                   return (
                     <div
                       key={ability}
-                      className="bg-card border border-border rounded-md p-4 flex flex-col items-center"
+                      className="bg-muted/20 border border-border/50 rounded-none p-4 sm:p-6 flex flex-col items-center shadow-sm hover:border-border transition-colors group"
                     >
-                      <div className="text-sm text-muted-foreground mb-2">
+                      <div className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-3 group-hover:text-foreground transition-colors">
                         {ability}
                       </div>
-                      <div className={`text-3xl font-bold tabular-nums mb-2 ${totalColorClass}`}>{total}</div>
-                      <div className="text-sm text-muted-foreground/80">
+                      <div className={`text-3xl sm:text-4xl font-extrabold tabular-nums mb-2 ${totalColorClass} drop-shadow-sm`}>
+                        {total}
+                      </div>
+                      <div className="text-xs font-medium text-muted-foreground/60 bg-background/50 px-2 py-1 rounded-none border border-border/30">
                         {displayed.map((d, i) => {
                           const isLast = i === displayed.length - 1;
                           const colorClass = settings.roll?.colorDice
                             ? d === 1
-                              ? "text-red-500"
+                              ? "text-red-500/80"
                               : d === 6
-                                ? "text-emerald-500"
+                                ? "text-emerald-500/80"
                                 : ""
                             : "";
                           return (
                             <span
                               key={i}
-                              className={`${colorClass} ${isLast ? "line-through" : ""} mx-0.5`}
+                              className={`${colorClass} ${isLast ? "line-through opacity-40" : ""} mx-0.5`}
                             >
                               {d}
                               {i < displayed.length - 1 ? "+" : ""}
@@ -472,7 +474,7 @@ function StatGeneratorInner() {
                       });
                       if (score !== null && availablePool.indexOf(score) === -1) availablePool.push(score);
                       return (
-                        <div key={ability} className={`rounded-lg border p-3 transition-colors flex flex-col h-full ${isPrimary ? "border-primary/40 bg-primary/8 dark:bg-primary/10" : "border-border bg-card"}`}>
+                        <div key={ability} className={`rounded-none border p-3 transition-colors flex flex-col h-full ${isPrimary ? "border-primary/40 bg-primary/8 dark:bg-primary/10" : "border-border bg-card"}`}>
                           <div className="flex items-center justify-between mb-2">
                             <div className="flex items-center gap-1">
                               <span className="text-sm font-bold">{ABILITY_ABBR[ability]}</span>
@@ -511,110 +513,110 @@ function StatGeneratorInner() {
                   </div>
 
                   {/* Desktop: Table */}
-                  <div className="hidden md:block">
-                  <table className="w-full text-sm border-separate border-spacing-y-1">
-                    <thead>
-                      <tr className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
-                        <th className="text-left pb-2 pl-2">Ability</th>
-                        <th className="text-center pb-2">Score</th>
-                        <th className="text-center pb-2">Background</th>
-                        {featBonusEnabled && <th className="text-center pb-2">Feat Bonus</th>}
-                        <th className="text-center pb-2">Total</th>
-                        <th className="text-center pb-2">Modifier</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {ABILITIES.map((ability) => {
-                        const score = standardScores[ability];
-                        const bgBonus = bgBonuses[ability];
-                        const manualBonus = manualBonuses[ability];
-                        const total = score === null ? null : score + bgBonus + (featBonusEnabled ? manualBonus : 0);
-                        const modifier = total === null ? null : getModifier(total);
+                  <div className="hidden md:block border border-border/60 rounded-none overflow-hidden bg-card/30">
+                    <table className="w-full text-sm border-collapse">
+                      <thead>
+                        <tr className="bg-muted/50 text-[10px] font-bold text-muted-foreground uppercase tracking-widest border-b border-border/50">
+                          <th className="text-left py-3 pl-4">Ability</th>
+                          <th className="text-center py-3">Score</th>
+                          <th className="text-center py-3">Background</th>
+                          {featBonusEnabled && <th className="text-center py-3">Feat Bonus</th>}
+                          <th className="text-center py-3">Total</th>
+                          <th className="text-center py-3 pr-4">Modifier</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-border/30">
+                        {ABILITIES.map((ability) => {
+                          const score = standardScores[ability];
+                          const bgBonus = bgBonuses[ability];
+                          const manualBonus = manualBonuses[ability];
+                          const total = score === null ? null : score + bgBonus + (featBonusEnabled ? manualBonus : 0);
+                          const modifier = total === null ? null : getModifier(total);
 
-                        const pool = getRolledTotals();
-                        const availablePool = pool.slice().sort((a, b) => b - a);
-                        ABILITIES.forEach((ab) => {
-                          if (ab === ability) return;
-                          const assigned = standardScores[ab];
-                          if (assigned === null) return;
-                          const idx = availablePool.indexOf(assigned);
-                          if (idx !== -1) availablePool.splice(idx, 1);
-                        });
-                        if (score !== null && availablePool.indexOf(score) === -1) {
-                          availablePool.push(score);
-                        }
+                          const pool = getRolledTotals();
+                          const availablePool = pool.slice().sort((a, b) => b - a);
+                          ABILITIES.forEach((ab) => {
+                            if (ab === ability) return;
+                            const assigned = standardScores[ab];
+                            if (assigned === null) return;
+                            const idx = availablePool.indexOf(assigned);
+                            if (idx !== -1) availablePool.splice(idx, 1);
+                          });
+                          if (score !== null && availablePool.indexOf(score) === -1) {
+                            availablePool.push(score);
+                          }
 
-                        const isBgAbility = bgAbilities.includes(ability);
-                        const isPrimary = primaryStats.includes(ability);
+                          const isBgAbility = bgAbilities.includes(ability);
+                          const isPrimary = primaryStats.includes(ability);
 
-                        return (
-                          <tr key={ability} className={`rounded-md transition-colors ${isPrimary ? "bg-primary/8 dark:bg-primary/10" : "hover:bg-muted/50"}`}>
-                            <AbilityNameCell
-                              ability={ability}
-                              abilityAbbreviation={ABILITY_ABBR[ability]}
-                              isPrimary={isPrimary}
-                              primaryTooltip="Primary stat for selected class"
-                            />
-                            <td className="py-2 px-2">
-                              <CenteredCellContent>
-                                <Select value={score === null ? "" : String(score)} onValueChange={(val) => handleRolledAssignChange(ability, val)}>
-                                  <SelectTrigger className="rounded-none w-28">
-                                    <SelectValue placeholder="Select" />
-                                  </SelectTrigger>
-                                  <SelectContent>
-                                    {availablePool.map((option, idx) => (
-                                      <SelectItem key={`${option}-${idx}`} value={String(option)}>
-                                        {option}
-                                      </SelectItem>
-                                    ))}
-                                  </SelectContent>
-                                </Select>
-                              </CenteredCellContent>
-                            </td>
-
-                            <td className="py-2 px-2">
-                              <CenteredCellContent>
-                                {isBgAbility ? (
-                                  <StepperInput className="rounded-none w-28" value={bgBonus} min={0} max={BG_BONUS_MAX} onChange={(val) => handleBgBonusChange(ability, val)} />
-                                ) : (
-                                  <span className="inline-block w-28 text-center text-muted-foreground/40 select-none">—</span>
-                                )}
-                              </CenteredCellContent>
-                            </td>
-
-                            {featBonusEnabled && (
-                              <td className="py-2 px-2">
+                          return (
+                            <tr key={ability} className={`transition-colors ${isPrimary ? "bg-primary/5 dark:bg-primary/10" : "hover:bg-muted/30"}`}>
+                              <AbilityNameCell
+                                ability={ability}
+                                abilityAbbreviation={ABILITY_ABBR[ability]}
+                                isPrimary={isPrimary}
+                                primaryTooltip="Primary stat for selected class"
+                              />
+                              <td className="py-3 px-2">
                                 <CenteredCellContent>
-                                  <StepperInput className="rounded-none w-28" value={manualBonus} min={0} max={MANUAL_BONUS_MAX} onChange={(val) => handleManualBonusChange(ability, val)} />
+                                  <Select value={score === null ? "" : String(score)} onValueChange={(val) => handleRolledAssignChange(ability, val)}>
+                                    <SelectTrigger className="rounded-none w-28 bg-background/50">
+                                      <SelectValue placeholder="Select" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                      {availablePool.map((option, idx) => (
+                                        <SelectItem key={`${option}-${idx}`} value={String(option)}>
+                                          {option}
+                                        </SelectItem>
+                                      ))}
+                                    </SelectContent>
+                                  </Select>
                                 </CenteredCellContent>
                               </td>
-                            )}
 
-                            <td className="py-2 px-2 text-center">
-                              <TotalScoreDisplay value={total ?? "—"} />
-                            </td>
+                              <td className="py-3 px-2">
+                                <CenteredCellContent>
+                                  {isBgAbility ? (
+                                    <StepperInput className="rounded-none w-28 bg-background/50" value={bgBonus} min={0} max={BG_BONUS_MAX} onChange={(val) => handleBgBonusChange(ability, val)} />
+                                  ) : (
+                                    <span className="inline-block w-28 text-center text-muted-foreground/30 select-none font-medium">—</span>
+                                  )}
+                                </CenteredCellContent>
+                              </td>
 
-                            <td className="py-2 pr-3 text-center rounded-r-md">
-                              <ModifierDisplay
-                                value={modifier === null ? "—" : formatModifier(modifier)}
-                                className={getModifierClass(modifier)}
-                              />
-                            </td>
-                          </tr>
-                        );
-                      })}
-                    </tbody>
-                  </table>
+                              {featBonusEnabled && (
+                                <td className="py-3 px-2">
+                                  <CenteredCellContent>
+                                    <StepperInput className="rounded-none w-28 bg-background/50" value={manualBonus} min={0} max={MANUAL_BONUS_MAX} onChange={(val) => handleManualBonusChange(ability, val)} />
+                                  </CenteredCellContent>
+                                </td>
+                              )}
+
+                              <td className="py-3 px-2 text-center">
+                                <TotalScoreDisplay value={total ?? "—"} />
+                              </td>
+
+                              <td className="py-3 pr-4 text-center rounded-none">
+                                <ModifierDisplay
+                                  value={modifier === null ? "—" : formatModifier(modifier)}
+                                  className={getModifierClass(modifier)}
+                                />
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
                   </div>
 
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between mt-3 gap-3">
-                    <div className="flex items-center gap-2">
-                      <ShareButton onClick={handleShareAssigned} copied={copied} />
-                      <ResetButton onClick={handleAssignmentReset} />
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between pt-6 mt-4 gap-4 border-t border-border/40">
+                    <div className="flex items-center gap-3">
+                      <ShareButton onClick={handleShareAssigned} copied={copied} className="shadow-sm hover:shadow-md transition-all" />
+                      <ResetButton onClick={handleAssignmentReset} className="shadow-sm hover:shadow-md transition-all" />
                     </div>
                     <div className="flex items-center gap-3">
                       <PoolStatus
-                        label="Background Points:"
+                        label="Background"
                         value={bgBonusRemaining}
                         max={bgBonusPool}
                         valueClassName={bgPoolColor}
@@ -652,7 +654,7 @@ function StatGeneratorInner() {
                   const showBgStepper = enforceAsiFromBackground ? isBgAbility : true;
 
                   return (
-                    <div key={ability} className={`rounded-lg border p-3 transition-colors flex flex-col h-full ${isPrimary ? "border-primary/40 bg-primary/8 dark:bg-primary/10" : "border-border bg-card"}`}>
+                    <div key={ability} className={`rounded-none border p-3 transition-colors flex flex-col h-full ${isPrimary ? "border-primary/40 bg-primary/8 dark:bg-primary/10" : "border-border bg-card"}`}>
                       <div className="flex items-center justify-between mb-2">
                         <div className="flex items-center gap-1">
                           <span className="text-sm font-bold">{ABILITY_ABBR[ability]}</span>
@@ -714,19 +716,19 @@ function StatGeneratorInner() {
               </div>
 
               {/* Desktop: Table */}
-              <div className="hidden md:block overflow-x-auto">
-                <table className="w-full text-sm border-separate border-spacing-y-1">
+              <div className="hidden md:block border border-border/60 rounded-none overflow-hidden bg-card/30">
+                <table className="w-full text-sm border-collapse">
                   <thead>
-                    <tr className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
-                      <th className="text-left pb-2 pl-2">Ability</th>
-                      <th className="text-center pb-2">Score</th>
-                      <th className="text-center pb-2">
+                    <tr className="bg-muted/50 text-[10px] font-bold text-muted-foreground uppercase tracking-widest border-b border-border/50">
+                      <th className="text-left py-3 pl-4">Ability</th>
+                      <th className="text-center py-3">Score</th>
+                      <th className="text-center py-3">
                         <TooltipProvider delay={100}>
                           <Tooltip>
                             <TooltipTrigger
                               render={
-                                <span className="cursor-help border-b border-dashed border-muted-foreground">
-                                  Background Bonus
+                                <span className="cursor-help border-b border-dashed border-muted-foreground/50">
+                                  Background
                                 </span>
                               }
                             />
@@ -737,15 +739,15 @@ function StatGeneratorInner() {
                         </TooltipProvider>
                       </th>
                       {featBonusEnabled && (
-                        <th className="text-center pb-2">Feat Bonus</th>
+                        <th className="text-center py-3">Feat Bonus</th>
                       )}
-                      <th className="text-center pb-2">Total</th>
-                      <th className="text-center pb-2">
+                      <th className="text-center py-3">Total</th>
+                      <th className="text-center py-3 pr-4">
                         <TooltipProvider delay={100}>
                           <Tooltip>
                             <TooltipTrigger
                               render={
-                                <span className="cursor-help border-b border-dashed border-muted-foreground">
+                                <span className="cursor-help border-b border-dashed border-muted-foreground/50">
                                   Modifier
                                 </span>
                               }
@@ -758,7 +760,7 @@ function StatGeneratorInner() {
                       </th>
                     </tr>
                   </thead>
-                  <tbody>
+                  <tbody className="divide-y divide-border/30">
                     {ABILITIES.map((ability) => {
                       const score = standardScores[ability];
                       const bgBonus = bgBonuses[ability];
@@ -775,9 +777,9 @@ function StatGeneratorInner() {
                       return (
                         <tr
                           key={ability}
-                          className={`rounded-md transition-colors ${isPrimary
-                            ? "bg-primary/8 dark:bg-primary/10"
-                            : "hover:bg-muted/50"
+                          className={`transition-colors ${isPrimary
+                            ? "bg-primary/5 dark:bg-primary/10"
+                            : "hover:bg-muted/30"
                             }`}
                         >
                           <AbilityNameCell
@@ -789,7 +791,7 @@ function StatGeneratorInner() {
                               : selectedStandardClass}`}
                           />
 
-                          <td className="py-2 px-2">
+                          <td className="py-3 px-2">
                             <CenteredCellContent>
                               <Select
                                 value={score === null ? "" : String(score)}
@@ -797,7 +799,7 @@ function StatGeneratorInner() {
                                   handleStandardScoreChange(ability, val)
                                 }
                               >
-                                <SelectTrigger className="rounded-none w-28">
+                                <SelectTrigger className="rounded-none w-28 bg-background/50">
                                   <SelectValue placeholder="Select" />
                                 </SelectTrigger>
                                 <SelectContent>
@@ -823,11 +825,11 @@ function StatGeneratorInner() {
                             </CenteredCellContent>
                           </td>
 
-                          <td className="py-2 px-2">
+                          <td className="py-3 px-2">
                             <CenteredCellContent>
                               {showBgStepper ? (
                                 <StepperInput
-                                  className="rounded-none w-28"
+                                  className="rounded-none w-28 bg-background/50"
                                   value={bgBonus}
                                   min={0}
                                   max={BG_BONUS_MAX}
@@ -836,7 +838,7 @@ function StatGeneratorInner() {
                                   }
                                 />
                               ) : (
-                                <span className="inline-block w-28 text-center text-muted-foreground/40 select-none">
+                                <span className="inline-block w-28 text-center text-muted-foreground/30 select-none font-medium">
                                   —
                                 </span>
                               )}
@@ -844,10 +846,10 @@ function StatGeneratorInner() {
                           </td>
 
                           {featBonusEnabled && (
-                            <td className="py-2 px-2">
+                            <td className="py-3 px-2">
                               <CenteredCellContent>
                                 <StepperInput
-                                  className="rounded-none w-28"
+                                  className="rounded-none w-28 bg-background/50"
                                   value={manualBonus}
                                   min={0}
                                   max={MANUAL_BONUS_MAX}
@@ -859,11 +861,11 @@ function StatGeneratorInner() {
                             </td>
                           )}
 
-                          <td className="py-2 px-2 text-center">
+                          <td className="py-3 px-2 text-center">
                             <TotalScoreDisplay value={total ?? "—"} />
                           </td>
 
-                          <td className="py-2 pr-3 text-center rounded-r-md">
+                          <td className="py-3 pr-4 text-center rounded-none">
                             <ModifierDisplay
                               value={modifier === null ? "—" : formatModifier(modifier)}
                               className={getModifierClass(modifier)}
@@ -876,15 +878,15 @@ function StatGeneratorInner() {
                 </table>
               </div>
 
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between pt-2 border-t gap-3">
-                <div className="flex items-center gap-2">
-                  <ResetButton onClick={handleStandardReset} />
-                  <ShareButton onClick={handleShareLink} copied={copied} />
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between pt-6 mt-2 gap-4 border-t border-border/40">
+                <div className="flex items-center gap-3">
+                  <ResetButton onClick={handleStandardReset} className="shadow-sm hover:shadow-md transition-all" />
+                  <ShareButton onClick={handleShareLink} copied={copied} className="shadow-sm hover:shadow-md transition-all" />
                 </div>
 
-                <div className="flex flex-wrap items-center gap-3 sm:gap-6 text-sm font-medium">
+                <div className="flex flex-wrap items-center gap-3 sm:gap-4">
                   <PoolStatus
-                    label="Background Points:"
+                    label="Background"
                     value={bgBonusRemaining}
                     max={bgBonusPool}
                     valueClassName={bgPoolColor}
