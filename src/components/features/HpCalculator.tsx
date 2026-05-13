@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { Plus, Trash2, Share2, RotateCcw, Settings, Dices } from "lucide-react";
+import { Plus, Trash2, Dices } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Select,
@@ -23,14 +23,13 @@ import {
   classSelectionsToClassInput,
 } from "@/utils/coreDataEncoder";
 import { decodedClassesToSelections, parseCoreData } from "@/utils/coreDataDecoder";
-import {
-  SettingsOverlay,
-  SettingsProvider,
-  useSettings,
-} from "@/components/features/SettingsOverlay";
+import { SettingsOverlay } from "@/components/features/SettingsOverlay";
+import { SettingsProvider, useSettings } from "@/contexts/SettingsContext";
+import { useCopyToClipboard } from "@/hooks/useCopyToClipboard";
+import { PageHeader } from "@/components/layout/PageHeader";
+import { ResetButton, ShareButton } from "@/components/ui/action-buttons";
+import { CUSTOM_CLASS_NAME, CUSTOM_HIT_DIE_OPTIONS } from "@/lib/constants";
 
-const CUSTOM_CLASS_NAME = "Custom";
-const CUSTOM_HIT_DIE_OPTIONS = [6, 8, 10, 12] as const;
 const hpClassOptions = [CUSTOM_CLASS_NAME, ...classNames];
 const INITIAL_CLASS_SELECTIONS: ClassSelection[] = [{ id: "1", className: "Wizard", level: 1 }];
 
@@ -100,7 +99,7 @@ function HpCalculatorInner() {
   const [hillDwarf, setHillDwarf] = useState(initialState.hillDwarf);
   const [activeTab, setActiveTab] = useState<"average" | "rolled">(initialState.activeTab);
   const [rolledValues, setRolledValues] = useState<number[]>(initialState.rolledValues);
-  const [copied, setCopied] = useState(false);
+  const { copied, copyToClipboard } = useCopyToClipboard();
   const advanceShareMenu = settings.hp.advanceShareMenu;
   const showRollCounter = settings.hp.showRollCounter;
   const initialComboKey = useMemo(
@@ -246,28 +245,16 @@ function HpCalculatorInner() {
       })
     );
 
-    try {
-      await navigator.clipboard.writeText(shareUrl.toString());
-      setCopied(true);
-      window.setTimeout(() => setCopied(false), 1500);
-    } catch {
-      // If clipboard permissions are blocked, fail quietly.
-    }
+    await copyToClipboard(shareUrl.toString());
   };
 
   return (
     <>
-      <div className="flex justify-between items-start mb-8">
-        <div>
-          <h1 className="text-4xl font-bold mb-2">D&D 5.5e Health Calculator</h1>
-          <p className="text-muted-foreground">Calculate your character's hit points based on class, level, and modifiers.</p>
-        </div>
-        <div className="flex items-center gap-2">
-          <Button variant="ghost" size="icon" aria-label="Open settings" onClick={openSettings}>
-            <Settings className="w-5 h-5" />
-          </Button>
-        </div>
-      </div>
+      <PageHeader
+        title="D&D 5.5e Health Calculator"
+        description="Calculate your character's hit points based on class, level, and modifiers."
+        onSettingsClick={openSettings}
+      />
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* INPUT SECTION */}
@@ -386,14 +373,11 @@ function HpCalculatorInner() {
                   <Plus className="w-4 h-4 mr-2" />
                   Add Another Class
                 </Button>
-                <Button
+                <ResetButton
                   onClick={handleResetClassSelections}
-                  variant="outline"
                   className="m-0"
-                >
-                  <RotateCcw className="w-3.5 h-3.5 mr-1.5" />
-                  Reset
-                </Button>
+                  size="default"
+                />
               </div>
 
               {/* CON Modifier & Feats */}
@@ -485,15 +469,11 @@ function HpCalculatorInner() {
                 <TabsContent value="average" className="mt-6 space-y-6">
                   <HpTotalDisplay total={result.totalHP} />
                   <HpBreakdown items={result.breakdown} />
-                  <Button
-                    variant="outline"
-                    size="sm"
+                  <ShareButton
                     onClick={() => handleShareLink("average")}
+                    copied={copied}
                     className="w-full m-0"
-                  >
-                      <Share2 className=" w-4 h-4 mr-2" />
-                      {copied ? "Copied" : "Share"}
-                  </Button>
+                  />
                 </TabsContent>
 
                 <TabsContent value="rolled" className="mt-6 space-y-6">
@@ -530,10 +510,10 @@ function HpCalculatorInner() {
                       <Dices className="w-4 h-4 mr-2" />
                       Roll Again
                     </Button>
-                    <Button variant="outline" size="sm" onClick={() => handleShareLink("rolled")}>
-                      <Share2 className="w-4 h-4 mr-2" />
-                      {copied ? "Copied" : "Share"}
-                    </Button>
+                    <ShareButton
+                      onClick={() => handleShareLink("rolled")}
+                      copied={copied}
+                    />
                   </div>
                 </TabsContent>
               </Tabs>

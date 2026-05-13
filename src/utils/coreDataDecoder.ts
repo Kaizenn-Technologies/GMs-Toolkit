@@ -1,5 +1,6 @@
 import { classes } from "../lib/classes";
 import type { ClassSelection } from "@/types";
+import { CUSTOM_CLASS_NAME } from "../lib/constants";
 
 export interface DecodedCustomClass {
     type: "custom";
@@ -254,7 +255,7 @@ export function decodedClassesToSelections(decodedClasses: DecodedClass[]): Clas
             if (decodedClass.type === "custom") {
                 return {
                     id: String(index + 1),
-                    className: "Custom",
+                    className: CUSTOM_CLASS_NAME,
                     level: decodedClass.levels,
                     customHitDie: CUSTOM_HIT_DIE_FROM_CODE[decodedClass.hitDie],
                 };

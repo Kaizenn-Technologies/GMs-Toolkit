@@ -1,5 +1,6 @@
 import { classes } from "../lib/classes";
 import type { ClassSelection } from "@/types";
+import { CUSTOM_CLASS_NAME } from "../lib/constants";
 
 export interface CustomClass {
     type: "custom";
@@ -66,11 +67,11 @@ const CUSTOM_HIT_DIE_TO_CODE: Record<number, 1 | 2 | 3 | 4> = {
 function toSortedSelections(classSelections: ClassSelection[]): ClassSelection[] {
     return [...classSelections].sort((a, b) => {
         const hitDieA =
-            a.className === "Custom"
+            a.className === CUSTOM_CLASS_NAME
                 ? (a.customHitDie ?? 0)
                 : (classes[a.className.toLowerCase() as keyof typeof classes]?.hitDie ?? 0);
         const hitDieB =
-            b.className === "Custom"
+            b.className === CUSTOM_CLASS_NAME
                 ? (b.customHitDie ?? 0)
                 : (classes[b.className.toLowerCase() as keyof typeof classes]?.hitDie ?? 0);
         return hitDieB - hitDieA;
@@ -121,7 +122,7 @@ function encodeMetadata(metadata?: CoreMetadataInput): string {
 
 export function classSelectionsToClassInput(classSelections: ClassSelection[]): ClassInput[] {
     return classSelections.map((selection) => {
-        if (selection.className === "Custom") {
+        if (selection.className === CUSTOM_CLASS_NAME) {
             const customHitDie = selection.customHitDie ?? 6;
             return {
                 type: "custom",
@@ -148,7 +149,7 @@ export function buildRollEntries(
 
     sortedSelections.forEach((selection) => {
         const classId =
-            selection.className === "Custom"
+            selection.className === CUSTOM_CLASS_NAME
                 ? "x"
                 : CLASS_LETTER_MAP[selection.className.toLowerCase() as keyof typeof classes];
 

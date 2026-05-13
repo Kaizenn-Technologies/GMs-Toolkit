@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { RotateCcw, Settings, Share2, Dices, Shuffle } from "lucide-react";
+import { Dices, Shuffle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useLocation, useNavigate } from "react-router-dom";
 import {
@@ -38,11 +38,11 @@ import {
   setOptionalAbilityParams,
 } from "@/lib/stat-generator-url";
 import type { Ability, PrimaryStat } from "@/types";
-import {
-  SettingsProvider,
-  SettingsOverlay,
-  useSettings,
-} from "@/components/features/SettingsOverlay";
+import { SettingsOverlay } from "@/components/features/SettingsOverlay";
+import { SettingsProvider, useSettings } from "@/contexts/SettingsContext";
+import { useCopyToClipboard } from "@/hooks/useCopyToClipboard";
+import { PageHeader } from "@/components/layout/PageHeader";
+import { ResetButton, ShareButton } from "@/components/ui/action-buttons";
 import {
   AbilityNameCell,
   CenteredCellContent,
@@ -242,7 +242,7 @@ function StatGeneratorInner() {
   const [manualBonuses, setManualBonuses] = useState<Record<Ability, number>>(
     defaultManualBonuses(),
   );
-  const [copied, setCopied] = useState(false);
+  const { copied, copyToClipboard } = useCopyToClipboard();
   // Rolled stats state
   const [rolledBoxes, setRolledBoxes] = useState<
     Record<Ability, { rolls: number[]; total: number }>
@@ -405,13 +405,7 @@ function StatGeneratorInner() {
     params.set("feat", featBonusEnabled ? "1" : "0");
     setAbilityParams(params, manualBonuses, manualBonusParamKeys);
 
-    try {
-      await navigator.clipboard.writeText(shareUrl.toString());
-      setCopied(true);
-      window.setTimeout(() => setCopied(false), 1500);
-    } catch {
-      // If clipboard permissions are blocked, fail quietly.
-    }
+    await copyToClipboard(shareUrl.toString());
   };
 
   useEffect(() => {
@@ -421,7 +415,9 @@ function StatGeneratorInner() {
     const params = new URLSearchParams(location.search);
     if (!params.toString()) {
       if (activeTab === "standard") {
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         setSelectedStandardClass(CHOOSE_STANDARD_CLASS);
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         setStandardScores(makeUnfilledStandardScores());
       }
       return;
@@ -535,7 +531,6 @@ function StatGeneratorInner() {
     }
     if (bcha !== null) {
       nextBonuses.Charisma = Math.min(bcha, remainingBonusPool);
-      remainingBonusPool -= nextBonuses.Charisma;
     }
 
     setBgBonuses(nextBonuses);
@@ -578,7 +573,7 @@ function StatGeneratorInner() {
   };
 
   const rollAllStats = () => {
-    const next: Record<Ability, { rolls: number[]; total: number }> = {} as any;
+    const next = {} as Record<Ability, { rolls: number[]; total: number }>;
     ABILITIES.forEach((ability) => {
       let rolls = Array.from({ length: 4 }, () => rollDie());
       if (settings.roll?.rerollOnes) {
@@ -664,11 +659,7 @@ function StatGeneratorInner() {
     setAbilityParams(params, manualBonuses, manualBonusParamKeys);
     params.set(ROLLED_POOL_PARAM, encodeRolledPool(rolledBoxes));
 
-    try {
-      await navigator.clipboard.writeText(shareUrl.toString());
-      setCopied(true);
-      window.setTimeout(() => setCopied(false), 1500);
-    } catch { }
+    await copyToClipboard(shareUrl.toString());
   };
 
   const pointsColor = getPoolStatusClass(remaining);
@@ -677,51 +668,11 @@ function StatGeneratorInner() {
   return (
     <>
       {/* ── Page Header ── */}
-      <div className="flex justify-between items-start mb-8">
-        <div>
-          <h1 className="text-4xl font-bold mb-2">D&D 5.5e Stat Generator</h1>
-          <p className="text-muted-foreground">
-            Generate ability scores using Point Buy, dice rolls, or the Standard
-            Array.
-          </p>
-        </div>
-
-        {/* Book + Settings icons */}
-        <div className="flex items-center gap-1 mt-1">
-          <TooltipProvider delay={100}>
-            {/* <Tooltip>
-              <TooltipTrigger
-                render={
-                  <Button variant="ghost" size="icon" disabled>
-                    <BookOpen className="w-5 h-5" />
-                  </Button>
-                }
-              />
-              <TooltipContent>
-                <p>Rules (coming soon)</p>
-              </TooltipContent>
-            </Tooltip> */}
-
-            <Tooltip>
-              <TooltipTrigger
-                render={
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    aria-label="Open settings"
-                    onClick={openSettings}
-                  >
-                    <Settings className="w-5 h-5" />
-                  </Button>
-                }
-              />
-              <TooltipContent>
-                <p>Settings</p>
-              </TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
-        </div>
-      </div>
+      <PageHeader
+        title="D&D 5.5e Stat Generator"
+        description="Generate ability scores using Point Buy, dice rolls, or the Standard Array."
+        onSettingsClick={openSettings}
+      />
 
       {/* ── Main Card with Tabs ── */}
       <Card>
@@ -919,14 +870,8 @@ function StatGeneratorInner() {
               {/* Footer row: Reset + Points counters */}
               <div className="flex items-center justify-between pt-2 border-t gap-4 flex-wrap">
                 <div className="flex items-center gap-2">
-                  <Button variant="outline" size="sm" onClick={handleReset}>
-                    <RotateCcw className="w-3.5 h-3.5 mr-1.5" />
-                    Reset
-                  </Button>
-                  <Button variant="outline" size="sm" onClick={handleShareLink}>
-                    <Share2 className="w-4 h-4 mr-2" />
-                    {copied ? "Copied" : "Share"}
-                  </Button>
+                  <ResetButton onClick={handleReset} />
+                  <ShareButton onClick={handleShareLink} copied={copied} />
                 </div>
 
                 <div className="flex items-center gap-6 text-sm font-medium flex-wrap">
@@ -1140,8 +1085,8 @@ function StatGeneratorInner() {
 
                   <div className="flex items-center justify-between mt-3 gap-3">
                     <div className="flex items-center gap-2">
-                      <Button variant="outline" size="sm" onClick={handleShareAssigned}><Share2 className="w-4 h-4 mr-2" />{copied ? "Copied" : "Share"}</Button>
-                      <Button variant="outline" size="sm" onClick={handleAssignmentReset}><RotateCcw className="w-3.5 h-3.5 mr-1.5" />Reset</Button>
+                      <ShareButton onClick={handleShareAssigned} copied={copied} />
+                      <ResetButton onClick={handleAssignmentReset} />
                     </div>
                     <div className="flex items-center gap-3">
                       <PoolStatus
@@ -1337,18 +1282,8 @@ function StatGeneratorInner() {
 
               <div className="flex items-center justify-between pt-2 border-t gap-4 flex-wrap">
                 <div className="flex items-center gap-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={handleStandardReset}
-                  >
-                    <RotateCcw className="w-3.5 h-3.5 mr-1.5" />
-                    Reset
-                  </Button>
-                  <Button variant="outline" size="sm" onClick={handleShareLink}>
-                    <Share2 className="w-4 h-4 mr-2" />
-                    {copied ? "Copied" : "Share"}
-                  </Button>
+                  <ResetButton onClick={handleStandardReset} />
+                  <ShareButton onClick={handleShareLink} copied={copied} />
                 </div>
 
                 <div className="flex items-center gap-6 text-sm font-medium flex-wrap">
