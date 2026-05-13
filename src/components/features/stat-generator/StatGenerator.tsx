@@ -142,7 +142,8 @@ function StatGeneratorInner() {
                     setSelectedClass(value);
                   }
                 }}
-                classOptions={classNames}
+                classOptions={[CHOOSE_STANDARD_CLASS, ...classNames]}
+                classPlaceholder={CHOOSE_STANDARD_CLASS}
                 backgroundValue={selectedBackground}
                 onBackgroundChange={handleBackgroundChange}
                 backgroundOptions={backgroundNames}

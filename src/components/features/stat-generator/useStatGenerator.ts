@@ -163,7 +163,7 @@ export function useStatGenerator() {
     enforceAsiFromBackground,
   } = pb;
 
-  const [selectedClass, setSelectedClass] = useState<string>("Wizard");
+  const [selectedClass, setSelectedClass] = useState<string>(CHOOSE_STANDARD_CLASS);
   const [selectedBackground, setSelectedBackground] = useState<string>("Sage");
   const [scores, setScores] = useState<Record<Ability, number>>(
     makeDefaultScores(minPurchasable),
@@ -172,7 +172,7 @@ export function useStatGenerator() {
     useState<string>(CHOOSE_STANDARD_CLASS);
   const [standardScores, setStandardScores] = useState<
     Record<Ability, number | null>
-  >(makeScoresFromStandardArray("Wizard"));
+  >(makeUnfilledStandardScores());
   const [bgBonuses, setBgBonuses] = useState<Record<Ability, number>>(
     defaultBgBonuses(),
   );
