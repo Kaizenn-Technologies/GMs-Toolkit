@@ -2,8 +2,8 @@ import { useState, useEffect } from "react";
 import { Navigate, Route, Routes, useLocation, useNavigate } from "react-router-dom";
 import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
-import { HpCalculator } from "@/components/features/HpCalculator";
-import { StatGenerator } from "@/components/features/StatGenerator";
+import { HpCalculator } from "@/components/features/hp-calculator/HpCalculator";
+import { StatGenerator } from "@/components/features/stat-generator/StatGenerator";
 
 export default function App() {
   const [darkMode, setDarkMode] = useState(true);
