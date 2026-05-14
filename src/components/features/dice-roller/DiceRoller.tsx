@@ -32,6 +32,7 @@ export const DiceRoller: React.FC = () => {
     rollGroup,
     reorderDice,
     reorderGroups,
+    clearAll,
   } = useDiceRoller(addLog);
 
   return (
@@ -59,6 +60,7 @@ export const DiceRoller: React.FC = () => {
             onRollGroup={rollGroup}
             onReorderDice={reorderDice}
             onReorderGroups={reorderGroups}
+            onClearAll={clearAll}
             settings={settings.diceRoller}
           />
         </div>

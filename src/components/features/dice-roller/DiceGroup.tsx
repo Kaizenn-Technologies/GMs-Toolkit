@@ -3,11 +3,11 @@ import type { DiceConfig, DiceGroup as IDiceGroup } from "./types";
 import { DiceCard } from "./DiceCard";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { 
-  Folder, 
-  FolderOpen, 
-  Trash2, 
-  Dice6, 
+import {
+  Folder,
+  FolderOpen,
+  Trash2,
+  Dice6,
   GripVertical,
   Save,
   SquarePen
@@ -86,20 +86,20 @@ export const DiceGroup: React.FC<DiceGroupProps> = ({
   };
 
   return (
-    <div 
+    <div
       className={clsx(
         "space-y-1.5 relative transition-all",
         isOverlay ? "cursor-grabbing shadow-2xl ring-2 ring-primary/50" : "",
         isDragging && !isOverlay ? "opacity-30 grayscale-[0.5]" : ""
-      )} 
-      ref={setNodeRef} 
+      )}
+      ref={setNodeRef}
       style={style}
     >
       {isDropTarget && !isOverlay && (
         <div className="absolute inset-0 pointer-events-none z-[100]">
-          <div 
+          <div
             className="absolute left-0 right-0 h-[3px] bg-[#3b82f6] shadow-[0_0_15px_#3b82f6]"
-            style={{ 
+            style={{
               top: transform && transform.y > 0 ? 0 : 'auto',
               bottom: transform && transform.y <= 0 ? 0 : 'auto'
             }}
@@ -107,9 +107,9 @@ export const DiceGroup: React.FC<DiceGroupProps> = ({
         </div>
       )}
 
-      <div 
+      <div
         className={clsx(
-          "flex items-center justify-between p-0 rounded border transition-all cursor-pointer overflow-hidden",
+          "flex items-center justify-between p-0 border transition-all cursor-pointer overflow-hidden",
           group.collapsed ? "bg-muted/30 border-border/50" : "bg-muted/50 border-primary/20 shadow-sm",
           isOverlay && "bg-muted/80 border-primary/50"
         )}
@@ -117,7 +117,7 @@ export const DiceGroup: React.FC<DiceGroupProps> = ({
       >
         <div className="flex items-center h-9 w-full min-w-0">
           {/* Drag Handle Container */}
-          <div 
+          <div
             className="w-7 h-full flex items-center justify-center bg-muted/20 border-r border-border/30 text-muted-foreground/30 hover:text-primary transition-colors cursor-grab active:cursor-grabbing shrink-0"
             {...attributes}
             {...listeners}
@@ -131,7 +131,7 @@ export const DiceGroup: React.FC<DiceGroupProps> = ({
             ) : (
               <FolderOpen size={16} className="text-primary shrink-0" />
             )}
-            
+
             {isEditing ? (
               <div className="flex items-center gap-1 flex-1">
                 <Input
@@ -158,14 +158,31 @@ export const DiceGroup: React.FC<DiceGroupProps> = ({
           </div>
         </div>
 
-        <div className="flex items-center gap-0.5 pr-1.5 shrink-0" onClick={(e) => e.stopPropagation()}>
+        <div className="flex items-center gap-1 pr-1 shrink-0" onClick={(e) => e.stopPropagation()}>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-7 w-7 text-muted-foreground/40 hover:text-primary hover:bg-primary/10 transition-colors"
+            onClick={handleEdit}
+          >
+            <SquarePen size={14} />
+          </Button>
+
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-7 w-7 text-muted-foreground/40 hover:text-red-500 hover:bg-red-500/10 transition-colors"
+            onClick={onDelete}
+          >
+            <Trash2 size={14} />
+          </Button>
           <Tooltip>
             <TooltipTrigger
               render={
-                <Button 
-                  variant="primary" 
-                  size="sm" 
-                  className="h-7 gap-1.5 px-2 text-[11px] font-bold"
+                <Button
+                  variant="default"
+                  size="sm"
+                  className="h-7 bg-blue-500/10 border border-blue-500/20 text-blue-500 hover:bg-blue-500/20 hover:border-blue-500/30 transition-all shadow-sm"
                   onClick={handleRollAll}
                 >
                   <Dice6 size={14} />
@@ -173,29 +190,16 @@ export const DiceGroup: React.FC<DiceGroupProps> = ({
                 </Button>
               }
             />
-            <TooltipContent className="text-[10px]">
-              <p>CTRL + Click = Advantage</p>
-              <p>SHIFT + Click = Disadvantage</p>
+            <TooltipContent>
+              <div className="text-[12px] space-y-0.5 p-1">
+                {/* <p className="font-bold text-blue-500">Roll Dice</p> */}
+                <p className="font-bold text-green-700 shadow-sm">CTRL + Click = Advantage</p>
+                <p className="font-bold text-red-600">SHIFT + Click = Disadvantage</p>
+              </div>
             </TooltipContent>
           </Tooltip>
 
-          <Button 
-            variant="ghost" 
-            size="icon" 
-            className="h-7 w-7 text-muted-foreground/40 hover:text-primary hover:bg-primary/10 transition-colors"
-            onClick={handleEdit}
-          >
-            <SquarePen size={14} />
-          </Button>
 
-          <Button 
-            variant="ghost" 
-            size="icon" 
-            className="h-7 w-7 text-muted-foreground/40 hover:text-destructive hover:bg-destructive/10 transition-colors"
-            onClick={onDelete}
-          >
-            <Trash2 size={14} />
-          </Button>
         </div>
       </div>
 

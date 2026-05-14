@@ -27,7 +27,7 @@ export function useDiceRoller(addLog: (log: RollLog) => void) {
   }, [groups]);
 
   const addDiceConfig = (config: DiceConfig) => {
-    setDiceConfigs((prev) => [...prev, { ...config, isEditing: true }]);
+    setDiceConfigs((prev) => [...prev, { ...config, isEditing: config.isEditing ?? false }]);
   };
 
   const updateDiceConfig = (id: string, updates: Partial<DiceConfig>) => {
@@ -52,7 +52,7 @@ export function useDiceRoller(addLog: (log: RollLog) => void) {
       name,
       diceIds: [],
       collapsed: false,
-      isEditing: true,
+      isEditing: false,
     };
     setGroups((prev) => [...prev, newGroup]);
   };
@@ -194,6 +194,11 @@ export function useDiceRoller(addLog: (log: RollLog) => void) {
     addLog(log);
   };
 
+  const clearAll = () => {
+    setDiceConfigs([]);
+    setGroups([]);
+  };
+
   return {
     diceConfigs,
     groups,
@@ -209,5 +214,6 @@ export function useDiceRoller(addLog: (log: RollLog) => void) {
     rollGroup,
     reorderDice: setDiceConfigs,
     reorderGroups: setGroups,
+    clearAll,
   };
 }

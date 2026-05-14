@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import type { RollLog, RollResult } from "./types";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Trash2, Clock, ChevronDown, ChevronUp } from "lucide-react";
+import { Trash2, Dices, Logs, ChevronDown, ChevronUp, Clock } from "lucide-react";
 import { clsx } from "clsx";
 
 interface DiceLogsProps {
@@ -12,14 +12,14 @@ interface DiceLogsProps {
 
 export const DiceLogs: React.FC<DiceLogsProps> = ({ logs, onClear }) => {
   return (
-    <Card className="h-full flex flex-col border-border/50 bg-card/30">
-      <CardHeader className="flex flex-row items-center justify-between py-2 px-4 shrink-0 border-b border-border/50">
+    <Card className="h-full flex flex-col gap-0 py-0 border-border/50 bg-card/30">
+      <CardHeader className="flex flex-row items-center justify-between shrink-0 border-b border-border/50 py-3">
         <CardTitle className="text-sm font-bold flex items-center gap-2">
-          <Clock size={14} className="text-primary" />
+          <Logs size={14} className="text-primary" />
           Roll History
         </CardTitle>
         <Button
-          variant="ghost"
+          variant="outline"
           size="sm"
           onClick={onClear}
           className="h-7 text-[10px] text-muted-foreground hover:text-destructive transition-colors px-2"
@@ -28,11 +28,11 @@ export const DiceLogs: React.FC<DiceLogsProps> = ({ logs, onClear }) => {
           Clear
         </Button>
       </CardHeader>
-      <CardContent className="flex-1 overflow-y-auto p-2 space-y-2 scrollbar-thin scrollbar-thumb-primary/10 hover:scrollbar-thumb-primary/20">
+      <CardContent className="flex-1 overflow-y-auto px-2 py-1 space-y-2 scrollbar-thin scrollbar-thumb-primary/10 hover:scrollbar-thumb-primary/20">
         {logs.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-full text-muted-foreground opacity-50 py-8">
-            <Clock size={32} strokeWidth={1} className="mb-2" />
-            <p className="text-[10px] uppercase font-bold tracking-widest">No rolls yet</p>
+            <Dices size={32} strokeWidth={1} className="mb-2" />
+            <p className="text-[10px] uppercase font-semibold tracking-widest">No rolls yet</p>
           </div>
         ) : (
           logs.map((log) => <LogEntry key={log.id} log={log} />)
@@ -53,7 +53,7 @@ const LogEntry: React.FC<{ log: RollLog }> = ({ log }) => {
   const hasAdvDis = log.mode && log.mode !== "normal";
 
   return (
-    <div 
+    <div
       className={clsx(
         "group cursor-pointer rounded border border-border/40 bg-muted/10 transition-all hover:bg-muted/20 overflow-hidden",
         isExpanded && "border-primary/30 bg-primary/5"
@@ -63,12 +63,12 @@ const LogEntry: React.FC<{ log: RollLog }> = ({ log }) => {
       {/* Compact Header: | [TOTAL] | Name Time | */}
       <div className="flex items-stretch min-h-[40px]">
         {/* Total Box */}
-        <div 
+        <div
           className={clsx(
-            "flex items-center justify-center min-w-[45px] font-black text-lg border-r border-border/40 shrink-0 shadow-inner",
-            log.mode === "advantage" ? "text-green-500 bg-green-500/10" : 
-            log.mode === "disadvantage" ? "text-red-500 bg-red-500/10" : 
-            "text-primary bg-primary/10"
+            "flex items-center justify-center min-w-[45px] font-bold text-lg border-r border-border/40 shrink-0 shadow-inner",
+            log.mode === "advantage" ? "text-green-500 bg-green-500/10" :
+              log.mode === "disadvantage" ? "text-red-500 bg-red-500/10" :
+                "text-primary bg-primary/10"
           )}
         >
           {log.total}
@@ -86,7 +86,7 @@ const LogEntry: React.FC<{ log: RollLog }> = ({ log }) => {
           </div>
           {hasAdvDis && (
             <span className={clsx(
-              "text-[10px] font-black uppercase tracking-widest",
+              "text-[10px] font-semibold uppercase tracking-widest",
               log.mode === "advantage" ? "text-green-500/70" : "text-red-500/70"
             )}>
               {log.mode}
@@ -105,12 +105,14 @@ const LogEntry: React.FC<{ log: RollLog }> = ({ log }) => {
         <div className="border-t border-border/40 bg-background/40 p-3 space-y-2 animate-in fade-in slide-in-from-top-1 duration-200">
           <div className="space-y-2">
             {log.rolls.map((roll, idx) => (
-              <div key={idx} className="flex flex-col gap-1.5 border-b border-border/10 pb-2 last:border-0 last:pb-0">
-                {/* Table-like row 1: Name/Notation | Total */}
-                <div className="flex items-center justify-between text-[10px] font-black uppercase tracking-tight text-muted-foreground/80">
+              <div key={idx} className="flex flex-col gap-1 border-b border-border/10 pb-2 last:border-0 last:pb-0">
+                <div className="flex items-center justify-between text-[10px] font-semibold uppercase tracking-tight text-muted-foreground/80">
                   <div className="flex items-center gap-1.5 min-w-0">
                     <span className="truncate">{roll.config.name || `Roll ${idx + 1}`}</span>
-                    <span className="text-primary/50 font-mono text-[11px]">[{roll.config.count}d{roll.config.sides}{roll.config.modifier ? (roll.config.modifier > 0 ? `+${roll.config.modifier}` : `-${Math.abs(roll.config.modifier)}`) : ""}]</span>
+                    <span className="text-primary/50 font-mono text-[11px]">
+                      [{roll.config.count}d{roll.config.sides}{roll.config.modifier ? (roll.config.modifier > 0 ? `+${roll.config.modifier}` : `-${Math.abs(roll.config.modifier)}`) : ""}]
+                    </span>
+                    <CriteriaBadges config={roll.config} />
                   </div>
                   <span className="text-primary ml-2 shrink-0 text-xs font-bold">= {roll.subtotal}</span>
                 </div>
@@ -120,7 +122,7 @@ const LogEntry: React.FC<{ log: RollLog }> = ({ log }) => {
                   <RollSet roll={roll} isRejected={false} />
                   {log.rejectedRolls && log.rejectedRolls[idx] && (
                     <div className="flex items-start gap-2">
-                      <span className="text-[9px] font-black uppercase text-muted-foreground/40 mt-1 shrink-0">Discarded</span>
+                      <span className="text-[9px] font-semibold uppercase text-muted-foreground/40 mt-1 shrink-0">Discarded</span>
                       <RollSet roll={log.rejectedRolls[idx]} isRejected={true} />
                     </div>
                   )}
@@ -158,7 +160,32 @@ const RollSet: React.FC<{ roll: RollResult, isRejected: boolean }> = ({ roll, is
           </span>
         );
       })}
-      {isRejected && <span className="text-[10px] font-black ml-1 text-muted-foreground/60">= {roll.subtotal}</span>}
+      {isRejected && <span className="text-[10px] font-semibold ml-1 text-muted-foreground/60">= {roll.subtotal}</span>}
+    </div>
+  );
+};
+
+const CriteriaBadges: React.FC<{ config: any }> = ({ config }) => {
+  const { rule, explode, reroll } = config;
+  if (!rule && !explode && !reroll) return null;
+
+  return (
+    <div className="flex items-center gap-1 ml-1.5 shrink-0">
+      {rule && (
+        <span className="text-[9px] font-bold uppercase tracking-tighter text-amber-500/80 bg-amber-500/5 px-1 rounded border border-amber-500/20">
+          {rule.type} {rule.value} {rule.target}
+        </span>
+      )}
+      {explode && (
+        <span className="text-[9px] font-bold uppercase tracking-tighter text-orange-500/80 bg-orange-500/5 px-1 rounded border border-orange-500/20">
+          Explode {explode}
+        </span>
+      )}
+      {reroll && (
+        <span className="text-[9px] font-bold uppercase tracking-tighter text-blue-500/80 bg-blue-500/5 px-1 rounded border border-blue-500/20">
+          Reroll {reroll.threshold}
+        </span>
+      )}
     </div>
   );
 };

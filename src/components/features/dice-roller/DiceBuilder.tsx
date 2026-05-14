@@ -3,14 +3,13 @@ import type { DiceConfig, DiceGroup as IDiceGroup } from "./types";
 import { DiceCard } from "./DiceCard";
 import { DiceGroup } from "./DiceGroup";
 import { Button } from "@/components/ui/button";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
 import {
   Wand2,
-  Terminal,
+  Trash2,
   Plus,
   FolderPlus,
-  Keyboard
+  Zap
 } from "lucide-react";
 import { parseDiceNotation } from "./utils";
 import { clsx } from "clsx";
@@ -50,6 +49,7 @@ interface DiceBuilderProps {
   onRollGroup: (id: string, mode: "normal" | "advantage" | "disadvantage") => void;
   onReorderDice: (dice: DiceConfig[]) => void;
   onReorderGroups: (groups: IDiceGroup[]) => void;
+  onClearAll: () => void;
   settings: { manualNotation: boolean };
 }
 
@@ -112,6 +112,7 @@ export const DiceBuilder: React.FC<DiceBuilderProps> = ({
   onRollGroup,
   onReorderDice,
   onReorderGroups,
+  onClearAll,
   settings,
 }) => {
   const [notation, setNotation] = useState("");
@@ -168,6 +169,12 @@ export const DiceBuilder: React.FC<DiceBuilderProps> = ({
 
   const handleAddGroupQuick = () => {
     onAddGroup("New Group");
+  };
+
+  const handleClearAll = () => {
+    if (window.confirm("Are you sure you want to clear all dice presets and groups? This action cannot be undone.")) {
+      onClearAll();
+    }
   };
 
   const handleDragStart = (event: DragStartEvent) => {
@@ -360,22 +367,30 @@ export const DiceBuilder: React.FC<DiceBuilderProps> = ({
             <Button size="sm" onClick={() => handleAddManual()} className="h-9 px-4">Add</Button>
           </div>
         )}
-        <div className="grid grid-cols-3 gap-2">
+        <div className="grid grid-cols-4 gap-2">
           <Button
-            variant={showQuickAdd ? "primary" : "secondary"}
-            className="gap-2 h-10 px-0 flex-col py-1 text-[11px]"
+            variant={showQuickAdd ? "default" : "secondary"}
+            className="gap-2 h-10 px-0 flex-row py-1 text-[11px]"
             onClick={() => setShowQuickAdd(!showQuickAdd)}
           >
-            <Keyboard size={14} />
+            <Zap size={14} />
             Quick
           </Button>
-          <Button variant="secondary" className="gap-2 h-10 px-0 flex-col py-1 text-[11px]" onClick={handleAddNewQuick}>
+          <Button variant="secondary" className="gap-2 h-10 px-0 flex-row py-1 text-[11px]" onClick={handleAddNewQuick}>
             <Plus size={14} />
             Dice
           </Button>
-          <Button variant="secondary" className="gap-2 h-10 px-0 flex-col py-1 text-[11px]" onClick={handleAddGroupQuick}>
+          <Button variant="secondary" className="gap-2 h-10 px-0 flex-row py-1 text-[11px]" onClick={handleAddGroupQuick}>
             <FolderPlus size={14} />
             Group
+          </Button>
+          <Button
+            variant="outline"
+            className="gap-2 h-10 px-0 flex-row py-1 text-[11px] text-red-500 hover:text-red-600 hover:bg-red-500/5 border-red-500/20"
+            onClick={handleClearAll}
+          >
+            <Trash2 size={14} />
+            Clear
           </Button>
         </div>
       </div>
