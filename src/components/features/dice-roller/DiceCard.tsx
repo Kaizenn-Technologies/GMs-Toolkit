@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { StepperInput } from "@/components/ui/stepper-input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Tooltip, TooltipProvider, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
+import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
 import {
   Trash2,
   SquarePen,
@@ -108,7 +108,7 @@ export const DiceCard: React.FC<DiceCardProps> = ({ config, onUpdate, onDelete, 
                 <label className="text-[10px] uppercase font-semibold text-muted-foreground/70 leading-none">Sides</label>
                 <Select
                   value={config.sides.toString()}
-                  onValueChange={(val) => onUpdate({ sides: parseInt(val) })}
+                  onValueChange={(val) => onUpdate({ sides: parseInt(val as string) })}
                 >
                   <SelectTrigger className="h-8 w-20 text-xs font-semibold">
                     <SelectValue />
@@ -138,7 +138,7 @@ export const DiceCard: React.FC<DiceCardProps> = ({ config, onUpdate, onDelete, 
 
             <div className="flex items-center gap-4">
               <Tooltip>
-                <TooltipTrigger asChild>
+                <TooltipTrigger render={
                   <div className="flex items-center space-x-2 cursor-help">
                     <Checkbox
                       id={`keep-drop-${config.id}`}
@@ -156,14 +156,14 @@ export const DiceCard: React.FC<DiceCardProps> = ({ config, onUpdate, onDelete, 
                     </label>
                     <Info size={12} className="text-muted-foreground/40" />
                   </div>
-                </TooltipTrigger>
+                } />
                 <TooltipContent side="bottom" className="max-w-[200px] text-[11px] leading-relaxed">
                   Keep or drop a specific number of highest or lowest dice results.
                 </TooltipContent>
               </Tooltip>
 
               <Tooltip>
-                <TooltipTrigger asChild>
+                <TooltipTrigger render={
                   <div className="flex items-center space-x-2 cursor-help">
                     <Checkbox
                       id={`explode-${config.id}`}
@@ -177,7 +177,7 @@ export const DiceCard: React.FC<DiceCardProps> = ({ config, onUpdate, onDelete, 
                     </label>
                     <Info size={12} className="text-muted-foreground/40" />
                   </div>
-                </TooltipTrigger>
+                } />
                 <TooltipContent side="bottom" className="max-w-[200px] text-[11px] leading-relaxed">
                   If you roll the maximum value on a die, you roll an additional die and add it to the total.
                 </TooltipContent>

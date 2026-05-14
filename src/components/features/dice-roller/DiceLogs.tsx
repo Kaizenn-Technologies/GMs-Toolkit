@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import type { RollLog, RollResult } from "./types";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Trash2, Dices, Logs, ChevronDown, ChevronUp, Clock } from "lucide-react";
+import { Trash2, Dices, Logs, ChevronDown, ChevronUp } from "lucide-react";
 import { clsx } from "clsx";
 
 interface DiceLogsProps {
