@@ -15,7 +15,6 @@ import { parseDiceNotation } from "./utils";
 import { clsx } from "clsx";
 import {
   DndContext,
-  closestCenter,
   KeyboardSensor,
   PointerSensor,
   useSensor,
@@ -25,7 +24,7 @@ import {
   pointerWithin,
   useDroppable,
 } from "@dnd-kit/core";
-import type { DragStartEvent, DragEndEvent, DragOverEvent, DropAnimation } from "@dnd-kit/core";
+import type { DragStartEvent, DragEndEvent, DropAnimation } from "@dnd-kit/core";
 import {
   arrayMove,
   SortableContext,
@@ -44,7 +43,7 @@ interface DiceBuilderProps {
   onUpdateGroup: (id: string, updates: Partial<IDiceGroup>) => void;
   onDeleteGroup: (id: string) => void;
   onToggleGroup: (id: string) => void;
-  onMoveDiceToGroup: (diceId: string, groupId: string | null) => void;
+  onMoveDiceToGroup: (diceId: string, groupId: string | null, position?: number) => void;
   onRollDice: (id: string, mode: "normal" | "advantage" | "disadvantage") => void;
   onRollGroup: (id: string, mode: "normal" | "advantage" | "disadvantage") => void;
   onReorderDice: (dice: DiceConfig[]) => void;
@@ -113,7 +112,6 @@ export const DiceBuilder: React.FC<DiceBuilderProps> = ({
   onReorderDice,
   onReorderGroups,
   onClearAll,
-  settings,
 }) => {
   const [notation, setNotation] = useState("");
   const [error, setError] = useState(false);
