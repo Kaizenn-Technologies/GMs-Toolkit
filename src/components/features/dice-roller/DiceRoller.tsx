@@ -42,8 +42,8 @@ export const DiceRoller: React.FC = () => {
       />
 
       <div className="flex-1 grid grid-cols-1 md:grid-cols-12 gap-6 overflow-hidden mt-4">
-        {/* Left: Builder / Presets */}
-        <div className="md:col-span-5 lg:col-span-4 flex flex-col h-full overflow-hidden">
+        {/* Left: Builder / Presets (60%) */}
+        <div className="md:col-span-7 lg:col-span-7 flex flex-col h-full overflow-hidden">
           <DiceBuilder
             diceConfigs={diceConfigs}
             groups={groups}
@@ -63,8 +63,8 @@ export const DiceRoller: React.FC = () => {
           />
         </div>
 
-        {/* Right: Roll History */}
-        <div className="md:col-span-7 lg:col-span-8 flex flex-col h-full overflow-hidden">
+        {/* Right: Roll History (40%) */}
+        <div className="md:col-span-5 lg:col-span-5 flex flex-col h-full overflow-hidden">
           <DiceLogs logs={logs} onClear={clearLogs} />
         </div>
       </div>

@@ -5,10 +5,10 @@ import { DiceGroup } from "./DiceGroup";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
-import { 
-  Wand2, 
-  Terminal, 
-  Plus, 
+import {
+  Wand2,
+  Terminal,
+  Plus,
   FolderPlus,
   Keyboard
 } from "lucide-react";
@@ -53,21 +53,47 @@ interface DiceBuilderProps {
   settings: { manualNotation: boolean };
 }
 
-const UngroupedHeader: React.FC = () => {
+const UngroupedHeader: React.FC<{ isDragging?: boolean }> = ({ isDragging }) => {
   const { setNodeRef, isOver } = useDroppable({
     id: "other-rolls-header",
   });
 
   return (
-    <h4 
+    <h4
       ref={setNodeRef}
       className={clsx(
-        "text-[10px] uppercase font-bold px-1 transition-colors duration-200",
-        isOver ? "text-primary" : "text-muted-foreground"
+        "text-[11px] uppercase font-bold px-1 transition-colors duration-200",
+        isOver ? "text-primary" : "text-muted-foreground",
+        !isDragging && "opacity-60"
       )}
     >
-      Other Rolls
+      Ungrouped Rolls
     </h4>
+  );
+};
+
+const BottomDropZone: React.FC<{ activeId: string | null }> = ({ activeId }) => {
+  const { setNodeRef, isOver } = useDroppable({
+    id: "bottom-drop-zone",
+  });
+
+  if (!activeId) return <div ref={setNodeRef} className="h-4" />;
+
+  return (
+    <div
+      ref={setNodeRef}
+      className={clsx(
+        "h-12 border-2 border-dashed rounded-lg flex items-center justify-center transition-all duration-200 mt-4 mx-1",
+        isOver
+          ? "border-primary bg-primary/10 text-primary scale-[1.01] shadow-lg"
+          : "border-border/20 text-muted-foreground/30 bg-muted/5"
+      )}
+    >
+      <span className="text-[10px] uppercase font-bold tracking-widest flex items-center gap-2">
+        <Plus size={12} />
+        Ungroup Roll
+      </span>
+    </div>
   );
 };
 
@@ -174,13 +200,13 @@ export const DiceBuilder: React.FC<DiceBuilderProps> = ({
 
     // Find which group the active dice is currently in
     const activeDiceGroup = groups.find(g => g.diceIds.includes(activeId));
-    
+
     // Find if we are dropping over another dice
     const overDiceIdx = diceConfigs.findIndex(d => d.id === overId);
     if (overDiceIdx !== -1) {
       // Find which group the 'over' dice is in
       const overDiceGroup = groups.find(g => g.diceIds.includes(overId));
-      
+
       if (overDiceGroup) {
         // Moving to/within a group
         const targetIdx = overDiceGroup.diceIds.indexOf(overId);
@@ -202,7 +228,7 @@ export const DiceBuilder: React.FC<DiceBuilderProps> = ({
     }
 
     // Check if dropped over a group header or ungrouped header
-    if (overId === "other-rolls-header") {
+    if (overId === "other-rolls-header" || overId === "bottom-drop-zone") {
       onMoveDiceToGroup(activeId, null);
       return;
     }
@@ -251,10 +277,14 @@ export const DiceBuilder: React.FC<DiceBuilderProps> = ({
           </div>
 
           {/* Ungrouped Section */}
-          {ungroupedDice.length > 0 && (
-            <div className="space-y-2 pt-4 border-t border-border/30">
-              <UngroupedHeader />
-              <SortableContext items={ungroupedDice.map(d => d.id)} strategy={verticalListSortingStrategy}>
+          <div className={clsx(
+            "space-y-2 pt-4 border-t border-border/30 transition-opacity duration-200",
+            ungroupedDice.length === 0 && !activeId && "hidden",
+            ungroupedDice.length === 0 && activeId && "opacity-50"
+          )}>
+            <UngroupedHeader isDragging={!!activeId} />
+            <SortableContext items={ungroupedDice.map(d => d.id)} strategy={verticalListSortingStrategy}>
+              <div className="space-y-2 min-h-[20px]">
                 {ungroupedDice.map((config) => (
                   <DiceCard
                     key={config.id}
@@ -264,9 +294,11 @@ export const DiceBuilder: React.FC<DiceBuilderProps> = ({
                     onRoll={(mode) => onRollDice(config.id, mode)}
                   />
                 ))}
-              </SortableContext>
-            </div>
-          )}
+              </div>
+            </SortableContext>
+          </div>
+
+          <BottomDropZone activeId={activeId} />
         </DndContext>
 
         <DragOverlay dropAnimation={dropAnimation}>
@@ -275,9 +307,9 @@ export const DiceBuilder: React.FC<DiceBuilderProps> = ({
               <div className="w-full opacity-40 rotate-1 scale-105 cursor-grabbing transition-transform duration-200">
                 <DiceCard
                   config={activeDice}
-                  onUpdate={() => {}}
-                  onDelete={() => {}}
-                  onRoll={() => {}}
+                  onUpdate={() => { }}
+                  onDelete={() => { }}
+                  onRoll={() => { }}
                   isOverlay
                 />
               </div>
@@ -286,13 +318,13 @@ export const DiceBuilder: React.FC<DiceBuilderProps> = ({
                 <DiceGroup
                   group={activeGroup}
                   diceConfigs={diceConfigs}
-                  onToggleCollapse={() => {}}
-                  onDelete={() => {}}
-                  onUpdateGroup={() => {}}
-                  onRollGroup={() => {}}
-                  onUpdateDice={() => {}}
-                  onDeleteDice={() => {}}
-                  onRollDice={() => {}}
+                  onToggleCollapse={() => { }}
+                  onDelete={() => { }}
+                  onUpdateGroup={() => { }}
+                  onRollGroup={() => { }}
+                  onUpdateDice={() => { }}
+                  onDeleteDice={() => { }}
+                  onRollDice={() => { }}
                   isOverlay
                 />
               </div>
@@ -303,7 +335,7 @@ export const DiceBuilder: React.FC<DiceBuilderProps> = ({
         {diceConfigs.length === 0 && groups.length === 0 && (
           <div className="flex flex-col items-center justify-center py-12 text-muted-foreground opacity-50">
             <Wand2 size={48} strokeWidth={1} className="mb-2" />
-            <p className="text-[10px] uppercase font-bold tracking-widest">No presets saved</p>
+            <p className="text-[11px] uppercase font-bold tracking-widest">No presets saved</p>
           </div>
         )}
       </div>
@@ -329,19 +361,19 @@ export const DiceBuilder: React.FC<DiceBuilderProps> = ({
           </div>
         )}
         <div className="grid grid-cols-3 gap-2">
-          <Button 
-            variant={showQuickAdd ? "primary" : "secondary"} 
-            className="gap-2 h-10 px-0 flex-col py-1 text-[10px]" 
+          <Button
+            variant={showQuickAdd ? "primary" : "secondary"}
+            className="gap-2 h-10 px-0 flex-col py-1 text-[11px]"
             onClick={() => setShowQuickAdd(!showQuickAdd)}
           >
             <Keyboard size={14} />
             Quick
           </Button>
-          <Button variant="secondary" className="gap-2 h-10 px-0 flex-col py-1 text-[10px]" onClick={handleAddNewQuick}>
+          <Button variant="secondary" className="gap-2 h-10 px-0 flex-col py-1 text-[11px]" onClick={handleAddNewQuick}>
             <Plus size={14} />
             Dice
           </Button>
-          <Button variant="secondary" className="gap-2 h-10 px-0 flex-col py-1 text-[10px]" onClick={handleAddGroupQuick}>
+          <Button variant="secondary" className="gap-2 h-10 px-0 flex-col py-1 text-[11px]" onClick={handleAddGroupQuick}>
             <FolderPlus size={14} />
             Group
           </Button>

@@ -135,7 +135,7 @@ export const DiceGroup: React.FC<DiceGroupProps> = ({
             {isEditing ? (
               <div className="flex items-center gap-1 flex-1">
                 <Input
-                  className="h-7 text-[11px] py-0 px-2"
+                  className="h-7 text-xs py-0 px-2"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   autoFocus
@@ -147,10 +147,10 @@ export const DiceGroup: React.FC<DiceGroupProps> = ({
               </div>
             ) : (
               <div className="flex items-center gap-2 min-w-0 flex-1">
-                <span className="text-[11px] font-bold truncate">
+                <span className="text-xs font-bold truncate">
                   {group.name}
                 </span>
-                <span className="text-[9px] text-muted-foreground/60 font-semibold shrink-0 uppercase tracking-tight">
+                <span className="text-[11px] text-muted-foreground/60 font-semibold shrink-0 uppercase tracking-tight">
                   {group.diceIds.length} rolls
                 </span>
               </div>
@@ -165,7 +165,7 @@ export const DiceGroup: React.FC<DiceGroupProps> = ({
                 <Button 
                   variant="primary" 
                   size="sm" 
-                  className="h-7 gap-1.5 px-2 text-[10px] font-bold"
+                  className="h-7 gap-1.5 px-2 text-[11px] font-bold"
                   onClick={handleRollAll}
                 >
                   <Dice6 size={14} />

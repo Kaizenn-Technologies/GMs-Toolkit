@@ -81,7 +81,7 @@ export const DiceCard: React.FC<DiceCardProps> = ({ config, onUpdate, onDelete, 
               placeholder="Roll Name (e.g. Fireball)"
               value={config.name || ""}
               onChange={(e) => onUpdate({ name: e.target.value })}
-              className="h-7 text-xs"
+              className="h-7 text-sm"
               autoFocus
             />
             <Button size="icon" variant="ghost" className="h-7 w-7" onClick={handleSave}>
@@ -91,7 +91,7 @@ export const DiceCard: React.FC<DiceCardProps> = ({ config, onUpdate, onDelete, 
 
           <div className="grid grid-cols-3 gap-2">
             <div className="space-y-1">
-              <label className="text-[10px] uppercase font-bold text-muted-foreground">Count</label>
+              <label className="text-[11px] uppercase font-bold text-muted-foreground">Count</label>
               <StepperInput
                 value={config.count}
                 onChange={(val) => onUpdate({ count: val })}
@@ -101,12 +101,12 @@ export const DiceCard: React.FC<DiceCardProps> = ({ config, onUpdate, onDelete, 
               />
             </div>
             <div className="space-y-1">
-              <label className="text-[10px] uppercase font-bold text-muted-foreground">Sides</label>
+              <label className="text-[11px] uppercase font-bold text-muted-foreground">Sides</label>
               <Select
                 value={config.sides.toString()}
                 onValueChange={(val) => onUpdate({ sides: parseInt(val) })}
               >
-                <SelectTrigger className="h-7 text-xs">
+                <SelectTrigger className="h-7 text-sm">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -119,7 +119,7 @@ export const DiceCard: React.FC<DiceCardProps> = ({ config, onUpdate, onDelete, 
               </Select>
             </div>
             <div className="space-y-1">
-              <label className="text-[10px] uppercase font-bold text-muted-foreground">Mod</label>
+              <label className="text-[11px] uppercase font-bold text-muted-foreground">Mod</label>
               <StepperInput
                 value={config.modifier || 0}
                 onChange={(val) => onUpdate({ modifier: val })}
@@ -143,7 +143,7 @@ export const DiceCard: React.FC<DiceCardProps> = ({ config, onUpdate, onDelete, 
                    }
                  }}
                />
-               <label htmlFor={`keep-drop-${config.id}`} className="text-[10px] font-medium leading-none cursor-pointer">
+               <label htmlFor={`keep-drop-${config.id}`} className="text-xs font-medium leading-none cursor-pointer">
                  Keep/Drop
                </label>
              </div>
@@ -154,7 +154,7 @@ export const DiceCard: React.FC<DiceCardProps> = ({ config, onUpdate, onDelete, 
                    value={config.rule.type}
                    onValueChange={(val: any) => onUpdate({ rule: { ...config.rule!, type: val } })}
                  >
-                   <SelectTrigger className="h-6 text-[10px]">
+                   <SelectTrigger className="h-6 text-xs">
                      <SelectValue />
                    </SelectTrigger>
                    <SelectContent>
@@ -166,7 +166,7 @@ export const DiceCard: React.FC<DiceCardProps> = ({ config, onUpdate, onDelete, 
                    value={config.rule.target}
                    onValueChange={(val: any) => onUpdate({ rule: { ...config.rule!, target: val } })}
                  >
-                   <SelectTrigger className="h-6 text-[10px]">
+                   <SelectTrigger className="h-6 text-xs">
                      <SelectValue />
                    </SelectTrigger>
                    <SelectContent>
@@ -185,14 +185,14 @@ export const DiceCard: React.FC<DiceCardProps> = ({ config, onUpdate, onDelete, 
                    onUpdate({ explode: checked ? "single" : undefined });
                  }}
                />
-               <label htmlFor={`explode-${config.id}`} className="text-[10px] font-medium leading-none cursor-pointer">
+               <label htmlFor={`explode-${config.id}`} className="text-xs font-medium leading-none cursor-pointer">
                  Explode
                </label>
              </div>
           </div>
 
           <div className="flex justify-end pt-1">
-            <Button variant="ghost" size="sm" onClick={onDelete} className="text-destructive hover:bg-destructive/10 h-6 text-[10px]">
+            <Button variant="ghost" size="sm" onClick={onDelete} className="text-destructive hover:bg-destructive/10 h-6 text-xs">
               <Trash2 size={12} className="mr-1" />
               Delete
             </Button>
@@ -239,10 +239,10 @@ export const DiceCard: React.FC<DiceCardProps> = ({ config, onUpdate, onDelete, 
         {/* Content Area */}
         <div className="flex-1 flex items-center px-2 min-w-0 gap-2">
           <div className="flex-1 flex items-baseline gap-2 min-w-0">
-            <span className="text-[11px] font-bold truncate">
+            <span className="text-xs font-bold truncate">
               {config.name || `${config.count}d${config.sides}`}
             </span>
-            <span className="text-[9px] text-muted-foreground uppercase font-semibold tracking-tight shrink-0 opacity-70">
+            <span className="text-[11px] text-muted-foreground uppercase font-semibold tracking-tight shrink-0 opacity-70">
               {config.count}d{config.sides}{config.modifier ? (config.modifier > 0 ? `+${config.modifier}` : `-${Math.abs(config.modifier)}`) : ""}
             </span>
           </div>
