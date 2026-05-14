@@ -21,8 +21,12 @@ import {
   PointerSensor,
   useSensor,
   useSensors,
+  DragOverlay,
+  defaultDropAnimationSideEffects,
+  pointerWithin,
+  useDroppable,
 } from "@dnd-kit/core";
-import type { DragEndEvent } from "@dnd-kit/core";
+import type { DragStartEvent, DragEndEvent, DragOverEvent, DropAnimation } from "@dnd-kit/core";
 import {
   arrayMove,
   SortableContext,
@@ -49,6 +53,24 @@ interface DiceBuilderProps {
   settings: { manualNotation: boolean };
 }
 
+const UngroupedHeader: React.FC = () => {
+  const { setNodeRef, isOver } = useDroppable({
+    id: "other-rolls-header",
+  });
+
+  return (
+    <h4 
+      ref={setNodeRef}
+      className={clsx(
+        "text-[10px] uppercase font-bold px-1 transition-colors duration-200",
+        isOver ? "text-primary" : "text-muted-foreground"
+      )}
+    >
+      Other Rolls
+    </h4>
+  );
+};
+
 export const DiceBuilder: React.FC<DiceBuilderProps> = ({
   diceConfigs,
   groups,
@@ -69,6 +91,20 @@ export const DiceBuilder: React.FC<DiceBuilderProps> = ({
   const [notation, setNotation] = useState("");
   const [error, setError] = useState(false);
   const [showQuickAdd, setShowQuickAdd] = useState(false);
+  const [activeId, setActiveId] = useState<string | null>(null);
+
+  const activeDice = activeId ? diceConfigs.find(d => d.id === activeId) : null;
+  const activeGroup = activeId ? groups.find(g => g.id === activeId) : null;
+
+  const dropAnimation: DropAnimation = {
+    sideEffects: defaultDropAnimationSideEffects({
+      styles: {
+        active: {
+          opacity: "0.4",
+        },
+      },
+    }),
+  };
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -108,39 +144,73 @@ export const DiceBuilder: React.FC<DiceBuilderProps> = ({
     onAddGroup("New Group");
   };
 
+  const handleDragStart = (event: DragStartEvent) => {
+    setActiveId(event.active.id as string);
+  };
+
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
+    setActiveId(null);
     if (!over) return;
 
-    if (active.id === over.id) return;
+    const activeId = active.id as string;
+    const overId = over.id as string;
+
+    if (activeId === overId) return;
 
     // 1. Reordering Groups
-    const activeGroupIdx = groups.findIndex((g) => g.id === active.id);
+    const activeGroupIdx = groups.findIndex((g) => g.id === activeId);
     if (activeGroupIdx !== -1) {
-      const overGroupIdx = groups.findIndex((g) => g.id === over.id);
+      const overGroupIdx = groups.findIndex((g) => g.id === overId);
       if (overGroupIdx !== -1) {
         onReorderGroups(arrayMove(groups, activeGroupIdx, overGroupIdx));
       }
       return;
     }
 
-    // 2. Handling Dice (Moving to Group or Reordering)
-    const activeDiceIdx = diceConfigs.findIndex((d) => d.id === active.id);
-    if (activeDiceIdx !== -1) {
-      // Check if dropped over a group
-      const overGroupIdx = groups.findIndex((g) => g.id === over.id);
-      if (overGroupIdx !== -1) {
-        onMoveDiceToGroup(active.id as string, over.id as string);
-        return;
-      }
+    // 2. Handling Dice
+    const activeDice = diceConfigs.find((d) => d.id === activeId);
+    if (!activeDice) return;
 
-      // Check if dropped over "Other Rolls" (ungrouped area) or another ungrouped dice
-      // To move back to ungrouped, we'd need a droppable area for it.
-      // For now, reorder ungrouped dice
-      const overDiceIdx = diceConfigs.findIndex((d) => d.id === over.id);
-      if (overDiceIdx !== -1) {
-        onReorderDice(arrayMove(diceConfigs, activeDiceIdx, overDiceIdx));
+    // Find which group the active dice is currently in
+    const activeDiceGroup = groups.find(g => g.diceIds.includes(activeId));
+    
+    // Find if we are dropping over another dice
+    const overDiceIdx = diceConfigs.findIndex(d => d.id === overId);
+    if (overDiceIdx !== -1) {
+      // Find which group the 'over' dice is in
+      const overDiceGroup = groups.find(g => g.diceIds.includes(overId));
+      
+      if (overDiceGroup) {
+        // Moving to/within a group
+        const targetIdx = overDiceGroup.diceIds.indexOf(overId);
+        onMoveDiceToGroup(activeId, overDiceGroup.id, targetIdx);
+      } else {
+        // Moving to/within ungrouped area
+        // 1. Remove from any group first
+        if (activeDiceGroup) {
+          onMoveDiceToGroup(activeId, null);
+        }
+        // 2. Reorder in global list (affects ungrouped order)
+        const activeIdx = diceConfigs.findIndex(d => d.id === activeId);
+        const overIdx = diceConfigs.findIndex(d => d.id === overId);
+        if (activeIdx !== -1 && overIdx !== -1) {
+          onReorderDice(arrayMove(diceConfigs, activeIdx, overIdx));
+        }
       }
+      return;
+    }
+
+    // Check if dropped over a group header or ungrouped header
+    if (overId === "other-rolls-header") {
+      onMoveDiceToGroup(activeId, null);
+      return;
+    }
+
+    const overGroupIdx = groups.findIndex((g) => g.id === overId);
+    if (overGroupIdx !== -1) {
+      onMoveDiceToGroup(activeId, overId);
+      return;
     }
   };
 
@@ -155,7 +225,8 @@ export const DiceBuilder: React.FC<DiceBuilderProps> = ({
       <div className="flex-1 overflow-y-auto p-4 space-y-6 scrollbar-thin scrollbar-thumb-primary/10 hover:scrollbar-thumb-primary/20">
         <DndContext
           sensors={sensors}
-          collisionDetection={closestCenter}
+          collisionDetection={pointerWithin}
+          onDragStart={handleDragStart}
           onDragEnd={handleDragEnd}
           modifiers={[restrictToVerticalAxis]}
         >
@@ -182,7 +253,7 @@ export const DiceBuilder: React.FC<DiceBuilderProps> = ({
           {/* Ungrouped Section */}
           {ungroupedDice.length > 0 && (
             <div className="space-y-2 pt-4 border-t border-border/30">
-              <h4 className="text-[10px] uppercase font-bold text-muted-foreground px-1">Other Rolls</h4>
+              <UngroupedHeader />
               <SortableContext items={ungroupedDice.map(d => d.id)} strategy={verticalListSortingStrategy}>
                 {ungroupedDice.map((config) => (
                   <DiceCard
@@ -197,6 +268,37 @@ export const DiceBuilder: React.FC<DiceBuilderProps> = ({
             </div>
           )}
         </DndContext>
+
+        <DragOverlay dropAnimation={dropAnimation}>
+          {activeId ? (
+            activeDice ? (
+              <div className="w-full opacity-40 rotate-1 scale-105 cursor-grabbing transition-transform duration-200">
+                <DiceCard
+                  config={activeDice}
+                  onUpdate={() => {}}
+                  onDelete={() => {}}
+                  onRoll={() => {}}
+                  isOverlay
+                />
+              </div>
+            ) : activeGroup ? (
+              <div className="w-full opacity-40 rotate-1 scale-105 cursor-grabbing transition-transform duration-200">
+                <DiceGroup
+                  group={activeGroup}
+                  diceConfigs={diceConfigs}
+                  onToggleCollapse={() => {}}
+                  onDelete={() => {}}
+                  onUpdateGroup={() => {}}
+                  onRollGroup={() => {}}
+                  onUpdateDice={() => {}}
+                  onDeleteDice={() => {}}
+                  onRollDice={() => {}}
+                  isOverlay
+                />
+              </div>
+            ) : null
+          ) : null}
+        </DragOverlay>
 
         {diceConfigs.length === 0 && groups.length === 0 && (
           <div className="flex flex-col items-center justify-center py-12 text-muted-foreground opacity-50">

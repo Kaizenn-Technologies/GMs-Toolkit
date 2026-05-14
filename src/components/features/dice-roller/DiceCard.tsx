@@ -24,9 +24,10 @@ interface DiceCardProps {
   onUpdate: (updates: Partial<DiceConfig>) => void;
   onDelete: () => void;
   onRoll: (mode: "normal" | "advantage" | "disadvantage") => void;
+  isOverlay?: boolean;
 }
 
-export const DiceCard: React.FC<DiceCardProps> = ({ config, onUpdate, onDelete, onRoll }) => {
+export const DiceCard: React.FC<DiceCardProps> = ({ config, onUpdate, onDelete, onRoll, isOverlay }) => {
   const [isEditing, setIsEditing] = useState(config.isEditing || false);
   const {
     attributes,
@@ -34,15 +35,21 @@ export const DiceCard: React.FC<DiceCardProps> = ({ config, onUpdate, onDelete, 
     setNodeRef,
     transform,
     transition,
+    isOver,
     isDragging,
   } = useSortable({ id: config.id });
 
   const style = {
     transform: CSS.Translate.toString(transform),
     transition,
-    zIndex: isDragging ? 10 : 1,
-    opacity: isDragging ? 0.5 : 1,
+    zIndex: isDragging ? 0 : isOverlay ? 100 : 1,
+    opacity: isDragging ? 0.2 : 1,
+    visibility: isDragging && !isOverlay ? "visible" as any : "visible" as any,
   };
+
+  // The "hint line" effect
+  // Show a blue line when another item is being dragged over this one.
+  const isDropTarget = isOver && !isDragging;
 
   // Sync internal editing state with prop if it changes (e.g. from hook)
   useEffect(() => {
@@ -196,13 +203,30 @@ export const DiceCard: React.FC<DiceCardProps> = ({ config, onUpdate, onDelete, 
   }
 
   return (
-    <Card 
+    <div 
       ref={setNodeRef}
       style={style}
-      className="group relative hover:border-primary/50 transition-all cursor-pointer overflow-hidden bg-card/50"
-      onClick={handleRoll}
+      className={clsx(
+        "group relative transition-all overflow-hidden rounded-md border border-border/50 shadow-sm",
+        isOverlay ? "cursor-grabbing shadow-2xl ring-2 ring-primary/50" : "cursor-pointer",
+        isDragging && !isOverlay ? "opacity-30 grayscale-[0.5] border-dashed border-primary/30" : "bg-card/50",
+        !isOverlay && "hover:border-primary/50"
+      )}
+      onClick={isOverlay ? undefined : handleRoll}
     >
-      <CardContent className="p-0 flex h-9">
+      {isDropTarget && !isOverlay && (
+        <div className="absolute inset-0 pointer-events-none z-[100]">
+          <div 
+            className="absolute left-0 right-0 h-[3px] bg-[#3b82f6] shadow-[0_0_15px_#3b82f6]"
+            style={{ 
+              top: transform && transform.y > 0 ? 0 : 'auto',
+              bottom: transform && transform.y <= 0 ? 0 : 'auto'
+            }}
+          />
+        </div>
+      )}
+
+      <CardContent className={clsx("p-0 flex", isOverlay ? "h-10" : "h-9")}>
         {/* Drag Handle Container */}
         <div 
           className="w-7 flex items-center justify-center bg-muted/30 border-r border-border/30 text-muted-foreground/40 group-hover:text-primary transition-colors cursor-grab active:cursor-grabbing"
@@ -291,6 +315,6 @@ export const DiceCard: React.FC<DiceCardProps> = ({ config, onUpdate, onDelete, 
           </div>
         </div>
       </CardContent>
-    </Card>
+    </div>
   );
 };

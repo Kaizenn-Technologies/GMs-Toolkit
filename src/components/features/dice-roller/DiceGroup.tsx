@@ -14,7 +14,7 @@ import {
 } from "lucide-react";
 import { Tooltip, TooltipProvider, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
 import { clsx } from "clsx";
-import { useSortable } from "@dnd-kit/sortable";
+import { useSortable, SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 
 interface DiceGroupProps {
@@ -27,6 +27,7 @@ interface DiceGroupProps {
   onUpdateDice: (id: string, updates: Partial<DiceConfig>) => void;
   onDeleteDice: (id: string) => void;
   onRollDice: (id: string, mode: "normal" | "advantage" | "disadvantage") => void;
+  isOverlay?: boolean;
 }
 
 export const DiceGroup: React.FC<DiceGroupProps> = ({
@@ -39,6 +40,7 @@ export const DiceGroup: React.FC<DiceGroupProps> = ({
   onUpdateDice,
   onDeleteDice,
   onRollDice,
+  isOverlay,
 }) => {
   const [isEditing, setIsEditing] = useState(group.isEditing || false);
   const [name, setName] = useState(group.name);
@@ -49,15 +51,18 @@ export const DiceGroup: React.FC<DiceGroupProps> = ({
     setNodeRef,
     transform,
     transition,
+    isOver,
     isDragging,
   } = useSortable({ id: group.id });
 
   const style = {
     transform: CSS.Translate.toString(transform),
     transition,
-    zIndex: isDragging ? 10 : 1,
-    opacity: isDragging ? 0.5 : 1,
+    zIndex: isDragging ? 0 : isOverlay ? 100 : 1,
+    opacity: isDragging ? 0.2 : 1,
   };
+
+  const isDropTarget = isOver && !isDragging;
 
   const groupDice = group.diceIds
     .map((id) => diceConfigs.find((c) => c.id === id))
@@ -81,13 +86,34 @@ export const DiceGroup: React.FC<DiceGroupProps> = ({
   };
 
   return (
-    <div className="space-y-1.5" ref={setNodeRef} style={style}>
+    <div 
+      className={clsx(
+        "space-y-1.5 relative transition-all",
+        isOverlay ? "cursor-grabbing shadow-2xl ring-2 ring-primary/50" : "",
+        isDragging && !isOverlay ? "opacity-30 grayscale-[0.5]" : ""
+      )} 
+      ref={setNodeRef} 
+      style={style}
+    >
+      {isDropTarget && !isOverlay && (
+        <div className="absolute inset-0 pointer-events-none z-[100]">
+          <div 
+            className="absolute left-0 right-0 h-[3px] bg-[#3b82f6] shadow-[0_0_15px_#3b82f6]"
+            style={{ 
+              top: transform && transform.y > 0 ? 0 : 'auto',
+              bottom: transform && transform.y <= 0 ? 0 : 'auto'
+            }}
+          />
+        </div>
+      )}
+
       <div 
         className={clsx(
           "flex items-center justify-between p-0 rounded border transition-all cursor-pointer overflow-hidden",
-          group.collapsed ? "bg-muted/30 border-border/50" : "bg-muted/50 border-primary/20 shadow-sm"
+          group.collapsed ? "bg-muted/30 border-border/50" : "bg-muted/50 border-primary/20 shadow-sm",
+          isOverlay && "bg-muted/80 border-primary/50"
         )}
-        onClick={onToggleCollapse}
+        onClick={isOverlay ? undefined : onToggleCollapse}
       >
         <div className="flex items-center h-9 w-full min-w-0">
           {/* Drag Handle Container */}
@@ -175,15 +201,17 @@ export const DiceGroup: React.FC<DiceGroupProps> = ({
 
       {!group.collapsed && (
         <div className="pl-4 space-y-1 border-l border-border/30 ml-3">
-          {groupDice.map((config) => (
-            <DiceCard
-              key={config.id}
-              config={config}
-              onUpdate={(updates) => onUpdateDice(config.id, updates)}
-              onDelete={() => onDeleteDice(config.id)}
-              onRoll={(mode) => onRollDice(config.id, mode)}
-            />
-          ))}
+          <SortableContext items={group.diceIds} strategy={verticalListSortingStrategy}>
+            {groupDice.map((config) => (
+              <DiceCard
+                key={config.id}
+                config={config}
+                onUpdate={(updates) => onUpdateDice(config.id, updates)}
+                onDelete={() => onDeleteDice(config.id)}
+                onRoll={(mode) => onRollDice(config.id, mode)}
+              />
+            ))}
+          </SortableContext>
         </div>
       )}
     </div>

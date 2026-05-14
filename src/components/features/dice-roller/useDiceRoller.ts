@@ -73,14 +73,19 @@ export function useDiceRoller(addLog: (log: RollLog) => void) {
     );
   };
 
-  const moveDiceToGroup = (diceId: string, groupId: string | null) => {
+  const moveDiceToGroup = (diceId: string, groupId: string | null, position?: number) => {
     setGroups((prev) =>
       prev.map((g) => {
         // Remove from all groups first
         const newDiceIds = g.diceIds.filter((id) => id !== diceId);
+        
         // Add to target group
         if (g.id === groupId) {
-          newDiceIds.push(diceId);
+          if (typeof position === 'number') {
+            newDiceIds.splice(position, 0, diceId);
+          } else {
+            newDiceIds.push(diceId);
+          }
         }
         return { ...g, diceIds: newDiceIds };
       })
