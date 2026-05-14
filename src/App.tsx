@@ -4,17 +4,25 @@ import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
 import { HpCalculator } from "@/components/features/hp-calculator/HpCalculator";
 import { StatGenerator } from "@/components/features/stat-generator/StatGenerator";
+import { DiceRoller } from "@/components/features/dice-roller/DiceRoller";
 
 export default function App() {
   const [darkMode, setDarkMode] = useState(true);
   const location = useLocation();
   const navigate = useNavigate();
 
-  const activeTab: "hp" | "point-buy" =
-    location.pathname.startsWith("/stat-generator") ? "point-buy" : "hp";
+  const getActiveTab = (): "hp" | "point-buy" | "dice-roller" => {
+    if (location.pathname.startsWith("/stat-generator")) return "point-buy";
+    if (location.pathname.startsWith("/dm-dice-roller")) return "dice-roller";
+    return "hp";
+  };
 
-  const setActiveTab = (tab: "hp" | "point-buy") => {
-    navigate(tab === "hp" ? "/hp-calculator" : "/stat-generator/pointbuy");
+  const activeTab = getActiveTab();
+
+  const setActiveTab = (tab: "hp" | "point-buy" | "dice-roller") => {
+    if (tab === "hp") navigate("/hp-calculator");
+    else if (tab === "point-buy") navigate("/stat-generator/pointbuy");
+    else if (tab === "dice-roller") navigate("/dm-dice-roller");
   };
 
   // Apply dark mode to document
@@ -53,6 +61,7 @@ export default function App() {
             element={<StatGenerator />}
           />
           <Route path="/stat-generator/rolled" element={<StatGenerator />} />
+          <Route path="/dm-dice-roller" element={<DiceRoller />} />
           <Route path="*" element={<Navigate to="/hp-calculator" replace />} />
         </Routes>
         <Footer />

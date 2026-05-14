@@ -135,7 +135,7 @@ function PointBuySettingsPanel() {
 
 // ─── Overlay ──────────────────────────────────────────────────────────────────
 
-type SettingsTabKey = "pointbuy" | "roll" | "standard" | "hp";
+type SettingsTabKey = "pointbuy" | "roll" | "standard" | "hp" | "dice";
 
 interface SettingsOverlayProps {
   enabledTabs?: SettingsTabKey[];
@@ -150,15 +150,18 @@ export function SettingsOverlay({
     resetPointBuy,
     resetRoll,
     resetHp,
+    resetDiceRoller,
     settings,
     updateRoll,
     updateHp,
+    updateDiceRoller,
   } = useSettings();
   const defaultTab = enabledTabs[0] ?? "pointbuy";
   const shouldShowPointBuy = enabledTabs.includes("pointbuy");
   const shouldShowRoll = enabledTabs.includes("roll");
   const shouldShowStandard = enabledTabs.includes("standard");
   const shouldShowHp = enabledTabs.includes("hp");
+  const shouldShowDice = enabledTabs.includes("dice");
 
   if (!isOpen) return null;
 
@@ -207,7 +210,9 @@ export function SettingsOverlay({
                       ? "grid-cols-2"
                       : enabledTabs.length === 3
                         ? "grid-cols-3"
-                        : "grid-cols-4"
+                        : enabledTabs.length === 4
+                          ? "grid-cols-4"
+                          : "grid-cols-5"
                 }`}
               >
                 {shouldShowPointBuy && (
@@ -228,6 +233,11 @@ export function SettingsOverlay({
                 {shouldShowHp && (
                   <TabsTrigger value="hp" className="gap-1.5">
                     HP
+                  </TabsTrigger>
+                )}
+                {shouldShowDice && (
+                  <TabsTrigger value="dice" className="gap-1.5">
+                    Dice
                   </TabsTrigger>
                 )}
               </TabsList>
@@ -312,6 +322,32 @@ export function SettingsOverlay({
                 </div>
               </TabsContent>
             )}
+
+            {shouldShowDice && (
+              <TabsContent value="dice" className="flex-1 px-6 pb-6 mt-0 pt-2">
+                <div className="space-y-2">
+                  <SettingRow
+                    label="Manual Notation"
+                    description="Enable the manual dice notation input field."
+                  >
+                    <Switch
+                      checked={settings.diceRoller.manualNotation}
+                      onCheckedChange={(v) => updateDiceRoller({ manualNotation: v })}
+                    />
+                  </SettingRow>
+
+                  <SettingRow
+                    label="Auto-clear Logs"
+                    description="Automatically clear roll history on page refresh."
+                  >
+                    <Switch
+                      checked={settings.diceRoller.autoClearLogs}
+                      onCheckedChange={(v) => updateDiceRoller({ autoClearLogs: v })}
+                    />
+                  </SettingRow>
+                </div>
+              </TabsContent>
+            )}
           </Tabs>
         </div>
 
@@ -325,6 +361,7 @@ export function SettingsOverlay({
               if (shouldShowPointBuy) resetPointBuy();
               if (shouldShowRoll) resetRoll();
               if (shouldShowHp) resetHp();
+              if (shouldShowDice) resetDiceRoller();
             }}
           >
             <RotateCcw className="w-3.5 h-3.5 mr-1.5" />

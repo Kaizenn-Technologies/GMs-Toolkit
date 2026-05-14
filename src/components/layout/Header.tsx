@@ -2,8 +2,8 @@ import { Moon, Sun } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 interface HeaderProps {
-  activeTab: "hp" | "point-buy";
-  setActiveTab: (tab: "hp" | "point-buy") => void;
+  activeTab: "hp" | "point-buy" | "dice-roller";
+  setActiveTab: (tab: "hp" | "point-buy" | "dice-roller") => void;
   darkMode: boolean;
   toggleDarkMode: () => void;
 }
@@ -38,6 +38,16 @@ export function Header({ activeTab, setActiveTab, darkMode, toggleDarkMode }: He
           >
             <span className="hidden sm:inline">Stat Generator</span>
             <span className="sm:hidden">Stats</span>
+          </button>
+
+          <button
+            onClick={() => setActiveTab("dice-roller")}
+            className={`transition-colors hover:text-foreground/80 whitespace-nowrap text-xs sm:text-sm ${
+              activeTab === "dice-roller" ? "text-foreground" : "text-foreground/60"
+            }`}
+          >
+            <span className="hidden sm:inline">DM Dice Roller</span>
+            <span className="sm:hidden">Dice</span>
           </button>
         </div>
 

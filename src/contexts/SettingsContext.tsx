@@ -24,10 +24,16 @@ export interface PointBuySettings {
   enforceAsiFromBackground: boolean;
 }
 
+export interface DiceRollerSettings {
+  manualNotation: boolean;
+  autoClearLogs: boolean;
+}
+
 export interface AppSettings {
   pointBuy: PointBuySettings;
   roll: RollSettings;
   hp: HpSettings;
+  diceRoller: DiceRollerSettings;
 }
 
 export interface RollSettings {
@@ -62,6 +68,11 @@ export const DEFAULT_HP_SETTINGS: HpSettings = {
   showRollCounter: true,
 };
 
+export const DEFAULT_DICE_ROLLER_SETTINGS: DiceRollerSettings = {
+  manualNotation: true,
+  autoClearLogs: false,
+};
+
 // ─── Context ──────────────────────────────────────────────────────────────────
 
 interface SettingsContextValue {
@@ -69,9 +80,11 @@ interface SettingsContextValue {
   updatePointBuy: (patch: Partial<PointBuySettings>) => void;
   updateRoll: (patch: Partial<RollSettings>) => void;
   updateHp: (patch: Partial<HpSettings>) => void;
+  updateDiceRoller: (patch: Partial<DiceRollerSettings>) => void;
   resetPointBuy: () => void;
   resetRoll: () => void;
   resetHp: () => void;
+  resetDiceRoller: () => void;
   isOpen: boolean;
   openSettings: () => void;
   closeSettings: () => void;
@@ -84,6 +97,7 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
     pointBuy: { ...DEFAULT_POINT_BUY_SETTINGS },
     roll: { ...DEFAULT_ROLL_SETTINGS },
     hp: { ...DEFAULT_HP_SETTINGS },
+    diceRoller: { ...DEFAULT_DICE_ROLLER_SETTINGS },
   });
   const [isOpen, setIsOpen] = useState(false);
 
@@ -105,6 +119,12 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
       hp: { ...prev.hp, ...patch },
     }));
 
+  const updateDiceRoller = (patch: Partial<DiceRollerSettings>) =>
+    setSettings((prev) => ({
+      ...prev,
+      diceRoller: { ...prev.diceRoller, ...patch },
+    }));
+
   const resetPointBuy = () =>
     setSettings((prev) => ({
       ...prev,
@@ -123,6 +143,12 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
       hp: { ...DEFAULT_HP_SETTINGS },
     }));
 
+  const resetDiceRoller = () =>
+    setSettings((prev) => ({
+      ...prev,
+      diceRoller: { ...DEFAULT_DICE_ROLLER_SETTINGS },
+    }));
+
   return (
     <SettingsContext.Provider
       value={{
@@ -130,9 +156,11 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
         updatePointBuy,
         updateRoll,
         updateHp,
+        updateDiceRoller,
         resetPointBuy,
         resetRoll,
         resetHp,
+        resetDiceRoller,
         isOpen,
         openSettings: () => setIsOpen(true),
         closeSettings: () => setIsOpen(false),
