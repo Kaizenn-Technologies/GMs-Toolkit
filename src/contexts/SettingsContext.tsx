@@ -2,6 +2,7 @@ import {
   createContext,
   useContext,
   useState,
+  useEffect,
   type ReactNode,
 } from "react";
 
@@ -24,10 +25,23 @@ export interface PointBuySettings {
   enforceAsiFromBackground: boolean;
 }
 
+export interface DiceRollerSettings {
+  manualNotation: boolean;
+  autoClearLogs: boolean;
+}
+
+export interface SitewideSettings {
+  darkMode: boolean;
+  showHeader: boolean;
+  showFooter: boolean;
+}
+
 export interface AppSettings {
+  sitewide: SitewideSettings;
   pointBuy: PointBuySettings;
   roll: RollSettings;
   hp: HpSettings;
+  diceRoller: DiceRollerSettings;
 }
 
 export interface RollSettings {
@@ -42,6 +56,12 @@ export interface HpSettings {
 }
 
 // ─── Defaults ─────────────────────────────────────────────────────────────────
+
+export const DEFAULT_SITEWIDE_SETTINGS: SitewideSettings = {
+  darkMode: true,
+  showHeader: true,
+  showFooter: true,
+};
 
 export const DEFAULT_POINT_BUY_SETTINGS: PointBuySettings = {
   pointPool: 27,
@@ -62,16 +82,25 @@ export const DEFAULT_HP_SETTINGS: HpSettings = {
   showRollCounter: true,
 };
 
+export const DEFAULT_DICE_ROLLER_SETTINGS: DiceRollerSettings = {
+  manualNotation: true,
+  autoClearLogs: false,
+};
+
 // ─── Context ──────────────────────────────────────────────────────────────────
 
 interface SettingsContextValue {
   settings: AppSettings;
+  updateSitewide: (patch: Partial<SitewideSettings>) => void;
   updatePointBuy: (patch: Partial<PointBuySettings>) => void;
   updateRoll: (patch: Partial<RollSettings>) => void;
   updateHp: (patch: Partial<HpSettings>) => void;
+  updateDiceRoller: (patch: Partial<DiceRollerSettings>) => void;
+  resetSitewide: () => void;
   resetPointBuy: () => void;
   resetRoll: () => void;
   resetHp: () => void;
+  resetDiceRoller: () => void;
   isOpen: boolean;
   openSettings: () => void;
   closeSettings: () => void;
@@ -80,12 +109,46 @@ interface SettingsContextValue {
 const SettingsContext = createContext<SettingsContextValue | null>(null);
 
 export function SettingsProvider({ children }: { children: ReactNode }) {
-  const [settings, setSettings] = useState<AppSettings>({
-    pointBuy: { ...DEFAULT_POINT_BUY_SETTINGS },
-    roll: { ...DEFAULT_ROLL_SETTINGS },
-    hp: { ...DEFAULT_HP_SETTINGS },
+  const [settings, setSettings] = useState<AppSettings>(() => {
+    // Try to load from localStorage if available, or use defaults
+    const saved = localStorage.getItem("dnd_tools_settings");
+    if (saved) {
+      try {
+        return JSON.parse(saved);
+      } catch (e) {
+        console.error("Failed to parse saved settings", e);
+      }
+    }
+    return {
+      sitewide: { ...DEFAULT_SITEWIDE_SETTINGS },
+      pointBuy: { ...DEFAULT_POINT_BUY_SETTINGS },
+      roll: { ...DEFAULT_ROLL_SETTINGS },
+      hp: { ...DEFAULT_HP_SETTINGS },
+      diceRoller: { ...DEFAULT_DICE_ROLLER_SETTINGS },
+    };
   });
+
   const [isOpen, setIsOpen] = useState(false);
+
+  // Persistence
+  useEffect(() => {
+    localStorage.setItem("dnd_tools_settings", JSON.stringify(settings));
+  }, [settings]);
+
+  // Dark mode effect
+  useEffect(() => {
+    if (settings.sitewide.darkMode) {
+      document.documentElement.classList.add("dark");
+    } else {
+      document.documentElement.classList.remove("dark");
+    }
+  }, [settings.sitewide.darkMode]);
+
+  const updateSitewide = (patch: Partial<SitewideSettings>) =>
+    setSettings((prev) => ({
+      ...prev,
+      sitewide: { ...prev.sitewide, ...patch },
+    }));
 
   const updatePointBuy = (patch: Partial<PointBuySettings>) =>
     setSettings((prev) => ({
@@ -103,6 +166,18 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
     setSettings((prev) => ({
       ...prev,
       hp: { ...prev.hp, ...patch },
+    }));
+
+  const updateDiceRoller = (patch: Partial<DiceRollerSettings>) =>
+    setSettings((prev) => ({
+      ...prev,
+      diceRoller: { ...prev.diceRoller, ...patch },
+    }));
+
+  const resetSitewide = () =>
+    setSettings((prev) => ({
+      ...prev,
+      sitewide: { ...DEFAULT_SITEWIDE_SETTINGS },
     }));
 
   const resetPointBuy = () =>
@@ -123,16 +198,26 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
       hp: { ...DEFAULT_HP_SETTINGS },
     }));
 
+  const resetDiceRoller = () =>
+    setSettings((prev) => ({
+      ...prev,
+      diceRoller: { ...DEFAULT_DICE_ROLLER_SETTINGS },
+    }));
+
   return (
     <SettingsContext.Provider
       value={{
         settings,
+        updateSitewide,
         updatePointBuy,
         updateRoll,
         updateHp,
+        updateDiceRoller,
+        resetSitewide,
         resetPointBuy,
         resetRoll,
         resetHp,
+        resetDiceRoller,
         isOpen,
         openSettings: () => setIsOpen(true),
         closeSettings: () => setIsOpen(false),
@@ -148,3 +233,4 @@ export function useSettings() {
   if (!ctx) throw new Error("useSettings must be used inside <SettingsProvider>");
   return ctx;
 }
+

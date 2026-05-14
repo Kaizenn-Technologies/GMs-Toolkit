@@ -14,14 +14,12 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { StepperInput } from "@/components/ui/stepper-input";
 import { HpBreakdown } from "./HpBreakdown";
 import { HpTotalDisplay } from "./HpTotalDisplay";
-import { SettingsOverlay } from "@/components/features/SettingsOverlay";
-import { SettingsProvider } from "@/contexts/SettingsContext";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { ResetButton, ShareButton } from "@/components/ui/action-buttons";
 import { CUSTOM_CLASS_NAME, CUSTOM_HIT_DIE_OPTIONS } from "@/lib/constants";
 import { useHpCalculator, hpClassOptions } from "./useHpCalculator";
 
-function HpCalculatorInner() {
+export function HpCalculator() {
   const {
     classSelections,
     conModifier,
@@ -42,7 +40,6 @@ function HpCalculatorInner() {
     sharedNameFromLink,
     showRollCounter,
     rerollCountForCurrentCombo,
-    openSettings,
     addClassSelection,
     handleResetClassSelections,
     removeClassSelection,
@@ -56,7 +53,6 @@ function HpCalculatorInner() {
       <PageHeader
         title="D&D 5.5e Health Calculator"
         description="Calculate your character's hit points based on class, level, and modifiers."
-        onSettingsClick={openSettings}
       />
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -64,7 +60,7 @@ function HpCalculatorInner() {
         <div>
           <Card>
             <CardContent className="space-y-6">
-              <p className="text-xl font-semibold text-center pb-2 pt-6">Class Picker</p>
+              <p className="text-xl font-semibold text-center pb-2">Class Picker</p>
               {/* Class Selections */}
               <div className="space-y-4">
                 {classSelections.map((selection, index) => (
@@ -200,7 +196,7 @@ function HpCalculatorInner() {
         {/* OUTPUT SECTION */}
         <div>
           <Card>
-            <CardContent className="pt-6">
+            <CardContent>
               <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as "average" | "rolled")} className="w-full">
                 <TabsList className="grid w-full grid-cols-2">
                   <TabsTrigger value="average">Average</TabsTrigger>
@@ -224,7 +220,7 @@ function HpCalculatorInner() {
                   <div className="mb-2">
                     <HpBreakdown items={rolledResult.breakdown} />
                   </div>
-                  
+
                   {activeTab === "rolled" && shouldShowMetaPanel && (
                     <div className="mt-3 mb-2 border border-border/70 bg-muted/40 px-3 py-2 text-sm">
                       {sharedNameFromLink.length > 0 && (
@@ -235,7 +231,7 @@ function HpCalculatorInner() {
                       )}
                     </div>
                   )}
-                  
+
                   <div className="flex flex-col gap-2 mt-4">
                     <Button onClick={handleRollAgain} className="w-full m-0">
                       <Dices className="w-4 h-4 mr-2" />
@@ -249,15 +245,6 @@ function HpCalculatorInner() {
           </Card>
         </div>
       </div>
-      <SettingsOverlay enabledTabs={["hp"]} />
     </>
-  );
-}
-
-export function HpCalculator() {
-  return (
-    <SettingsProvider>
-      <HpCalculatorInner />
-    </SettingsProvider>
   );
 }
