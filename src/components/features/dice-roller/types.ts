@@ -14,6 +14,7 @@ export type DiceConfig = {
     target: "highest" | "lowest";
     value: number;
   };
+  isEditing?: boolean;
 };
 
 export type DiceGroup = {
@@ -21,6 +22,7 @@ export type DiceGroup = {
   name: string;
   diceIds: string[];
   collapsed: boolean;
+  isEditing?: boolean;
 };
 
 export type RollResult = {
@@ -36,6 +38,7 @@ export type RollLog = {
   name?: string;
   timestamp: number;
   rolls: RollResult[];
+  rejectedRolls?: RollResult[];
   total: number;
   mode?: "normal" | "advantage" | "disadvantage";
 };

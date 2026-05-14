@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import type { DiceConfig } from "./types";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -6,15 +6,18 @@ import { Button } from "@/components/ui/button";
 import { StepperInput } from "@/components/ui/stepper-input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { Tooltip, TooltipProvider, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
 import { 
-  DiceFive, 
-  Trash, 
-  PencilSimple, 
-  Check, 
-  Info 
-} from "@phosphor-icons/react";
+  Trash2, 
+  SquarePen, 
+  Save, 
+  Info,
+  GripVertical,
+  Dice6
+} from "lucide-react";
 import { clsx } from "clsx";
+import { useSortable } from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 
 interface DiceCardProps {
   config: DiceConfig;
@@ -24,7 +27,29 @@ interface DiceCardProps {
 }
 
 export const DiceCard: React.FC<DiceCardProps> = ({ config, onUpdate, onDelete, onRoll }) => {
-  const [isEditing, setIsEditing] = useState(false);
+  const [isEditing, setIsEditing] = useState(config.isEditing || false);
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: config.id });
+
+  const style = {
+    transform: CSS.Translate.toString(transform),
+    transition,
+    zIndex: isDragging ? 10 : 1,
+    opacity: isDragging ? 0.5 : 1,
+  };
+
+  // Sync internal editing state with prop if it changes (e.g. from hook)
+  useEffect(() => {
+    if (config.isEditing !== undefined) {
+      setIsEditing(config.isEditing);
+    }
+  }, [config.isEditing]);
 
   const handleRoll = (e: React.MouseEvent) => {
     if (isEditing) return;
@@ -34,23 +59,30 @@ export const DiceCard: React.FC<DiceCardProps> = ({ config, onUpdate, onDelete, 
     onRoll(mode);
   };
 
+  const handleSave = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setIsEditing(false);
+    onUpdate({ isEditing: false });
+  };
+
   if (isEditing) {
     return (
-      <Card className="border-primary/50 shadow-md">
-        <CardContent className="p-4 space-y-4">
+      <Card className="border-primary/50 shadow-md" ref={setNodeRef} style={style}>
+        <CardContent className="p-3 space-y-3">
           <div className="flex items-center justify-between gap-2">
             <Input
               placeholder="Roll Name (e.g. Fireball)"
               value={config.name || ""}
               onChange={(e) => onUpdate({ name: e.target.value })}
-              className="h-8 text-sm"
+              className="h-7 text-xs"
+              autoFocus
             />
-            <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => setIsEditing(false)}>
-              <Check size={18} className="text-primary" />
+            <Button size="icon" variant="ghost" className="h-7 w-7" onClick={handleSave}>
+              <Save size={14} className="text-primary" />
             </Button>
           </div>
 
-          <div className="grid grid-cols-3 gap-3">
+          <div className="grid grid-cols-3 gap-2">
             <div className="space-y-1">
               <label className="text-[10px] uppercase font-bold text-muted-foreground">Count</label>
               <StepperInput
@@ -58,6 +90,7 @@ export const DiceCard: React.FC<DiceCardProps> = ({ config, onUpdate, onDelete, 
                 onChange={(val) => onUpdate({ count: val })}
                 min={1}
                 max={99}
+                className="h-7"
               />
             </div>
             <div className="space-y-1">
@@ -66,7 +99,7 @@ export const DiceCard: React.FC<DiceCardProps> = ({ config, onUpdate, onDelete, 
                 value={config.sides.toString()}
                 onValueChange={(val) => onUpdate({ sides: parseInt(val) })}
               >
-                <SelectTrigger className="h-9">
+                <SelectTrigger className="h-7 text-xs">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -79,17 +112,18 @@ export const DiceCard: React.FC<DiceCardProps> = ({ config, onUpdate, onDelete, 
               </Select>
             </div>
             <div className="space-y-1">
-              <label className="text-[10px] uppercase font-bold text-muted-foreground">Modifier</label>
+              <label className="text-[10px] uppercase font-bold text-muted-foreground">Mod</label>
               <StepperInput
                 value={config.modifier || 0}
                 onChange={(val) => onUpdate({ modifier: val })}
                 min={-99}
                 max={99}
+                className="h-7"
               />
             </div>
           </div>
 
-          <div className="space-y-3 pt-2 border-t border-border/50">
+          <div className="space-y-2 pt-2 border-t border-border/50">
              <div className="flex items-center space-x-2">
                <Checkbox 
                  id={`keep-drop-${config.id}`} 
@@ -102,18 +136,18 @@ export const DiceCard: React.FC<DiceCardProps> = ({ config, onUpdate, onDelete, 
                    }
                  }}
                />
-               <label htmlFor={`keep-drop-${config.id}`} className="text-xs font-medium leading-none cursor-pointer">
-                 Enable Keep / Drop
+               <label htmlFor={`keep-drop-${config.id}`} className="text-[10px] font-medium leading-none cursor-pointer">
+                 Keep/Drop
                </label>
              </div>
 
              {config.rule && (
-               <div className="grid grid-cols-2 gap-3 pl-6">
+               <div className="grid grid-cols-2 gap-2 pl-5">
                  <Select
                    value={config.rule.type}
                    onValueChange={(val: any) => onUpdate({ rule: { ...config.rule!, type: val } })}
                  >
-                   <SelectTrigger className="h-8 text-xs">
+                   <SelectTrigger className="h-6 text-[10px]">
                      <SelectValue />
                    </SelectTrigger>
                    <SelectContent>
@@ -125,28 +159,18 @@ export const DiceCard: React.FC<DiceCardProps> = ({ config, onUpdate, onDelete, 
                    value={config.rule.target}
                    onValueChange={(val: any) => onUpdate({ rule: { ...config.rule!, target: val } })}
                  >
-                   <SelectTrigger className="h-8 text-xs">
+                   <SelectTrigger className="h-6 text-[10px]">
                      <SelectValue />
                    </SelectTrigger>
                    <SelectContent>
-                     <SelectItem value="highest">Highest</SelectItem>
-                     <SelectItem value="lowest">Lowest</SelectItem>
+                     <SelectItem value="highest">High</SelectItem>
+                     <SelectItem value="lowest">Low</SelectItem>
                    </SelectContent>
                  </Select>
-                 <div className="col-span-2 flex items-center gap-2">
-                   <span className="text-xs text-muted-foreground">Count:</span>
-                   <StepperInput
-                     value={config.rule.value}
-                     onChange={(val) => onUpdate({ rule: { ...config.rule!, value: val } })}
-                     min={1}
-                     max={config.count - 1}
-                     className="h-8"
-                   />
-                 </div>
                </div>
              )}
 
-             <div className="flex items-center space-x-2 pt-2 border-t border-border/50">
+             <div className="flex items-center space-x-2">
                <Checkbox 
                  id={`explode-${config.id}`} 
                  checked={!!config.explode} 
@@ -154,66 +178,15 @@ export const DiceCard: React.FC<DiceCardProps> = ({ config, onUpdate, onDelete, 
                    onUpdate({ explode: checked ? "single" : undefined });
                  }}
                />
-               <label htmlFor={`explode-${config.id}`} className="text-xs font-medium leading-none cursor-pointer">
-                 Explode on Max
+               <label htmlFor={`explode-${config.id}`} className="text-[10px] font-medium leading-none cursor-pointer">
+                 Explode
                </label>
-               {config.explode && (
-                 <Select
-                   value={config.explode}
-                   onValueChange={(val: any) => onUpdate({ explode: val })}
-                 >
-                   <SelectTrigger className="h-7 w-24 text-[10px]">
-                     <SelectValue />
-                   </SelectTrigger>
-                   <SelectContent>
-                     <SelectItem value="single">Once</SelectItem>
-                     <SelectItem value="compound">Recursive</SelectItem>
-                   </SelectContent>
-                 </Select>
-               )}
-             </div>
-
-             <div className="flex items-center space-x-2">
-               <Checkbox 
-                 id={`reroll-${config.id}`} 
-                 checked={!!config.reroll} 
-                 onCheckedChange={(checked) => {
-                   onUpdate({ reroll: checked ? { type: "once", threshold: 1 } : undefined });
-                 }}
-               />
-               <label htmlFor={`reroll-${config.id}`} className="text-xs font-medium leading-none cursor-pointer">
-                 Reroll Threshold
-               </label>
-               {config.reroll && (
-                 <div className="flex items-center gap-2">
-                   <span className="text-[10px] text-muted-foreground">≤</span>
-                   <StepperInput
-                     value={config.reroll.threshold}
-                     onChange={(val) => onUpdate({ reroll: { ...config.reroll!, threshold: val } })}
-                     min={1}
-                     max={config.sides - 1}
-                     className="h-7 w-20"
-                   />
-                   <Select
-                     value={config.reroll.type}
-                     onValueChange={(val: any) => onUpdate({ reroll: { ...config.reroll!, type: val } })}
-                   >
-                     <SelectTrigger className="h-7 w-20 text-[10px]">
-                       <SelectValue />
-                     </SelectTrigger>
-                     <SelectContent>
-                       <SelectItem value="once">Once</SelectItem>
-                       <SelectItem value="until">Until</SelectItem>
-                     </SelectContent>
-                   </Select>
-                 </div>
-               )}
              </div>
           </div>
 
-          <div className="flex justify-between items-center pt-2">
-            <Button variant="ghost" size="sm" onClick={onDelete} className="text-destructive hover:bg-destructive/10 h-8">
-              <Trash size={16} className="mr-2" />
+          <div className="flex justify-end pt-1">
+            <Button variant="ghost" size="sm" onClick={onDelete} className="text-destructive hover:bg-destructive/10 h-6 text-[10px]">
+              <Trash2 size={12} className="mr-1" />
               Delete
             </Button>
           </div>
@@ -224,60 +197,98 @@ export const DiceCard: React.FC<DiceCardProps> = ({ config, onUpdate, onDelete, 
 
   return (
     <Card 
-      className="group relative hover:border-primary/50 transition-all cursor-pointer overflow-hidden"
+      ref={setNodeRef}
+      style={style}
+      className="group relative hover:border-primary/50 transition-all cursor-pointer overflow-hidden bg-card/50"
       onClick={handleRoll}
     >
-      <div className="absolute left-0 top-0 bottom-0 w-1 bg-muted group-hover:bg-primary transition-colors" />
-      <CardContent className="p-3 flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className="p-2 rounded bg-muted text-muted-foreground group-hover:text-primary transition-colors">
-            <DiceFive size={20} />
-          </div>
-          <div className="flex flex-col">
-            <span className="text-sm font-bold truncate max-w-[150px]">
-              {config.name || `${config.count}d${config.sides}`}
-            </span>
-            <span className="text-[10px] text-muted-foreground uppercase font-bold tracking-wider">
-              {config.count}d{config.sides}
-              {config.modifier ? (config.modifier > 0 ? ` + ${config.modifier}` : ` - ${Math.abs(config.modifier)}`) : ""}
-              {config.rule && ` • ${config.rule.type === 'keep' ? 'k' : 'd'}${config.rule.value}`}
-            </span>
-          </div>
+      <CardContent className="p-0 flex h-9">
+        {/* Drag Handle Container */}
+        <div 
+          className="w-7 flex items-center justify-center bg-muted/30 border-r border-border/30 text-muted-foreground/40 group-hover:text-primary transition-colors cursor-grab active:cursor-grabbing"
+          {...attributes}
+          {...listeners}
+        >
+          <GripVertical size={16} />
         </div>
 
-        <div className="flex items-center gap-1">
-          <TooltipProvider>
+        {/* Content Area */}
+        <div className="flex-1 flex items-center px-2 min-w-0 gap-2">
+          <div className="flex-1 flex items-baseline gap-2 min-w-0">
+            <span className="text-[11px] font-bold truncate">
+              {config.name || `${config.count}d${config.sides}`}
+            </span>
+            <span className="text-[9px] text-muted-foreground uppercase font-semibold tracking-tight shrink-0 opacity-70">
+              {config.count}d{config.sides}{config.modifier ? (config.modifier > 0 ? `+${config.modifier}` : `-${Math.abs(config.modifier)}`) : ""}
+            </span>
+          </div>
+          
+          {/* Quick Actions */}
+          <div className="flex items-center gap-0.5 transition-opacity">
             <Tooltip>
-              <TooltipTrigger asChild>
-                <Button 
-                  variant="ghost" 
-                  size="icon" 
-                  className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setIsEditing(true);
-                  }}
-                >
-                  <PencilSimple size={16} />
-                </Button>
-              </TooltipTrigger>
+              <TooltipTrigger
+                render={
+                  <Button 
+                    variant="ghost" 
+                    size="icon" 
+                    className="h-7 w-7 text-muted-foreground/40 hover:text-primary hover:bg-primary/10 transition-colors"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setIsEditing(true);
+                    }}
+                  >
+                    <SquarePen size={14} />
+                  </Button>
+                }
+              />
               <TooltipContent>Edit</TooltipContent>
             </Tooltip>
-          </TooltipProvider>
 
-          <TooltipProvider>
             <Tooltip>
-              <TooltipTrigger asChild>
-                <div className="h-8 w-8 flex items-center justify-center text-muted-foreground/30">
-                  <Info size={16} />
+              <TooltipTrigger
+                render={
+                  <Button 
+                    variant="ghost" 
+                    size="icon" 
+                    className="h-7 w-7 text-muted-foreground/40 hover:text-destructive hover:bg-destructive/10 transition-colors"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onDelete();
+                    }}
+                  >
+                    <Trash2 size={14} />
+                  </Button>
+                }
+              />
+              <TooltipContent>Delete</TooltipContent>
+            </Tooltip>
+
+            <Tooltip>
+              <TooltipTrigger
+                render={
+                  <Button 
+                    variant="ghost" 
+                    size="icon" 
+                    className="h-7 w-7 text-primary/60 hover:text-primary hover:bg-primary/20 transition-colors"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      const mode = e.ctrlKey || e.metaKey ? "advantage" : e.shiftKey ? "disadvantage" : "normal";
+                      onRoll(mode);
+                    }}
+                  >
+                    <Dice6 size={14} />
+                  </Button>
+                }
+              />
+              <TooltipContent>
+                <div className="text-[10px] space-y-0.5">
+                  <p className="font-bold">Roll Dice</p>
+                  <p className="text-muted-foreground">CTRL + Click = Advantage</p>
+                  <p className="text-muted-foreground">SHIFT + Click = Disadvantage</p>
                 </div>
-              </TooltipTrigger>
-              <TooltipContent className="text-[10px]">
-                <p>CTRL + Click = Advantage</p>
-                <p>SHIFT + Click = Disadvantage</p>
               </TooltipContent>
             </Tooltip>
-          </TooltipProvider>
+          </div>
         </div>
       </CardContent>
     </Card>

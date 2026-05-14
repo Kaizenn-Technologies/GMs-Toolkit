@@ -6,6 +6,7 @@ import { useDiceLogs } from "./useDiceLogs";
 import { useDiceRoller } from "./useDiceRoller";
 import { DiceBuilder } from "./DiceBuilder";
 import { DiceLogs } from "./DiceLogs";
+import { TooltipProvider } from "@/components/ui/tooltip";
 
 function DiceRollerInner() {
   const { settings, openSettings } = useSettings();
@@ -25,10 +26,14 @@ function DiceRollerInner() {
     updateDiceConfig,
     deleteDiceConfig,
     addGroup,
+    updateGroup,
     deleteGroup,
     toggleGroupCollapse,
+    moveDiceToGroup,
     rollConfig,
     rollGroup,
+    reorderDice,
+    reorderGroups,
   } = useDiceRoller(addLog);
 
   return (
@@ -49,10 +54,14 @@ function DiceRollerInner() {
             onUpdateDice={updateDiceConfig}
             onDeleteDice={deleteDiceConfig}
             onAddGroup={addGroup}
+            onUpdateGroup={updateGroup}
             onDeleteGroup={deleteGroup}
             onToggleGroup={toggleGroupCollapse}
+            onMoveDiceToGroup={moveDiceToGroup}
             onRollDice={rollConfig}
             onRollGroup={rollGroup}
+            onReorderDice={reorderDice}
+            onReorderGroups={reorderGroups}
             settings={settings.diceRoller}
           />
         </div>
@@ -71,7 +80,9 @@ function DiceRollerInner() {
 export const DiceRoller: React.FC = () => {
   return (
     <SettingsProvider>
-      <DiceRollerInner />
+      <TooltipProvider>
+        <DiceRollerInner />
+      </TooltipProvider>
     </SettingsProvider>
   );
 };

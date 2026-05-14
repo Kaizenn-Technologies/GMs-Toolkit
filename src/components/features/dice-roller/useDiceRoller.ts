@@ -17,15 +17,17 @@ export function useDiceRoller(addLog: (log: RollLog) => void) {
   });
 
   useEffect(() => {
-    localStorage.setItem(PRESETS_KEY, JSON.stringify(diceConfigs));
+    const cleaned = diceConfigs.map(({ isEditing, ...rest }) => rest);
+    localStorage.setItem(PRESETS_KEY, JSON.stringify(cleaned));
   }, [diceConfigs]);
 
   useEffect(() => {
-    localStorage.setItem(GROUPS_KEY, JSON.stringify(groups));
+    const cleaned = groups.map(({ isEditing, ...rest }) => rest);
+    localStorage.setItem(GROUPS_KEY, JSON.stringify(cleaned));
   }, [groups]);
 
   const addDiceConfig = (config: DiceConfig) => {
-    setDiceConfigs((prev) => [...prev, config]);
+    setDiceConfigs((prev) => [...prev, { ...config, isEditing: true }]);
   };
 
   const updateDiceConfig = (id: string, updates: Partial<DiceConfig>) => {
@@ -50,12 +52,19 @@ export function useDiceRoller(addLog: (log: RollLog) => void) {
       name,
       diceIds: [],
       collapsed: false,
+      isEditing: true,
     };
     setGroups((prev) => [...prev, newGroup]);
   };
 
   const deleteGroup = (id: string) => {
     setGroups((prev) => prev.filter((g) => g.id !== id));
+  };
+  
+  const updateGroup = (id: string, updates: Partial<DiceGroup>) => {
+    setGroups((prev) =>
+      prev.map((g) => (g.id === id ? { ...g, ...updates } : g))
+    );
   };
 
   const toggleGroupCollapse = (id: string) => {
@@ -82,23 +91,28 @@ export function useDiceRoller(addLog: (log: RollLog) => void) {
     const config = diceConfigs.find((c) => c.id === configId);
     if (!config) return;
 
-    let finalRolls: RollResult[] = [];
+    let rolls: RollResult[] = [];
+    let rejectedRolls: RollResult[] | undefined = undefined;
     let total = 0;
 
     if (mode === "normal") {
       const result = rollDice(config);
-      finalRolls = [result];
+      rolls = [result];
       total = result.subtotal;
     } else {
       const r1 = rollDice(config);
       const r2 = rollDice(config);
       if (mode === "advantage") {
         const picked = r1.subtotal >= r2.subtotal ? r1 : r2;
-        finalRolls = [picked];
+        const rejected = r1.subtotal >= r2.subtotal ? r2 : r1;
+        rolls = [picked];
+        rejectedRolls = [rejected];
         total = picked.subtotal;
       } else {
         const picked = r1.subtotal <= r2.subtotal ? r1 : r2;
-        finalRolls = [picked];
+        const rejected = r1.subtotal <= r2.subtotal ? r2 : r1;
+        rolls = [picked];
+        rejectedRolls = [rejected];
         total = picked.subtotal;
       }
     }
@@ -107,7 +121,8 @@ export function useDiceRoller(addLog: (log: RollLog) => void) {
       id: crypto.randomUUID(),
       name: config.name || `${config.count}d${config.sides}`,
       timestamp: Date.now(),
-      rolls: finalRolls,
+      rolls,
+      rejectedRolls,
       total,
       mode,
     };
@@ -125,12 +140,13 @@ export function useDiceRoller(addLog: (log: RollLog) => void) {
 
     if (groupConfigs.length === 0) return;
 
-    let finalRolls: RollResult[] = [];
+    let rolls: RollResult[] = [];
+    let rejectedRolls: RollResult[] | undefined = undefined;
     let total = 0;
 
     if (mode === "normal") {
-      finalRolls = groupConfigs.map((c) => rollDice(c));
-      total = finalRolls.reduce((acc, r) => acc + r.subtotal, 0);
+      rolls = groupConfigs.map((c) => rollDice(c));
+      total = rolls.reduce((acc, r) => acc + r.subtotal, 0);
     } else {
       const set1 = groupConfigs.map((c) => rollDice(c));
       const set2 = groupConfigs.map((c) => rollDice(c));
@@ -139,18 +155,22 @@ export function useDiceRoller(addLog: (log: RollLog) => void) {
 
       if (mode === "advantage") {
         if (t1 >= t2) {
-          finalRolls = set1;
+          rolls = set1;
+          rejectedRolls = set2;
           total = t1;
         } else {
-          finalRolls = set2;
+          rolls = set2;
+          rejectedRolls = set1;
           total = t2;
         }
       } else {
         if (t1 <= t2) {
-          finalRolls = set1;
+          rolls = set1;
+          rejectedRolls = set2;
           total = t1;
         } else {
-          finalRolls = set2;
+          rolls = set2;
+          rejectedRolls = set1;
           total = t2;
         }
       }
@@ -160,7 +180,8 @@ export function useDiceRoller(addLog: (log: RollLog) => void) {
       id: crypto.randomUUID(),
       name: group.name,
       timestamp: Date.now(),
-      rolls: finalRolls,
+      rolls,
+      rejectedRolls,
       total,
       mode,
     };
@@ -175,6 +196,7 @@ export function useDiceRoller(addLog: (log: RollLog) => void) {
     updateDiceConfig,
     deleteDiceConfig,
     addGroup,
+    updateGroup,
     deleteGroup,
     toggleGroupCollapse,
     moveDiceToGroup,

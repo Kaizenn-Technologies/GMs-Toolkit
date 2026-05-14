@@ -1,16 +1,28 @@
-import React from "react";
+import React, { useState } from "react";
 import type { DiceConfig, DiceGroup as IDiceGroup } from "./types";
 import { DiceCard } from "./DiceCard";
 import { Button } from "@/components/ui/button";
-import { CaretDown, CaretRight, Trash, Play, FolderSimple } from "@phosphor-icons/react";
+import { Input } from "@/components/ui/input";
+import { 
+  Folder, 
+  FolderOpen, 
+  Trash2, 
+  Dice6, 
+  GripVertical,
+  Save,
+  SquarePen
+} from "lucide-react";
 import { Tooltip, TooltipProvider, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
 import { clsx } from "clsx";
+import { useSortable } from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 
 interface DiceGroupProps {
   group: IDiceGroup;
   diceConfigs: DiceConfig[];
   onToggleCollapse: () => void;
   onDelete: () => void;
+  onUpdateGroup: (id: string, updates: Partial<IDiceGroup>) => void;
   onRollGroup: (mode: "normal" | "advantage" | "disadvantage") => void;
   onUpdateDice: (id: string, updates: Partial<DiceConfig>) => void;
   onDeleteDice: (id: string) => void;
@@ -22,90 +34,156 @@ export const DiceGroup: React.FC<DiceGroupProps> = ({
   diceConfigs,
   onToggleCollapse,
   onDelete,
+  onUpdateGroup,
   onRollGroup,
   onUpdateDice,
   onDeleteDice,
   onRollDice,
 }) => {
+  const [isEditing, setIsEditing] = useState(group.isEditing || false);
+  const [name, setName] = useState(group.name);
+
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: group.id });
+
+  const style = {
+    transform: CSS.Translate.toString(transform),
+    transition,
+    zIndex: isDragging ? 10 : 1,
+    opacity: isDragging ? 0.5 : 1,
+  };
+
   const groupDice = group.diceIds
     .map((id) => diceConfigs.find((c) => c.id === id))
     .filter((c): c is DiceConfig => !!c);
 
   const handleRollAll = (e: React.MouseEvent) => {
     e.stopPropagation();
-    let mode: "normal" | "advantage" | "disadvantage" = "normal";
-    if (e.ctrlKey) mode = "advantage";
-    if (e.shiftKey) mode = "disadvantage";
+    const mode = e.ctrlKey || e.metaKey ? "advantage" : e.shiftKey ? "disadvantage" : "normal";
     onRollGroup(mode);
   };
 
+  const handleSave = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setIsEditing(false);
+    onUpdateGroup(group.id, { name, isEditing: false });
+  };
+
+  const handleEdit = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setIsEditing(true);
+  };
+
   return (
-    <div className="space-y-2">
+    <div className="space-y-1.5" ref={setNodeRef} style={style}>
       <div 
         className={clsx(
-          "flex items-center justify-between p-2 rounded-lg border transition-all cursor-pointer",
+          "flex items-center justify-between p-0 rounded border transition-all cursor-pointer overflow-hidden",
           group.collapsed ? "bg-muted/30 border-border/50" : "bg-muted/50 border-primary/20 shadow-sm"
         )}
         onClick={onToggleCollapse}
       >
-        <div className="flex items-center gap-2">
-          {group.collapsed ? <CaretRight size={16} /> : <CaretDown size={16} />}
-          <FolderSimple size={20} className="text-primary" weight={group.collapsed ? "regular" : "fill"} />
-          <span className="font-bold text-sm">{group.name}</span>
-          <span className="text-[10px] text-muted-foreground bg-background px-1.5 py-0.5 rounded border border-border/50">
-            {groupDice.length} Dice
-          </span>
+        <div className="flex items-center h-9 w-full min-w-0">
+          {/* Drag Handle Container */}
+          <div 
+            className="w-7 h-full flex items-center justify-center bg-muted/20 border-r border-border/30 text-muted-foreground/30 hover:text-primary transition-colors cursor-grab active:cursor-grabbing shrink-0"
+            {...attributes}
+            {...listeners}
+          >
+            <GripVertical size={16} />
+          </div>
+
+          <div className="flex items-center gap-2 px-2 min-w-0 flex-1">
+            {group.collapsed ? (
+              <Folder size={16} className="text-muted-foreground/50 shrink-0" />
+            ) : (
+              <FolderOpen size={16} className="text-primary shrink-0" />
+            )}
+            
+            {isEditing ? (
+              <div className="flex items-center gap-1 flex-1">
+                <Input
+                  className="h-7 text-[11px] py-0 px-2"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  autoFocus
+                  onClick={(e) => e.stopPropagation()}
+                />
+                <Button size="icon" variant="ghost" className="h-7 w-7 shrink-0" onClick={handleSave}>
+                  <Save size={14} className="text-primary" />
+                </Button>
+              </div>
+            ) : (
+              <div className="flex items-center gap-2 min-w-0 flex-1">
+                <span className="text-[11px] font-bold truncate">
+                  {group.name}
+                </span>
+                <span className="text-[9px] text-muted-foreground/60 font-semibold shrink-0 uppercase tracking-tight">
+                  {group.diceIds.length} rolls
+                </span>
+              </div>
+            )}
+          </div>
         </div>
 
-        <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
-          <TooltipProvider>
-            <Tooltip>
-              <TooltipTrigger asChild>
+        <div className="flex items-center gap-0.5 pr-1.5 shrink-0" onClick={(e) => e.stopPropagation()}>
+          <Tooltip>
+            <TooltipTrigger
+              render={
                 <Button 
                   variant="primary" 
                   size="sm" 
-                  className="h-8 gap-2 px-3"
+                  className="h-7 gap-1.5 px-2 text-[10px] font-bold"
                   onClick={handleRollAll}
                 >
-                  <Play size={14} weight="fill" />
+                  <Dice6 size={14} />
                   Roll All
                 </Button>
-              </TooltipTrigger>
-              <TooltipContent className="text-[10px]">
-                <p>CTRL + Click = Advantage</p>
-                <p>SHIFT + Click = Disadvantage</p>
-              </TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
+              }
+            />
+            <TooltipContent className="text-[10px]">
+              <p>CTRL + Click = Advantage</p>
+              <p>SHIFT + Click = Disadvantage</p>
+            </TooltipContent>
+          </Tooltip>
 
           <Button 
             variant="ghost" 
             size="icon" 
-            className="h-8 w-8 text-muted-foreground hover:text-destructive"
+            className="h-7 w-7 text-muted-foreground/40 hover:text-primary hover:bg-primary/10 transition-colors"
+            onClick={handleEdit}
+          >
+            <SquarePen size={14} />
+          </Button>
+
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            className="h-7 w-7 text-muted-foreground/40 hover:text-destructive hover:bg-destructive/10 transition-colors"
             onClick={onDelete}
           >
-            <Trash size={16} />
+            <Trash2 size={14} />
           </Button>
         </div>
       </div>
 
       {!group.collapsed && (
-        <div className="pl-6 space-y-2 border-l-2 border-muted ml-3">
-          {groupDice.length === 0 ? (
-            <div className="text-[10px] text-muted-foreground italic p-2 bg-muted/20 rounded border border-dashed border-border/50">
-              Drag dice here to group them
-            </div>
-          ) : (
-            groupDice.map((config) => (
-              <DiceCard
-                key={config.id}
-                config={config}
-                onUpdate={(updates) => onUpdateDice(config.id, updates)}
-                onDelete={() => onDeleteDice(config.id)}
-                onRoll={(mode) => onRollDice(config.id, mode)}
-              />
-            ))
-          )}
+        <div className="pl-4 space-y-1 border-l border-border/30 ml-3">
+          {groupDice.map((config) => (
+            <DiceCard
+              key={config.id}
+              config={config}
+              onUpdate={(updates) => onUpdateDice(config.id, updates)}
+              onDelete={() => onDeleteDice(config.id)}
+              onRoll={(mode) => onRollDice(config.id, mode)}
+            />
+          ))}
         </div>
       )}
     </div>
