@@ -1,15 +1,13 @@
 import React, { useEffect } from "react";
 import { PageHeader } from "@/components/layout/PageHeader";
-import { SettingsOverlay } from "@/components/features/SettingsOverlay";
-import { useSettings, SettingsProvider } from "@/contexts/SettingsContext";
+import { useSettings } from "@/contexts/SettingsContext";
 import { useDiceLogs } from "./useDiceLogs";
 import { useDiceRoller } from "./useDiceRoller";
 import { DiceBuilder } from "./DiceBuilder";
 import { DiceLogs } from "./DiceLogs";
-import { TooltipProvider } from "@/components/ui/tooltip";
 
-function DiceRollerInner() {
-  const { settings, openSettings } = useSettings();
+export const DiceRoller: React.FC = () => {
+  const { settings } = useSettings();
   const { logs, addLog, clearLogs } = useDiceLogs();
 
   // Handle auto-clear logs on refresh
@@ -41,7 +39,6 @@ function DiceRollerInner() {
       <PageHeader
         title="DM Dice Roller"
         description="Build custom dice sets, organize them into groups, and track your roll history."
-        onSettingsClick={openSettings}
       />
 
       <div className="flex-1 grid grid-cols-1 md:grid-cols-12 gap-6 overflow-hidden mt-4">
@@ -71,18 +68,6 @@ function DiceRollerInner() {
           <DiceLogs logs={logs} onClear={clearLogs} />
         </div>
       </div>
-
-      <SettingsOverlay enabledTabs={["dice"]} />
     </div>
-  );
-}
-
-export const DiceRoller: React.FC = () => {
-  return (
-    <SettingsProvider>
-      <TooltipProvider>
-        <DiceRollerInner />
-      </TooltipProvider>
-    </SettingsProvider>
   );
 };

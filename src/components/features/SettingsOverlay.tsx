@@ -5,7 +5,7 @@
  */
 
 import type { ReactNode } from "react";
-import { X, SlidersHorizontal, RotateCcw } from "lucide-react";
+import { X, SlidersHorizontal, RotateCcw, Sun, Moon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { StepperInput } from "@/components/ui/stepper-input";
@@ -147,11 +147,13 @@ export function SettingsOverlay({
   const {
     isOpen,
     closeSettings,
+    resetSitewide,
     resetPointBuy,
     resetRoll,
     resetHp,
     resetDiceRoller,
     settings,
+    updateSitewide,
     updateRoll,
     updateHp,
     updateDiceRoller,
@@ -200,6 +202,60 @@ export function SettingsOverlay({
 
         {/* Tabbed body */}
         <div className="flex-1 overflow-y-auto">
+          {/* Sitewide Settings Section */}
+          <div className="px-6 py-4 border-b border-border/50 bg-muted/30">
+            <h3 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground mb-2">
+              Sitewide Settings
+            </h3>
+            <div className="space-y-1 divide-y divide-border/40">
+              <SettingRow
+                label="Appearance"
+                description={settings.sitewide.darkMode ? "Dark Mode" : "Light Mode"}
+              >
+                <div className="flex items-center gap-2 bg-background border rounded-lg p-1">
+                  <Button
+                    variant={!settings.sitewide.darkMode ? "secondary" : "ghost"}
+                    size="sm"
+                    className="h-7 px-2 text-xs gap-1"
+                    onClick={() => updateSitewide({ darkMode: false })}
+                  >
+                    <Sun className="w-3.5 h-3.5" />
+                    Light
+                  </Button>
+                  <Button
+                    variant={settings.sitewide.darkMode ? "secondary" : "ghost"}
+                    size="sm"
+                    className="h-7 px-2 text-xs gap-1"
+                    onClick={() => updateSitewide({ darkMode: true })}
+                  >
+                    <Moon className="w-3.5 h-3.5" />
+                    Dark
+                  </Button>
+                </div>
+              </SettingRow>
+
+              <SettingRow
+                label="Show Page Titles"
+                description="Show or hide the title and description at the top of each page."
+              >
+                <Switch
+                  checked={settings.sitewide.showHeader}
+                  onCheckedChange={(v) => updateSitewide({ showHeader: v })}
+                />
+              </SettingRow>
+
+              <SettingRow
+                label="Show Footer"
+                description="Show or hide the sitewide footer."
+              >
+                <Switch
+                  checked={settings.sitewide.showFooter}
+                  onCheckedChange={(v) => updateSitewide({ showFooter: v })}
+                />
+              </SettingRow>
+            </div>
+          </div>
+
           <Tabs defaultValue={defaultTab} className="h-full flex flex-col">
             <div className="px-6 pt-4 shrink-0">
               <TabsList
@@ -358,6 +414,7 @@ export function SettingsOverlay({
             size="sm"
             className="text-muted-foreground hover:text-foreground"
             onClick={() => {
+              resetSitewide();
               if (shouldShowPointBuy) resetPointBuy();
               if (shouldShowRoll) resetRoll();
               if (shouldShowHp) resetHp();

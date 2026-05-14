@@ -1,14 +1,15 @@
-import { Moon, Sun } from "lucide-react";
+import { Settings } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useSettings } from "@/contexts/SettingsContext";
 
 interface HeaderProps {
   activeTab: "hp" | "point-buy" | "dice-roller";
   setActiveTab: (tab: "hp" | "point-buy" | "dice-roller") => void;
-  darkMode: boolean;
-  toggleDarkMode: () => void;
 }
 
-export function Header({ activeTab, setActiveTab, darkMode, toggleDarkMode }: HeaderProps) {
+export function Header({ activeTab, setActiveTab }: HeaderProps) {
+  const { settings, openSettings } = useSettings();
+
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <nav className="flex items-center justify-between px-3 sm:px-4 h-12 sm:h-14 text-sm font-medium gap-2">
@@ -51,18 +52,15 @@ export function Header({ activeTab, setActiveTab, darkMode, toggleDarkMode }: He
           </button>
         </div>
 
-        {/* Right: Theme Toggle */}
+        {/* Right: Settings Toggle */}
         <Button
           variant="ghost"
           size="icon"
-          onClick={toggleDarkMode}
+          onClick={openSettings}
           className="shrink-0 h-8 w-8 sm:h-9 sm:w-9"
+          aria-label="Open settings"
         >
-          {darkMode ? (
-            <Sun className="w-4 h-4" />
-          ) : (
-            <Moon className="w-4 h-4" />
-          )}
+          <Settings className="w-4 h-4" />
         </Button>
       </nav>
     </header>

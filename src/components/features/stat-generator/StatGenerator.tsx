@@ -26,8 +26,6 @@ import {
   getModifierClass,
   getPoolStatusClass,
 } from "@/lib/stat-generator";
-import { SettingsOverlay } from "@/components/features/SettingsOverlay";
-import { SettingsProvider } from "@/contexts/SettingsContext";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { ResetButton, ShareButton } from "@/components/ui/action-buttons";
 
@@ -48,9 +46,8 @@ import {
   STAT_TAB_ROUTES,
 } from "./useStatGenerator";
 
-function StatGeneratorInner() {
+export function StatGenerator() {
   const {
-    openSettings,
     settings,
     location,
     navigate,
@@ -107,7 +104,6 @@ function StatGeneratorInner() {
       <PageHeader
         title="D&D 5.5e Stat Generator"
         description="Generate ability scores using Point Buy, dice rolls, or the Standard Array."
-        onSettingsClick={openSettings}
       />
 
       <Card>
@@ -898,15 +894,6 @@ function StatGeneratorInner() {
         </CardContent>
       </Card>
 
-      <SettingsOverlay />
     </>
-  );
-}
-
-export function StatGenerator() {
-  return (
-    <SettingsProvider>
-      <StatGeneratorInner />
-    </SettingsProvider>
   );
 }
