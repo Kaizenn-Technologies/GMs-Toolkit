@@ -47,7 +47,7 @@ interface DiceBuilderProps {
   onMoveDiceToGroup: (diceId: string, groupId: string | null, position?: number) => void;
   onRollDice: (id: string, mode: "normal" | "advantage" | "disadvantage") => void;
   onRollGroup: (id: string, mode: "normal" | "advantage" | "disadvantage") => void;
-  onRollNotation: (notation: string, name?: string, isDaggerheart?: boolean) => void;
+  onRollNotation: (notation: string, name?: string, isDaggerheart?: boolean, mode?: "normal" | "advantage" | "disadvantage") => void;
 
   onReorderDice: (dice: DiceConfig[]) => void;
   onReorderGroups: (groups: IDiceGroup[]) => void;
@@ -386,11 +386,12 @@ export const DiceBuilder: React.FC<DiceBuilderProps> = ({
           <Button
             variant="default"
             className="gap-2 h-10 px-0 flex-row py-1 text-[11px]"
-            onClick={() => {
+            onClick={(e) => {
+              const mode = e.ctrlKey || e.metaKey ? "advantage" : e.shiftKey ? "disadvantage" : "normal";
               if (settings.daggerheartMode) {
-                onRollNotation("2d12", "Hope & Fear Roll", true);
+                onRollNotation("2d12", "Hope & Fear Roll", true, mode);
               } else {
-                onRollNotation("1d20", "Quick D20 Roll");
+                onRollNotation("1d20", "Quick D20 Roll", false, mode);
               }
             }}
           >

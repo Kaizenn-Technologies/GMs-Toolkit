@@ -17,23 +17,23 @@ export function parseDiceNotation(input: string): Partial<DiceConfig> {
   };
 
   // Keep/Drop
-  // Match k followed by digits
-  const keepMatch = cleanInput.match(/k(\d+)/);
+  // Match k followed by h/l (optional) and digits
+  const keepMatch = cleanInput.match(/k(h|l)?(\d+)/);
   if (keepMatch) {
     config.rule = {
       type: "keep",
-      target: "highest",
-      value: parseInt(keepMatch[1]),
+      target: keepMatch[1] === "l" ? "lowest" : "highest",
+      value: parseInt(keepMatch[2]),
     };
   }
 
-  // Match d followed by digits, but NOT the 'd' in '4d6'
-  const dropAfterBase = cleanInput.slice(baseMatch[0].length).match(/d(\d+)/);
+  // Match d followed by h/l (optional) and digits, but NOT the 'd' in '4d6'
+  const dropAfterBase = cleanInput.slice(baseMatch[0].length).match(/d(h|l)?(\d+)/);
   if (dropAfterBase) {
     config.rule = {
       type: "drop",
-      target: "lowest",
-      value: parseInt(dropAfterBase[1]),
+      target: dropAfterBase[1] === "h" ? "highest" : "lowest",
+      value: parseInt(dropAfterBase[2]),
     };
   }
 
