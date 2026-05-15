@@ -40,10 +40,10 @@ export function StatGeneratorSelectorRow({
 }: StatGeneratorSelectorRowProps) {
   return (
     <div className="bg-muted/30 border border-border/50 rounded-none p-4 mb-6 shadow-sm">
-      <div className="flex flex-col lg:flex-row lg:items-center gap-4 lg:gap-8">
+      <div className="flex flex-row flex-wrap  lg:items-center gap-4 lg:gap-8">
         {/* Class Selection */}
         <div className="flex flex-col sm:flex-row sm:items-center gap-2 lg:gap-3 flex-1">
-          <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground shrink-0 sm:w-24 lg:w-auto">
+          <label className="text-xs text-center font-bold uppercase tracking-wider text-muted-foreground shrink-0 sm:w-24 lg:w-auto">
             Class
           </label>
           <div className="flex-1 max-w-sm">
@@ -68,12 +68,12 @@ export function StatGeneratorSelectorRow({
 
         {/* Background Selection */}
         <div className="flex flex-col sm:flex-row sm:items-center gap-2 lg:gap-3 flex-1">
-          <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground shrink-0 sm:w-24 lg:w-auto">
+          <label className="text-xs text-center font-bold uppercase tracking-wider text-muted-foreground shrink-0 sm:w-24 lg:w-auto">
             Background
           </label>
-          <div className="flex-1 max-w-sm">
+          <div className="flex-1">
             <Select value={backgroundValue} onValueChange={onBackgroundChange}>
-              <SelectTrigger className="bg-background/50 hover:bg-background transition-colors">
+              <SelectTrigger className="w-full lg:w-23  bg-background/50 hover:bg-background transition-colors">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -88,8 +88,8 @@ export function StatGeneratorSelectorRow({
         </div>
 
         {/* Settings & Primary Info */}
-        <div className="flex items-center justify-between lg:justify-start gap-6 pt-2 lg:pt-0 border-t lg:border-t-0 border-border/30">
-          <div className="flex items-center gap-3 bg-background/40 px-3 py-1.5 rounded-none border border-border/40">
+        <div className="flex items-center justify-between lg:justify-start gap-6 pt-2 lg:pt-0 ">
+          <div className="flex items-center gap-3  px-3 py-1.5 rounded-none">
             <TooltipProvider delay={100}>
               <Tooltip>
                 <TooltipTrigger

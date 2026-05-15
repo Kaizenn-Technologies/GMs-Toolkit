@@ -149,12 +149,17 @@ const RollSet: React.FC<{ roll: RollResult, isRejected: boolean }> = ({ roll, is
             key={idx}
             className={clsx(
               "inline-flex items-center justify-center min-w-[20px] h-[20px] px-1 text-[10px] font-bold rounded border transition-colors",
-              isKept ? "bg-background/80" : "bg-muted/50 text-muted-foreground/50 line-through opacity-30",
+              isKept ? "bg-background/80" : "text-muted-foreground/50 line-through opacity-60",
               isKept && isMax && "text-green-500 border-green-500/40 bg-green-500/10",
               isKept && isMin && "text-red-500 border-red-500/40 bg-red-500/10",
               isKept && !isMax && !isMin && "border-border/30",
               isRejected && "border-muted-foreground/20"
             )}
+            style={!isKept ? {
+              backgroundColor: '#222222',
+              backgroundImage: `url("data:image/svg+xml,%3Csvg width='40' height='40' viewBox='0 0 40 40' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='%23ff5656' fill-opacity='0.4' fill-rule='evenodd'%3E%3Cpath d='M0 40L40 0H20L0 20M40 40V20L20 40'/%3E%3C/g%3E%3C/svg%3E")`,
+              backgroundSize: '12px 12px'
+            } : undefined}
           >
             {val}
           </span>

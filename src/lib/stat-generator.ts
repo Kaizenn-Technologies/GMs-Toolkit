@@ -34,7 +34,8 @@ export function getModifier(score: number): number {
 }
 
 export function formatModifier(mod: number): string {
-  return mod >= 0 ? `+${mod}` : `${mod}`;
+  if (mod > 0) return `+${mod}`;
+  return `${mod}`;
 }
 
 export function getPoolStatusClass(value: number): string {

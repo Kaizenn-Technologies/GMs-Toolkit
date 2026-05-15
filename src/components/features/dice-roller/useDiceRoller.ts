@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import type { DiceConfig, DiceGroup, RollLog, RollResult } from "./types";
-import { rollDice } from "./utils";
+import { rollDice, parseDiceNotation } from "./utils";
 
 const PRESETS_KEY = "dm-dice-presets";
 const GROUPS_KEY = "dm-dice-groups";
@@ -194,6 +194,37 @@ export function useDiceRoller(addLog: (log: RollLog) => void) {
     addLog(log);
   };
 
+  const rollNotation = (notation: string, name?: string) => {
+    // Basic validation and fallback parsing for simple dX or XdX
+    let config: Partial<DiceConfig> = parseDiceNotation(notation);
+    
+    if (!config.count || !config.sides) {
+      const match = notation.toLowerCase().match(/^(\d*)d(\d+)$/);
+      if (match) {
+        config = {
+          count: parseInt(match[1]) || 1,
+          sides: parseInt(match[2]),
+        };
+      }
+    }
+
+    if (!config.count || !config.sides) return;
+    
+    if (!config.id) config.id = Date.now().toString() + Math.random().toString(36).substring(2, 9);
+
+    const result = rollDice(config as DiceConfig);
+    const log: RollLog = {
+      id: Date.now().toString() + Math.random().toString(36).substring(2, 9),
+      name: name || notation,
+      timestamp: Date.now(),
+      rolls: [result],
+      total: result.subtotal,
+      mode: "normal",
+    };
+
+    addLog(log);
+  };
+
   const clearAll = () => {
     setDiceConfigs([]);
     setGroups([]);
@@ -212,6 +243,7 @@ export function useDiceRoller(addLog: (log: RollLog) => void) {
     moveDiceToGroup,
     rollConfig,
     rollGroup,
+    rollNotation,
     reorderDice: setDiceConfigs,
     reorderGroups: setGroups,
     clearAll,
