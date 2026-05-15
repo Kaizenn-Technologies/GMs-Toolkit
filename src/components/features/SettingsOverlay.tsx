@@ -401,6 +401,16 @@ export function SettingsOverlay({
                       onCheckedChange={(v) => updateDiceRoller({ autoClearLogs: v })}
                     />
                   </SettingRow>
+
+                  <SettingRow
+                    label="Daggerheart Mode"
+                    description="Replace the D20 quick roll with a 2d12 Hope & Fear roll."
+                  >
+                    <Switch
+                      checked={settings.diceRoller.daggerheartMode}
+                      onCheckedChange={(v) => updateDiceRoller({ daggerheartMode: v })}
+                    />
+                  </SettingRow>
                 </div>
               </TabsContent>
             )}

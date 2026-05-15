@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import type { DiceConfig, DiceGroup, RollLog, RollResult } from "./types";
-import { rollDice } from "./utils";
+import { rollDice, parseDiceNotation } from "./utils";
 
 const PRESETS_KEY = "dm-dice-presets";
 const GROUPS_KEY = "dm-dice-groups";
@@ -194,6 +194,81 @@ export function useDiceRoller(addLog: (log: RollLog) => void) {
     addLog(log);
   };
 
+  const rollNotation = (notation: string, name?: string, isDaggerheart?: boolean, mode: "normal" | "advantage" | "disadvantage" = "normal") => {
+    // Basic validation and fallback parsing for simple dX or XdX
+    let config: Partial<DiceConfig> = parseDiceNotation(notation);
+    
+    if (!config.count || !config.sides) {
+      const match = notation.toLowerCase().match(/^(\d*)d(\d+)$/);
+      if (match) {
+        config = {
+          count: parseInt(match[1]) || 1,
+          sides: parseInt(match[2]),
+        };
+      }
+    }
+
+    if (!config.count || !config.sides) return;
+    
+    if (!config.id) config.id = Date.now().toString() + Math.random().toString(36).substring(2, 9);
+
+    let rolls: RollResult[] = [];
+    let rejectedRolls: RollResult[] | undefined = undefined;
+    let total = 0;
+
+    if (mode === "normal" || isDaggerheart) {
+      const result = rollDice(config as DiceConfig);
+      rolls = [result];
+      total = result.subtotal;
+    } else {
+      const r1 = rollDice(config as DiceConfig);
+      const r2 = rollDice(config as DiceConfig);
+      if (mode === "advantage") {
+        const picked = r1.subtotal >= r2.subtotal ? r1 : r2;
+        const rejected = r1.subtotal >= r2.subtotal ? r2 : r1;
+        rolls = [picked];
+        rejectedRolls = [rejected];
+        total = picked.subtotal;
+      } else {
+        const picked = r1.subtotal <= r2.subtotal ? r1 : r2;
+        const rejected = r1.subtotal <= r2.subtotal ? r2 : r1;
+        rolls = [picked];
+        rejectedRolls = [rejected];
+        total = picked.subtotal;
+      }
+    }
+    
+    const log: RollLog = {
+      id: Date.now().toString() + Math.random().toString(36).substring(2, 9),
+      name: name || notation,
+      timestamp: Date.now(),
+      rolls,
+      rejectedRolls,
+      total,
+      mode: isDaggerheart ? "daggerheart" : mode,
+    };
+
+    if (isDaggerheart && rolls[0].results.length >= 2) {
+      const result = rolls[0];
+      const hope = result.results[0];
+      const fear = result.results[1];
+      let outcome: "hope" | "fear" | "critical" = "hope";
+      
+      if (hope === fear) {
+        outcome = "critical";
+      } else if (fear > hope) {
+        outcome = "fear";
+      } else {
+        outcome = "hope";
+      }
+      
+      log.daggerheart = { hope, fear, outcome };
+    }
+
+    addLog(log);
+  };
+
+
   const clearAll = () => {
     setDiceConfigs([]);
     setGroups([]);
@@ -212,6 +287,7 @@ export function useDiceRoller(addLog: (log: RollLog) => void) {
     moveDiceToGroup,
     rollConfig,
     rollGroup,
+    rollNotation,
     reorderDice: setDiceConfigs,
     reorderGroups: setGroups,
     clearAll,

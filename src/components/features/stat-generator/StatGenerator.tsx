@@ -337,7 +337,7 @@ export function StatGenerator() {
               </div>
 
               <div className="flex flex-col sm:flex-row sm:items-center justify-between pt-6 mt-2 gap-4 border-t border-border/40">
-                <div className="flex items-center gap-3">
+                <div className="flex flex-row justify-between">
                   <ResetButton onClick={handleReset} className="shadow-sm hover:shadow-md transition-all" />
                   <ShareButton onClick={handleShareLink} copied={copied} className="shadow-sm hover:shadow-md transition-all" />
                 </div>
@@ -368,8 +368,8 @@ export function StatGenerator() {
             </TabsContent>
 
             <TabsContent value="roll" className="space-y-6">
-              <div className=" grid grid-cols-2 sm:grid-cols-3 gap-3">
-                {ABILITIES.map((ability) => {
+              <div className=" grid grid-cols-2 sm:grid-cols-6 gap-3">
+                {ABILITIES.map((ability, index) => {
                   const box = rolledBoxes[ability];
                   const rolls = box?.rolls ?? [0, 0, 0, 0];
                   const total = box?.total ?? 0;
@@ -382,31 +382,43 @@ export function StatGenerator() {
                   return (
                     <div
                       key={ability}
-                      className="bg-muted/20 border border-border/50 rounded-none p-4 sm:p-6 flex flex-col items-center shadow-sm hover:border-border transition-colors group"
+                      className="bg-muted/20 border border-border/50 p-4 sm:p-6 flex flex-col items-center shadow-sm hover:border-border transition-colors group"
                     >
-                      <div className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-3 group-hover:text-foreground transition-colors">
-                        {ability}
+                      <div className="text-[12px] font-bold uppercase tracking-widest text-muted-foreground mb-3 group-hover:text-foreground transition-colors">
+                        Roll {index + 1}
                       </div>
-                      <div className={`text-3xl sm:text-4xl font-extrabold tabular-nums mb-2 ${totalColorClass} drop-shadow-sm`}>
-                        {total}
+                      <div className="flex flex-col gap-2 items-center justify-center mb-4">
+                        <div className={`text-3xl sm:text-4xl font-bold tabular-nums ${totalColorClass} drop-shadow-sm ${total === 0 ? "text-muted-foreground/20" : ""}`}>
+                          {total}
+                        </div>
+                        {total > 0 && (
+                          <div className={`text-sm border border-muted-foreground/20 bg-background/30 px-2 py-1 rounded font-bold ${getModifier(total) > 0 ? "text-emerald-500" : getModifier(total) < 0 ? "text-red-500" : "text-muted-foreground/60"}`}>
+                            {formatModifier(getModifier(total))}
+                          </div>
+                        )}
                       </div>
-                      <div className="text-xs font-medium text-muted-foreground/60 bg-background/50 px-2 py-1 rounded-none border border-border/30">
+                      <div className="text-xs font-medium text-muted-foreground/95 px-2 py-1 ">
                         {displayed.map((d, i) => {
                           const isLast = i === displayed.length - 1;
                           const colorClass = settings.roll?.colorDice
                             ? d === 1
-                              ? "text-red-500/80"
+                              ? "text-red-500 bg-red-500/10 border-red-500 rounded"
                               : d === 6
-                                ? "text-emerald-500/80"
-                                : ""
+                                ? "text-emerald-500/70 bg-emerald-500/10 border-emerald-500/70"
+                                : "border-white/20"
                             : "";
                           return (
                             <span
                               key={i}
-                              className={`${colorClass} ${isLast ? "line-through opacity-40" : ""} mx-0.5`}
+                              className={`${colorClass} ${isLast ? "text-muted-foreground/95 opacity-60 border-dashed" : "bg-background/50"} mx-0.5 rounded-none border border-border/30 px-2 py-1 ${d === 0 ? "text-muted-foreground/20" : ""}`}
+                              style={isLast && d > 0 ? {
+                                backgroundColor: '#222222',
+                                backgroundImage: `url("data:image/svg+xml,%3Csvg width='40' height='40' viewBox='0 0 40 40' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='%23ff5656' fill-opacity='0.4' fill-rule='evenodd'%3E%3Cpath d='M0 40L40 0H20L0 20M40 40V20L20 40'/%3E%3C/g%3E%3C/svg%3E")`,
+                                backgroundSize: '12px 12px'
+                              } : undefined}
                             >
-                              {d}
-                              {i < displayed.length - 1 ? "+" : ""}
+                              {d === 0 ? "⠿" : d}
+                              {/* {i < displayed.length - 1 ? " +" : ""} */}
                             </span>
                           );
                         })}
@@ -606,7 +618,7 @@ export function StatGenerator() {
                   </div>
 
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between pt-6 mt-4 gap-4 border-t border-border/40">
-                    <div className="flex items-center gap-3">
+                    <div className="flex flex-row justify-between">
                       <ShareButton onClick={handleShareAssigned} copied={copied} className="shadow-sm hover:shadow-md transition-all" />
                       <ResetButton onClick={handleAssignmentReset} className="shadow-sm hover:shadow-md transition-all" />
                     </div>
@@ -875,7 +887,7 @@ export function StatGenerator() {
               </div>
 
               <div className="flex flex-col sm:flex-row sm:items-center justify-between pt-6 mt-2 gap-4 border-t border-border/40">
-                <div className="flex items-center gap-3">
+                <div className="flex flex-row justify-between">
                   <ResetButton onClick={handleStandardReset} className="shadow-sm hover:shadow-md transition-all" />
                   <ShareButton onClick={handleShareLink} copied={copied} className="shadow-sm hover:shadow-md transition-all" />
                 </div>

@@ -28,6 +28,7 @@ export interface PointBuySettings {
 export interface DiceRollerSettings {
   manualNotation: boolean;
   autoClearLogs: boolean;
+  daggerheartMode: boolean;
 }
 
 export interface SitewideSettings {
@@ -85,6 +86,7 @@ export const DEFAULT_HP_SETTINGS: HpSettings = {
 export const DEFAULT_DICE_ROLLER_SETTINGS: DiceRollerSettings = {
   manualNotation: true,
   autoClearLogs: false,
+  daggerheartMode: false,
 };
 
 // ─── Context ──────────────────────────────────────────────────────────────────

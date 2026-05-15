@@ -40,5 +40,11 @@ export type RollLog = {
   rolls: RollResult[];
   rejectedRolls?: RollResult[];
   total: number;
-  mode?: "normal" | "advantage" | "disadvantage";
+  mode?: "normal" | "advantage" | "disadvantage" | "daggerheart";
+  daggerheart?: {
+    hope: number;
+    fear: number;
+    outcome: "hope" | "fear" | "critical";
+  };
 };
+

@@ -30,6 +30,7 @@ export const DiceRoller: React.FC = () => {
     moveDiceToGroup,
     rollConfig,
     rollGroup,
+    rollNotation,
     reorderDice,
     reorderGroups,
     clearAll,
@@ -58,6 +59,7 @@ export const DiceRoller: React.FC = () => {
             onMoveDiceToGroup={moveDiceToGroup}
             onRollDice={rollConfig}
             onRollGroup={rollGroup}
+            onRollNotation={rollNotation}
             onReorderDice={reorderDice}
             onReorderGroups={reorderGroups}
             onClearAll={clearAll}

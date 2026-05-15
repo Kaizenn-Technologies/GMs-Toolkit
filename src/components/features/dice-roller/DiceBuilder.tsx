@@ -8,6 +8,7 @@ import {
   Wand2,
   Trash2,
   Plus,
+  Dices,
   FolderPlus,
   Zap
 } from "lucide-react";
@@ -46,10 +47,12 @@ interface DiceBuilderProps {
   onMoveDiceToGroup: (diceId: string, groupId: string | null, position?: number) => void;
   onRollDice: (id: string, mode: "normal" | "advantage" | "disadvantage") => void;
   onRollGroup: (id: string, mode: "normal" | "advantage" | "disadvantage") => void;
+  onRollNotation: (notation: string, name?: string, isDaggerheart?: boolean, mode?: "normal" | "advantage" | "disadvantage") => void;
+
   onReorderDice: (dice: DiceConfig[]) => void;
   onReorderGroups: (groups: IDiceGroup[]) => void;
   onClearAll: () => void;
-  settings: { manualNotation: boolean };
+  settings: { manualNotation: boolean; daggerheartMode: boolean };
 }
 
 const UngroupedHeader: React.FC<{ isDragging?: boolean }> = ({ isDragging }) => {
@@ -109,9 +112,11 @@ export const DiceBuilder: React.FC<DiceBuilderProps> = ({
   onMoveDiceToGroup,
   onRollDice,
   onRollGroup,
+  onRollNotation,
   onReorderDice,
   onReorderGroups,
   onClearAll,
+  settings,
 }) => {
   const [notation, setNotation] = useState("");
   const [error, setError] = useState(false);
@@ -365,7 +370,7 @@ export const DiceBuilder: React.FC<DiceBuilderProps> = ({
             <Button size="sm" onClick={() => handleAddManual()} className="h-9 px-4">Add</Button>
           </div>
         )}
-        <div className="grid grid-cols-4 gap-2">
+        <div className="grid grid-cols-5 gap-2">
           <Button
             variant={showQuickAdd ? "default" : "secondary"}
             className="gap-2 h-10 px-0 flex-row py-1 text-[11px]"
@@ -377,6 +382,21 @@ export const DiceBuilder: React.FC<DiceBuilderProps> = ({
           <Button variant="secondary" className="gap-2 h-10 px-0 flex-row py-1 text-[11px]" onClick={handleAddNewQuick}>
             <Plus size={14} />
             Dice
+          </Button>
+          <Button
+            variant="default"
+            className="gap-2 h-10 px-0 flex-row py-1 text-[11px]"
+            onClick={(e) => {
+              const mode = e.ctrlKey || e.metaKey ? "advantage" : e.shiftKey ? "disadvantage" : "normal";
+              if (settings.daggerheartMode) {
+                onRollNotation("2d12", "Hope & Fear Roll", true, mode);
+              } else {
+                onRollNotation("1d20", "Quick D20 Roll", false, mode);
+              }
+            }}
+          >
+            <Dices size={14} />
+            {settings.daggerheartMode ? "DH Roll" : "D20"}
           </Button>
           <Button variant="secondary" className="gap-2 h-10 px-0 flex-row py-1 text-[11px]" onClick={handleAddGroupQuick}>
             <FolderPlus size={14} />
