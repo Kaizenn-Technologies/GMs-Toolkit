@@ -8,15 +8,23 @@ interface HeaderProps {
 }
 
 export function Header({ activeTab, setActiveTab }: HeaderProps) {
-  const { openSettings } = useSettings();
+  const { settings, openSettings } = useSettings();
+  const isDarkMode = settings.sitewide.darkMode;
 
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <nav className="flex items-center justify-between px-3 sm:px-4 h-12 sm:h-14 text-sm font-medium gap-2">
         {/* Left: Logo */}
-        <div className="font-bold shrink-0 text-sm sm:text-base">
-          <span className="hidden sm:inline">GM's Toolkit</span>
-          <span className="sm:hidden">GM's Toolkit</span>
+        <div className="flex items-center gap-2 shrink-0">
+          <img
+            src={isDarkMode ? "/gm-toolkit-logo-white.svg" : "/gm-toolkit-logo-black.svg"}
+            alt="GM's Toolkit Logo"
+            className="h-7 w-auto sm:h-8 transition-opacity hover:opacity-80 cursor-pointer"
+            onClick={() => setActiveTab("hp")}
+          />
+          <span className="font-bold text-sm sm:text-base hidden lg:inline tracking-tight">
+            GM's Toolkit
+          </span>
         </div>
 
         {/* Center: Tabs */}
