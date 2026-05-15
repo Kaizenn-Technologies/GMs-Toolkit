@@ -194,7 +194,7 @@ export function useDiceRoller(addLog: (log: RollLog) => void) {
     addLog(log);
   };
 
-  const rollNotation = (notation: string, name?: string) => {
+  const rollNotation = (notation: string, name?: string, isDaggerheart?: boolean) => {
     // Basic validation and fallback parsing for simple dX or XdX
     let config: Partial<DiceConfig> = parseDiceNotation(notation);
     
@@ -213,17 +213,35 @@ export function useDiceRoller(addLog: (log: RollLog) => void) {
     if (!config.id) config.id = Date.now().toString() + Math.random().toString(36).substring(2, 9);
 
     const result = rollDice(config as DiceConfig);
+    
     const log: RollLog = {
       id: Date.now().toString() + Math.random().toString(36).substring(2, 9),
       name: name || notation,
       timestamp: Date.now(),
       rolls: [result],
       total: result.subtotal,
-      mode: "normal",
+      mode: isDaggerheart ? "daggerheart" : "normal",
     };
+
+    if (isDaggerheart && result.results.length >= 2) {
+      const hope = result.results[0];
+      const fear = result.results[1];
+      let outcome: "hope" | "fear" | "critical" = "hope";
+      
+      if (hope === fear) {
+        outcome = "critical";
+      } else if (fear > hope) {
+        outcome = "fear";
+      } else {
+        outcome = "hope";
+      }
+      
+      log.daggerheart = { hope, fear, outcome };
+    }
 
     addLog(log);
   };
+
 
   const clearAll = () => {
     setDiceConfigs([]);

@@ -68,6 +68,11 @@ const LogEntry: React.FC<{ log: RollLog }> = ({ log }) => {
             "flex items-center justify-center min-w-[45px] font-bold text-lg border-r border-border/40 shrink-0 shadow-inner",
             log.mode === "advantage" ? "text-green-500 bg-green-500/10" :
               log.mode === "disadvantage" ? "text-red-500 bg-red-500/10" :
+                log.mode === "daggerheart" ? (
+                  log.daggerheart?.outcome === "critical" ? "text-amber-500 bg-amber-500/20" :
+                  log.daggerheart?.outcome === "hope" ? "text-yellow-500 bg-yellow-500/10" :
+                  "text-purple-500 bg-purple-500/10"
+                ) :
                 "text-primary bg-primary/10"
           )}
         >
@@ -84,12 +89,20 @@ const LogEntry: React.FC<{ log: RollLog }> = ({ log }) => {
               {timeString}
             </span>
           </div>
-          {hasAdvDis && (
+          {(hasAdvDis || log.mode === "daggerheart") && (
             <span className={clsx(
               "text-[10px] font-semibold uppercase tracking-widest",
-              log.mode === "advantage" ? "text-green-500/70" : "text-red-500/70"
+              log.mode === "advantage" ? "text-green-500/70" : 
+              log.mode === "disadvantage" ? "text-red-500/70" :
+              log.mode === "daggerheart" ? (
+                log.daggerheart?.outcome === "critical" ? "text-amber-500" :
+                log.daggerheart?.outcome === "hope" ? "text-yellow-500/80" : "text-purple-500/80"
+              ) : ""
             )}>
-              {log.mode}
+              {log.mode === "daggerheart" ? (
+                log.daggerheart?.outcome === "critical" ? "Critical Success!" :
+                `with ${log.daggerheart?.outcome}`
+              ) : log.mode}
             </span>
           )}
         </div>
@@ -119,7 +132,7 @@ const LogEntry: React.FC<{ log: RollLog }> = ({ log }) => {
 
                 {/* Table-like row 2: The Rolls */}
                 <div className="flex flex-col gap-2 pl-1">
-                  <RollSet roll={roll} isRejected={false} />
+                  <RollSet roll={roll} isRejected={false} isDaggerheart={log.mode === "daggerheart"} />
                   {log.rejectedRolls && log.rejectedRolls[idx] && (
                     <div className="flex items-start gap-2">
                       <span className="text-[9px] font-semibold uppercase text-muted-foreground/40 mt-1 shrink-0">Discarded</span>
@@ -136,7 +149,7 @@ const LogEntry: React.FC<{ log: RollLog }> = ({ log }) => {
   );
 };
 
-const RollSet: React.FC<{ roll: RollResult, isRejected: boolean }> = ({ roll, isRejected }) => {
+const RollSet: React.FC<{ roll: RollResult, isRejected: boolean, isDaggerheart?: boolean }> = ({ roll, isRejected, isDaggerheart }) => {
   return (
     <div className={clsx("flex flex-wrap gap-1", isRejected && "opacity-40 grayscale")}>
       {roll.results.map((val, idx) => {
@@ -144,15 +157,26 @@ const RollSet: React.FC<{ roll: RollResult, isRejected: boolean }> = ({ roll, is
         const isMin = val === 1;
         const isKept = roll.kept[idx];
 
+        // Daggerheart coloring: 0 is Hope (Golden), 1 is Fear (Purple)
+        const isHopeDie = isDaggerheart && idx === 0;
+        const isFearDie = isDaggerheart && idx === 1;
+
         return (
           <span
             key={idx}
             className={clsx(
-              "inline-flex items-center justify-center min-w-[20px] h-[20px] px-1 text-[10px] font-bold rounded border transition-colors",
+              "inline-flex items-center justify-center min-w-[20px] h-[20px] px-1 text-[10px] font-bold rounded border transition-colors relative",
               isKept ? "bg-background/80" : "text-muted-foreground/50 line-through opacity-60",
-              isKept && isMax && "text-green-500 border-green-500/40 bg-green-500/10",
-              isKept && isMin && "text-red-500 border-red-500/40 bg-red-500/10",
-              isKept && !isMax && !isMin && "border-border/30",
+              
+              // Standard coloring
+              !isDaggerheart && isKept && isMax && "text-green-500 border-green-500/40 bg-green-500/10",
+              !isDaggerheart && isKept && isMin && "text-red-500 border-red-500/40 bg-red-500/10",
+              !isDaggerheart && isKept && !isMax && !isMin && "border-border/30",
+              
+              // Daggerheart coloring
+              isHopeDie && "text-yellow-600 border-yellow-500/50 bg-yellow-500/10 shadow-[0_0_8px_-2px_rgba(234,179,8,0.3)]",
+              isFearDie && "text-purple-600 border-purple-500/50 bg-purple-500/10 shadow-[0_0_8px_-2px_rgba(168,85,247,0.3)]",
+              
               isRejected && "border-muted-foreground/20"
             )}
             style={!isKept ? {
@@ -162,6 +186,8 @@ const RollSet: React.FC<{ roll: RollResult, isRejected: boolean }> = ({ roll, is
             } : undefined}
           >
             {val}
+            {/* {isHopeDie && <span className="absolute -top-2.5 left-0 text-[7px] text-yellow-600/70 font-black">H</span>} */}
+            {/* {isFearDie && <span className="absolute -top-2.5 left-0 text-[7px] text-purple-600/70 font-black">F</span>} */}
           </span>
         );
       })}
@@ -169,6 +195,7 @@ const RollSet: React.FC<{ roll: RollResult, isRejected: boolean }> = ({ roll, is
     </div>
   );
 };
+
 
 const CriteriaBadges: React.FC<{ config: any }> = ({ config }) => {
   const { rule, explode, reroll } = config;
