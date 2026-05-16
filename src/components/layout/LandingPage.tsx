@@ -1,6 +1,6 @@
-import { Calculator, Users, Dices, ArrowRight } from "lucide-react";
+import { Calculator, Users, Dices } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import { Button } from "@/components/ui/button";
+
 import { useSettings } from "@/contexts/SettingsContext";
 
 export function LandingPage() {
