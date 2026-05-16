@@ -6,20 +6,25 @@ import { StatGenerator } from "@/components/features/stat-generator/StatGenerato
 import { DiceRoller } from "@/components/features/dice-roller/DiceRoller";
 import { SettingsOverlay } from "@/components/features/SettingsOverlay";
 
+import { LandingPage } from "@/components/layout/LandingPage";
+
 export default function App() {
   const location = useLocation();
   const navigate = useNavigate();
 
-  const getActiveTab = (): "hp" | "point-buy" | "dice-roller" => {
+  const getActiveTab = (): "hp" | "point-buy" | "dice-roller" | "landing" => {
+    if (location.pathname === "/") return "landing";
     if (location.pathname.startsWith("/stat-generator")) return "point-buy";
     if (location.pathname.startsWith("/dm-dice-roller")) return "dice-roller";
+    if (location.pathname.startsWith("/hp-calculator")) return "hp";
     return "hp";
   };
 
   const activeTab = getActiveTab();
 
-  const setActiveTab = (tab: "hp" | "point-buy" | "dice-roller") => {
-    if (tab === "hp") navigate("/hp-calculator");
+  const setActiveTab = (tab: "hp" | "point-buy" | "dice-roller" | "landing") => {
+    if (tab === "landing") navigate("/");
+    else if (tab === "hp") navigate("/hp-calculator");
     else if (tab === "point-buy") navigate("/stat-generator/pointbuy");
     else if (tab === "dice-roller") navigate("/dm-dice-roller");
   };
@@ -33,7 +38,7 @@ export default function App() {
 
       <main className="max-w-6xl mx-auto w-full flex-1 flex flex-col pt-4 px-4 pb-2 md:pt-8 md:px-8 md:pb-2">
         <Routes>
-          <Route path="/" element={<Navigate to="/hp-calculator" replace />} />
+          <Route path="/" element={<LandingPage />} />
           <Route path="/hp-calculator" element={<HpCalculator />} />
           <Route
             path="/stat-generator"
@@ -46,7 +51,7 @@ export default function App() {
           />
           <Route path="/stat-generator/rolled" element={<StatGenerator />} />
           <Route path="/dm-dice-roller" element={<DiceRoller />} />
-          <Route path="*" element={<Navigate to="/hp-calculator" replace />} />
+          <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
         <Footer />
       </main>
@@ -57,7 +62,9 @@ export default function App() {
             ? ["hp"]
             : activeTab === "point-buy"
               ? ["pointbuy", "roll", "standard"]
-              : ["dice"]
+              : activeTab === "dice-roller"
+                ? ["dice"]
+                : []
         }
       />
     </div>

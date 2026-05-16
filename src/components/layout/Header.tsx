@@ -3,24 +3,36 @@ import { Button } from "@/components/ui/button";
 import { useSettings } from "@/contexts/SettingsContext";
 
 interface HeaderProps {
-  activeTab: "hp" | "point-buy" | "dice-roller";
-  setActiveTab: (tab: "hp" | "point-buy" | "dice-roller") => void;
+  activeTab: "hp" | "point-buy" | "dice-roller" | "landing";
+  setActiveTab: (tab: "hp" | "point-buy" | "dice-roller" | "landing") => void;
 }
 
 export function Header({ activeTab, setActiveTab }: HeaderProps) {
-  const { openSettings } = useSettings();
+  const { settings, openSettings } = useSettings();
+  const isDarkMode = settings.sitewide.darkMode;
 
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-      <nav className="flex items-center justify-between px-3 sm:px-4 h-12 sm:h-14 text-sm font-medium gap-2">
-        {/* Left: Logo */}
-        <div className="font-bold shrink-0 text-sm sm:text-base">
-          <span className="hidden sm:inline">GM's Toolkit</span>
-          <span className="sm:hidden">GM's Toolkit</span>
+      <nav className="flex items-center h-12 sm:h-14 px-3 sm:px-4 text-sm font-medium">
+        {/* Left: Logo (takes 1/3 of space or matches right) */}
+        <div className="flex-1 flex items-center">
+          <div 
+            className="flex items-center gap-2 shrink-0 cursor-pointer transition-opacity hover:opacity-80"
+            onClick={() => setActiveTab("landing")}
+          >
+            <img
+              src={isDarkMode ? "/gm-toolkit-logo-white.svg" : "/gm-toolkit-logo-black.svg"}
+              alt="GM's Toolkit Logo"
+              className="h-7 w-auto sm:h-8"
+            />
+            <span className="font-bold text-sm sm:text-base hidden lg:inline tracking-tight">
+              GM's Toolkit
+            </span>
+          </div>
         </div>
 
-        {/* Center: Tabs */}
-        <div className="flex items-center gap-3 sm:gap-6">
+        {/* Center: Tabs (True center) */}
+        <div className="flex items-center gap-3 sm:gap-6 shrink-0">
           <button
             onClick={() => setActiveTab("hp")}
             className={`transition-colors hover:text-foreground/80 whitespace-nowrap text-xs sm:text-sm ${activeTab === "hp" ? "text-foreground" : "text-foreground/60"
@@ -49,16 +61,18 @@ export function Header({ activeTab, setActiveTab }: HeaderProps) {
           </button>
         </div>
 
-        {/* Right: Settings Toggle */}
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={openSettings}
-          className="shrink-0 h-8 w-8 sm:h-9 sm:w-9"
-          aria-label="Open settings"
-        >
-          <Settings className="w-4 h-4" />
-        </Button>
+        {/* Right: Settings Toggle (takes 1/3 of space or matches left) */}
+        <div className="flex-1 flex justify-end">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={openSettings}
+            className="shrink-0 h-8 w-8 sm:h-9 sm:w-9"
+            aria-label="Open settings"
+          >
+            <Settings className="w-4 h-4" />
+          </Button>
+        </div>
       </nav>
     </header>
   );

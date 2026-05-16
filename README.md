@@ -1,73 +1,71 @@
-# React + TypeScript + Vite
+# GM's Toolkit
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+![Header](./.github/header.png)
 
-Currently, two official plugins are available:
+## About
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+GM's Toolkit is a powerful web application designed to streamline game management for Game Masters.
 
-## React Compiler
+### Features
+- **HP Calculator**: Track party HP, temporary HP, and status effects for the whole table.
+- **Stat Generator**: Create characters with Point Buy, Standard Array, or advanced dice rolling logic.
+- **Dice Roller**: High-density DM dice roller with custom groups and Daggerheart (2d12) support.
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+## HP Calculator
 
-## Expanding the ESLint configuration
+Manage your party's health, temporary hit points, and death saves in one compact, efficient interface.
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+- HP Calculation with Multiclass support
+    
+    ![HP Input](./.github//features/hp-calculator-input.png)
+- Rolled HP Results with differnce indicator against the average HP for the class combination
+    
+    ![HP Output](./.github/features/hp-calculator-output.png)
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+- Ability to share rolled stats with verifiable Name, No. of Rerolls, Time, and the dice roll results.
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
+<!-- > Insert image of share modal -->
+    
+## Stat Generator
+Generate balanced characters with real-time point tracking or use advanced rolling mechanics.
 
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
+- Point buy with class & background section for suggested stat allocation.
+    ![Point Buy](./.github/features/point-buy.png)
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+- Rolled Stats with suffled & manual score allocation options.
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+    ![Rolled Stats](./.github/features/rolled-stats.png)
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
+- Standard Array with PHB Suggested Points Allocation based on class.
+
+    ![Standard Array](./.github/features/standard-array.png)
+
+
+## DM Dice Roller
+
+A specialized tool for DMs needing quick, high-density dice rolls. Features custom grouping, advantage/disadvantage toggles, and specific support for the Daggerheart RPG system.
+
+- Preset Rolls with groups for easy access to frequently used dice combinations or custom dice rolls for different creatures.
+- Also supports Rolling with advantage and disadvantage 
+
+    ![Dice Preset Groups](./.github/features/dm-roller-groups.png)
+    ![Add Dice](./.github/features/add-dice.png)
+    ![Quick Add Dice](./.github/features/quick-add-dice.png)    
+
+
+| **Detailed** | **Compact** |
+| :---: | :---: |
+| ![Dice Roll History Detailed](./.github/features/dm-roller-log-expanded.png) | ![Dice Roll History Compact](./.github/features/dm-roller-log-compact.png) |
+
+
+
+- Partial Support for Daggerheart, can be turned on in the settings, more comming soon!
+    
+    ![](./.github/features/dm-roller-daggerheart-hope-fear.png)
+
+# TODO
+
+- Share modal component, also display the time of rolled HP
+- Encrypted URL for tamper-proof sharing.
+- Share & Reset button, for Rolled Stats
+
