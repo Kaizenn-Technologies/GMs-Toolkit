@@ -69,7 +69,7 @@ A specialized tool for DMs needing quick, high-density dice rolls. Features cust
 
 </details>
 
-# Future Enhancements
+## Future Enhancements
 
 - Share modal component, also display the time of rolled HP
 - Encrypted URL for tamper-proof sharing.
