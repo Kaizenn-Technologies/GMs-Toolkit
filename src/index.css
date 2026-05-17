@@ -298,3 +298,23 @@ code {
     perspective: 1000px;
   }
 }
+
+@utility rainbow-badge-border {
+  background: repeating-linear-gradient(90deg in hsl longer hue, red 0 50%) 0/200%;
+  animation: r 6s linear infinite;
+}
+
+@utility rainbow-badge-text {
+  background: repeating-linear-gradient(90deg in hsl longer hue, red 0 50%) 0/200%;
+  animation: r 6s linear infinite;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  -webkit-text-fill-color: transparent;
+}
+
+@keyframes r {
+  to {
+    background-position: 100%;
+  }
+}

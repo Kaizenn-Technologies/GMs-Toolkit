@@ -1,4 +1,4 @@
-import { Dices, Shuffle } from "lucide-react";
+import { Dices, Shuffle, BookOpen, Sparkles, Shield, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Select,
@@ -15,9 +15,11 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { useState, useEffect, useRef } from "react";
 import { StepperInput } from "@/components/ui/stepper-input";
-import { classNames } from "@/lib/classes";
+import { classes, classNames } from "@/lib/classes";
 import { backgroundNames } from "@/lib/backgrounds";
+import type { Ability } from "@/types";
 import {
   ABILITIES,
   ABILITY_ABBR,
@@ -98,6 +100,208 @@ export function StatGenerator() {
 
   const pointsColor = getPoolStatusClass(remaining);
   const bgPoolColor = getPoolStatusClass(bgBonusRemaining);
+
+  // Skills and Saving Throws state
+  const [level, setLevel] = useState<number>(1);
+  const [skillsState, setSkillsState] = useState<Record<string, "none" | "prof" | "expertise">>(() => {
+    return {
+      Athletics: "none",
+      Acrobatics: "none",
+      "Sleight of Hand": "none",
+      Stealth: "none",
+      Arcana: "none",
+      History: "none",
+      Investigation: "none",
+      Nature: "none",
+      Religion: "none",
+      "Animal Handling": "none",
+      Insight: "none",
+      Medicine: "none",
+      Perception: "none",
+      Survival: "none",
+      Deception: "none",
+      Intimidation: "none",
+      Performance: "none",
+      Persuasion: "none",
+    };
+  });
+
+  const [savingThrowsState, setSavingThrowsState] = useState<Record<Ability, "none" | "prof" | "expertise">>(() => {
+    return {
+      Strength: "none",
+      Dexterity: "none",
+      Constitution: "none",
+      Intelligence: "none",
+      Wisdom: "none",
+      Charisma: "none",
+    };
+  });
+
+  const activeClass = activeTab === "pointbuy" ? selectedClass : selectedStandardClass;
+
+  // Autofill saving throws when active class changes
+  useEffect(() => {
+    if (!activeClass || activeClass === CHOOSE_STANDARD_CLASS) {
+      setSavingThrowsState({
+        Strength: "none",
+        Dexterity: "none",
+        Constitution: "none",
+        Intelligence: "none",
+        Wisdom: "none",
+        Charisma: "none",
+      });
+      return;
+    }
+
+    const activeClassData = Object.values(classes).find((c) => c.name === activeClass);
+    const activeSavingThrows = (activeClassData?.savingThrows ?? []) as Ability[];
+
+    setSavingThrowsState((prev) => {
+      const next = { ...prev };
+      ABILITIES.forEach((ability) => {
+        if (activeSavingThrows.includes(ability)) {
+          next[ability] = "prof";
+        } else {
+          next[ability] = "none";
+        }
+      });
+      return next;
+    });
+  }, [activeClass]);
+
+  const handleSkillsReset = () => {
+    setSkillsState({
+      Athletics: "none",
+      Acrobatics: "none",
+      "Sleight of Hand": "none",
+      Stealth: "none",
+      Arcana: "none",
+      History: "none",
+      Investigation: "none",
+      Nature: "none",
+      Religion: "none",
+      "Animal Handling": "none",
+      Insight: "none",
+      Medicine: "none",
+      Perception: "none",
+      Survival: "none",
+      Deception: "none",
+      Intimidation: "none",
+      Performance: "none",
+      Persuasion: "none",
+    });
+
+    if (!activeClass || activeClass === CHOOSE_STANDARD_CLASS) {
+      setSavingThrowsState({
+        Strength: "none",
+        Dexterity: "none",
+        Constitution: "none",
+        Intelligence: "none",
+        Wisdom: "none",
+        Charisma: "none",
+      });
+    } else {
+      const activeClassData = Object.values(classes).find((c) => c.name === activeClass);
+      const activeSavingThrows = (activeClassData?.savingThrows ?? []) as Ability[];
+      setSavingThrowsState(() => {
+        const next = {
+          Strength: "none" as const,
+          Dexterity: "none" as const,
+          Constitution: "none" as const,
+          Intelligence: "none" as const,
+          Wisdom: "none" as const,
+          Charisma: "none" as const,
+        };
+        ABILITIES.forEach((ability) => {
+          if (activeSavingThrows.includes(ability)) {
+            next[ability] = "prof";
+          }
+        });
+        return next;
+      });
+    }
+    setLevel(1);
+  };
+
+  const profBonus = Math.floor((level - 1) / 4) + 2;
+
+  const SKILL_MAPPING: Record<Ability, string[]> = {
+    Strength: ["Athletics"],
+    Dexterity: ["Acrobatics", "Sleight of Hand", "Stealth"],
+    Constitution: [],
+    Intelligence: ["Arcana", "History", "Investigation", "Nature", "Religion"],
+    Wisdom: ["Animal Handling", "Insight", "Medicine", "Perception", "Survival"],
+    Charisma: ["Deception", "Intimidation", "Performance", "Persuasion"],
+  };
+
+  const getAbilityModifier = (ability: Ability): number | null => {
+    let baseScore: number | null = null;
+    if (activeTab === "pointbuy") {
+      baseScore = scores[ability];
+    } else {
+      // standard or roll
+      baseScore = standardScores[ability];
+    }
+
+    if (baseScore === null) return null;
+
+    const bgBonus = bgBonuses[ability] || 0;
+    const manualBonus = manualBonuses[ability] || 0;
+    const total = baseScore + bgBonus + (featBonusEnabled ? manualBonus : 0);
+    return getModifier(total);
+  };
+
+  const getSavingThrowValueRaw = (ability: Ability): number | null => {
+    const mod = getAbilityModifier(ability);
+    if (mod === null) return null;
+
+    const profState = savingThrowsState[ability] ?? "none";
+    let bgBonusAmount = 0;
+    if (profState === "prof") {
+      bgBonusAmount = profBonus;
+    } else if (profState === "expertise") {
+      bgBonusAmount = 2 * profBonus;
+    }
+
+    return mod + bgBonusAmount;
+  };
+
+  const getSavingThrowValue = (ability: Ability): string => {
+    const raw = getSavingThrowValueRaw(ability);
+    return raw !== null ? formatModifier(raw) : "—";
+  };
+
+  const getSkillValueRaw = (ability: Ability, skillName: string): number | null => {
+    const mod = getAbilityModifier(ability);
+    if (mod === null) return null;
+
+    const profState = skillsState[skillName] ?? "none";
+    let bonus = 0;
+    if (profState === "prof") {
+      bonus = profBonus;
+    } else if (profState === "expertise") {
+      bonus = 2 * profBonus;
+    } else if (profState === "none") {
+      if (activeClass === "Bard") {
+        bonus = Math.floor(profBonus / 2);
+      }
+    }
+
+    return mod + bonus;
+  };
+
+  const getSkillValue = (ability: Ability, skillName: string): string => {
+    const raw = getSkillValueRaw(ability, skillName);
+    return raw !== null ? formatModifier(raw) : "—";
+  };
+
+  const handleSavingThrowChange = (ability: Ability, state: "none" | "prof" | "expertise") => {
+    setSavingThrowsState((prev) => ({ ...prev, [ability]: state }));
+  };
+
+  const handleSkillChange = (skillName: string, state: "none" | "prof" | "expertise") => {
+    setSkillsState((prev) => ({ ...prev, [skillName]: state }));
+  };
 
   return (
     <>
@@ -906,6 +1110,391 @@ export function StatGenerator() {
         </CardContent>
       </Card>
 
+      {/* Skills & Saving Throws Section */}
+      <Card className="mt-6 border-border bg-card/45 backdrop-blur-sm">
+        <CardContent className="">
+          <div className="flex flex-col md:flex-row md:items-center justify-between pb-2 mb-2 border-b border-border/40 gap-4">
+            <div>
+              <h3 className="text-lg font-bold tracking-tight">Skills &amp; Saving Throws</h3>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                Select class for automatic saving throws.
+              </p>
+            </div>
+
+            <div className="flex flex-wrap items-center gap-4">
+              <div className="flex items-center gap-2 px-3 py-1.5">
+                <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Character Level:</span>
+                <StepperInput
+                  value={level}
+                  onChange={setLevel}
+                  min={1}
+                  max={20}
+                  className="w-24 bg-background/50 h-7"
+                />
+              </div>
+
+              <div className="flex items-center gap-2 px-3 py-1.5">
+                <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Proficiency Bonus:</span>
+                <span className="text-sm font-extrabold text-primary font-mono px-2 py-0.5 rounded border border-primary/20">
+                  +{profBonus}
+                </span>
+              </div>
+              <ResetButton
+                onClick={handleSkillsReset}
+                className="shadow-sm hover:shadow-md transition-all h-8"
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {ABILITIES.map((ability) => {
+              const skills = SKILL_MAPPING[ability];
+
+              return (
+                <div key={ability} className="flex flex-col border border-border bg-card/60 backdrop-blur-sm rounded-lg shadow-sm hover:shadow-md transition-all">
+                  {/* Ability Header with Integrated Saving Throw */}
+                  <div className="bg-muted/60 py-2 px-3 text-center border-b border-border/50 flex items-center justify-between rounded-t-lg">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <SkillDropdown
+                        state={savingThrowsState[ability]}
+                        isBard={activeClass === "Bard"}
+                        isSkill={false}
+                        onChange={(state) => handleSavingThrowChange(ability, state)}
+                      />
+                      <span className="text-xs uppercase tracking-widest text-foreground font-bold truncate">
+                        <span className="hidden sm:inline lg:hidden xl:inline">{ability}</span>
+                        <span className="sm:hidden lg:inline xl:hidden">{ability.slice(0, 3)}</span> Saving Throw
+                      </span>
+                    </div>
+                    <span className={`font-mono font-bold text-md bg-background/60 px-2 py-0.5 min-w-[32px] text-center rounded shrink-0 ${getModifierClass(getSavingThrowValueRaw(ability))}`}>
+                      {getSavingThrowValue(ability)}
+                    </span>
+                  </div>
+
+                  {/* Body with Skills (if any) */}
+                  {skills.length > 0 && (
+                    <div className="flex-1 p-3 ">
+                      {skills.map((skill, index) => (
+                        <div key={skill} className="flex items-center justify-between text-sm py-1">
+                          <div className="flex items-center gap-1.5 min-w-0">
+                            <SkillDropdown
+                              state={skillsState[skill] || "none"}
+                              isBard={activeClass === "Bard"}
+                              isSkill={true}
+                              onChange={(state) => handleSkillChange(skill, state)}
+                              openUpward={index >= 2}
+                            />
+                            <span className="truncate" title={skill}>
+                              {skill}
+                            </span>
+                          </div>
+                          <div className="flex-1 mx-2 pt-1 border-b border-dashed border-muted-foreground/40 self-center" />
+                          <span className={`font-mono font-bold text-xs bg-background/60 border border-border px-1.5 py-0.5 min-w-[28px] text-center rounded shrink-0 ${getModifierClass(getSkillValueRaw(ability, skill))}`}>
+                            {getSkillValue(ability, skill)}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+          {/* Reference & Progression Helper */}
+          <div className="mt-8 pt-6 border-t border-border/40">
+            <div className="flex items-center gap-2 mb-4">
+              <BookOpen className="w-5 h-5 text-primary/80" />
+              <h4 className="text-sm font-bold uppercase tracking-wider text-foreground">
+                Progression &amp; Gear Reference
+              </h4>
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {/* Feats Section */}
+              <div className="space-y-3">
+                <div className="flex items-center gap-1.5 text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1">
+                  <Sparkles className="w-4 h-4 text-amber-500/80" />
+                  <span>Feats &amp; Ability Score Increases</span>
+                </div>
+
+                <div className="space-y-2.5">
+                  {/* Skilled Feat */}
+                  <div className="bg-muted/10 border border-border/40 rounded-lg p-3 hover:bg-muted/20 transition-all group">
+                    <div className="flex flex-wrap items-center justify-between gap-2 mb-1.5">
+                      <span className="font-bold text-sm text-foreground group-hover:text-primary transition-colors">
+                        Skilled
+                      </span>
+                      <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-emerald-500/10 border border-emerald-500/25 text-emerald-400">
+                        Origin Feat
+                      </span>
+                    </div>
+                    <p className="text-xs text-muted-foreground leading-relaxed">
+                      You gain proficiency in any combination of three skills or tools of your choice. Excellent for broadening your utility.
+                    </p>
+                  </div>
+
+                  {/* ASI Feat */}
+                  <div className="bg-muted/10 border border-border/40 rounded-lg p-3 hover:bg-muted/20 transition-all group">
+                    <div className="flex flex-wrap items-center justify-between gap-2 mb-1.5">
+                      <span className="font-bold text-sm text-foreground group-hover:text-primary transition-colors">
+                        Ability Score Improvement
+                      </span>
+                      <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-blue-500/10 border border-blue-500/25 text-blue-400">
+                        General Feat
+                      </span>
+                    </div>
+                    <p className="text-xs text-muted-foreground leading-relaxed">
+                      Increase one ability score by 2, or two ability scores by 1. You cannot increase an ability score above 20 using this feature.
+                    </p>
+                  </div>
+
+                  {/* Resilient Feat */}
+                  <div className="bg-muted/10 border border-border/40 rounded-lg p-3 hover:bg-muted/20 transition-all group">
+                    <div className="flex flex-wrap items-center justify-between gap-2 mb-1.5">
+                      <span className="font-bold text-sm text-foreground group-hover:text-primary transition-colors">
+                        Resilient
+                      </span>
+                      <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-blue-500/10 border border-blue-500/25 text-blue-400">
+                        General Feat
+                      </span>
+                    </div>
+                    <p className="text-xs text-muted-foreground leading-relaxed">
+                      Increase the ability score of your choice by 1, and gain proficiency in saving throws using that ability.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Magical Items Section */}
+              <div className="space-y-3">
+                <div className="flex items-center justify-between mb-1">
+                  <div className="flex items-center gap-1.5 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                    <Shield className="w-4 h-4 text-blue-500/80" />
+                    <span>Stat-Enhancing Magic Items</span>
+                  </div>
+                  <TooltipProvider delay={100}>
+                    <Tooltip>
+                      <TooltipTrigger
+                        render={
+                          <span className="cursor-help text-[10px] font-semibold text-muted-foreground/80 bg-muted/40 border border-border/60 border-dashed rounded px-1.5 py-0.5 flex items-center gap-1 transition-colors hover:bg-muted/65">
+                            <span className="text-blue-400">💠</span> Max 3 Attuned
+                          </span>
+                        }
+                      />
+                      <TooltipContent>
+                        <p>Characters are limited to 3 attuned magic items (unless you are an Artificer).</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                  {/* Headband of Intellect */}
+                  <div className="bg-muted/10 border border-border/40 rounded-lg p-3 hover:bg-muted/20 transition-all flex flex-col justify-between">
+                    <div>
+                      <div className="flex items-center justify-between gap-2 mb-1">
+                        <span className="font-bold text-xs text-foreground truncate">Headband of Intellect</span>
+                        <span className="text-[10px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded bg-emerald-500/10 border border-emerald-500/25 text-emerald-400 shrink-0">
+                          Uncommon
+                        </span>
+                      </div>
+                      <p className="text-[11px] text-muted-foreground leading-relaxed">
+                        Sets your <strong className="text-foreground">INT to 20</strong> while worn. No effect if INT is already 20+.
+                      </p>
+                    </div>
+                    <div className="text-[10px] text-blue-400/80 mt-1.5 flex items-center gap-1">
+                      <span>💠 Requires Attunement</span>
+                    </div>
+                  </div>
+
+                  {/* Gauntlets of Ogre Power */}
+                  <div className="bg-muted/10 border border-border/40 rounded-lg p-3 hover:bg-muted/20 transition-all flex flex-col justify-between">
+                    <div>
+                      <div className="flex items-center justify-between gap-2 mb-1">
+                        <span className="font-bold text-xs text-foreground truncate">Gauntlets of Ogre Power</span>
+                        <span className="text-[10px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded bg-emerald-500/10 border border-emerald-500/25 text-emerald-400 shrink-0">
+                          Uncommon
+                        </span>
+                      </div>
+                      <p className="text-[11px] text-muted-foreground leading-relaxed">
+                        Sets your <strong className="text-foreground">STR to 19</strong> while worn. No effect if STR is already 19+.
+                      </p>
+                    </div>
+                    <div className="text-[10px] text-blue-400/80 mt-1.5 flex items-center gap-1">
+                      <span>💠 Requires Attunement</span>
+                    </div>
+                  </div>
+
+                  {/* Amulet of Health */}
+                  <div className="bg-muted/10 border border-border/40 rounded-lg p-3 hover:bg-muted/20 transition-all flex flex-col justify-between">
+                    <div>
+                      <div className="flex items-center justify-between gap-2 mb-1">
+                        <span className="font-bold text-xs text-foreground truncate">Amulet of Health</span>
+                        <span className="text-[10px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded bg-blue-500/10 border border-blue-500/25 text-blue-400 shrink-0">
+                          Rare
+                        </span>
+                      </div>
+                      <p className="text-[11px] text-muted-foreground leading-relaxed">
+                        Sets your <strong className="text-foreground">CON to 19</strong> while worn. No effect if CON is already 19+.
+                      </p>
+                    </div>
+                    <div className="text-[10px] text-blue-400/80 mt-1.5 flex items-center gap-1">
+                      <span>💠 Requires Attunement</span>
+                    </div>
+                  </div>
+
+                  {/* Belt of Giant Strength */}
+                  <div className="bg-muted/10 border border-border/40 rounded-lg p-3 hover:bg-muted/20 transition-all flex flex-col justify-between">
+                    <div>
+                      <div className="flex items-center justify-between gap-2 mb-1">
+                        <span className="font-bold text-xs text-foreground truncate">Belt of Giant Strength</span>
+                        <span className="inline-block p-[1px] rounded bg-gradient-to-r from-red-500 via-green-400 via-blue-500 to-purple-500 shadow-[0_0_6px_rgba(239,68,68,0.15)] shrink-0">
+                          <span className="block bg-card dark:bg-muted/90 rounded-[3px] px-1 py-0.2 flex items-center justify-center">
+                            <span className="text-[9px] font-bold uppercase tracking-wider text-transparent bg-clip-text bg-gradient-to-r from-red-500 via-green-400 via-blue-500 to-purple-500">
+                              Variable
+                            </span>
+                          </span>
+                        </span>
+                      </div>
+                      <p className="text-[11px] text-muted-foreground leading-relaxed">
+                        Sets your <strong className="text-foreground">STR to 21-29</strong> (depends on belt rarity). No effect if STR is higher.
+                      </p>
+                    </div>
+                    <div className="text-[10px] text-blue-400/80 mt-1.5 flex items-center gap-1">
+                      <span>💠 Requires Attunement</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Attunement Warning Callout */}
+                <div className="bg-amber-500/5 border border-amber-500/20 rounded-lg p-3 mt-1.5 flex items-start gap-2.5">
+                  <AlertCircle className="w-4 h-4 text-amber-500 mt-0.5 shrink-0" />
+                  <div>
+                    <span className="font-bold text-xs text-amber-500 block mb-0.5">More Magic Items</span>
+                    <p className="text-[11px] text-muted-foreground leading-relaxed">
+                      Manuals &amp; Tomes can also permanently increase ability scores and their maximums by 2.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
     </>
+  );
+}
+
+interface SkillDropdownProps {
+  state: "none" | "prof" | "expertise";
+  isBard: boolean;
+  isSkill: boolean;
+  onChange: (state: "none" | "prof" | "expertise") => void;
+  openUpward?: boolean;
+}
+
+function SkillDropdown({ state, isBard, isSkill, onChange, openUpward }: SkillDropdownProps) {
+  const [isOpen, setIsOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleOutsideClick = (e: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+        setIsOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleOutsideClick);
+    return () => document.removeEventListener("mousedown", handleOutsideClick);
+  }, [isOpen]);
+
+  const renderIcon = (s: "none" | "prof" | "expertise", interactive = true) => {
+    const baseClass = `w-4 h-4 cursor-pointer shrink-0 transition-transform ${interactive ? "hover:scale-110 active:scale-95" : ""}`;
+    if (s === "expertise") {
+      return (
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          viewBox="0 0 24 24"
+          fill="currentColor"
+          className={`${baseClass} text-amber-500 fill-amber-500 drop-shadow-[0_0_2px_rgba(245,158,11,0.3)]`}
+        >
+          <path fillRule="evenodd" d="M10.788 3.21c.448-1.077 1.976-1.077 2.424 0l2.082 5.006 5.404.434c1.164.093 1.636 1.545.749 2.305l-4.117 3.527 1.257 5.273c.271 1.136-.964 2.033-1.96 1.425L12 18.354 7.373 21.18c-.996.608-2.231-.29-1.96-1.425l1.257-5.273-4.117-3.527c-.887-.76-.415-2.212.749-2.305l5.404-.434 2.082-5.005Z" clipRule="evenodd" />
+        </svg>
+      );
+    }
+    if (s === "prof") {
+      return (
+        <div className={`${baseClass} rounded-full bg-primary border-2 border-primary shadow-sm flex items-center justify-center`} />
+      );
+    }
+    if (isSkill && isBard) {
+      return (
+        <div className={`${baseClass} rounded-full border-2 border-muted-foreground/50 hover:border-foreground flex items-center justify-center`}>
+          <div className="w-1.5 h-1.5 rounded-full bg-muted-foreground/80" />
+        </div>
+      );
+    }
+    return (
+      <div className={`${baseClass} rounded-full border-2 border-muted-foreground/40 hover:border-foreground`} />
+    );
+  };
+
+  return (
+    <div className="relative inline-block" ref={dropdownRef}>
+      <button
+        type="button"
+        onClick={() => setIsOpen(!isOpen)}
+        className="flex items-center justify-center w-6 h-6 rounded hover:bg-muted/80 focus:outline-none transition-colors"
+        title={`Change Proficiency (Current: ${state === "none" ? (isSkill && isBard ? "Jack of All Trades" : "None") : state === "prof" ? "Proficient" : "Expertise"})`}
+      >
+        {renderIcon(state)}
+      </button>
+
+      {isOpen && (
+        <div
+          className={`absolute left-0 z-50 w-44 rounded-md border border-border bg-popover p-1 shadow-md animate-in fade-in duration-150 ${openUpward
+            ? "bottom-full mb-1 slide-in-from-bottom-1"
+            : "top-full mt-1 slide-in-from-top-1"
+            }`}
+        >
+          <button
+            type="button"
+            onClick={() => {
+              onChange("none");
+              setIsOpen(false);
+            }}
+            className="flex items-center gap-2 w-full px-2 py-1.5 text-xs text-left hover:bg-muted rounded transition-colors text-foreground"
+          >
+            {renderIcon("none", false)}
+            <span>No Proficiency {isSkill && isBard && <span className="text-[10px] text-muted-foreground">(JoAT)</span>}</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              onChange("prof");
+              setIsOpen(false);
+            }}
+            className="flex items-center gap-2 w-full px-2 py-1.5 text-xs text-left hover:bg-muted rounded transition-colors text-foreground"
+          >
+            {renderIcon("prof", false)}
+            <span>Proficiency (+PROF)</span>
+          </button>
+          {isSkill && (
+            <button
+              type="button"
+              onClick={() => {
+                onChange("expertise");
+                setIsOpen(false);
+              }}
+              className="flex items-center gap-2 w-full px-2 py-1.5 text-xs text-left hover:bg-muted rounded transition-colors text-foreground"
+            >
+              {renderIcon("expertise", false)}
+              <span>Expertise (+ 2x PROF)</span>
+            </button>
+          )}
+        </div>
+      )}
+    </div>
   );
 }
