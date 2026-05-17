@@ -204,13 +204,13 @@ export function StatGenerator() {
       const activeClassData = Object.values(classes).find((c) => c.name === activeClass);
       const activeSavingThrows = (activeClassData?.savingThrows ?? []) as Ability[];
       setSavingThrowsState(() => {
-        const next = {
-          Strength: "none" as const,
-          Dexterity: "none" as const,
-          Constitution: "none" as const,
-          Intelligence: "none" as const,
-          Wisdom: "none" as const,
-          Charisma: "none" as const,
+        const next: Record<Ability, "none" | "prof" | "expertise"> = {
+          Strength: "none",
+          Dexterity: "none",
+          Constitution: "none",
+          Intelligence: "none",
+          Wisdom: "none",
+          Charisma: "none",
         };
         ABILITIES.forEach((ability) => {
           if (activeSavingThrows.includes(ability)) {
