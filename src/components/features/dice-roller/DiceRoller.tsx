@@ -15,6 +15,7 @@ export const DiceRoller: React.FC = () => {
     if (settings.diceRoller.autoClearLogs) {
       clearLogs();
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); // Only on mount
 
   const {

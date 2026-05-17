@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import type { RollLog, RollResult } from "./types";
+import type { RollLog, RollResult, DiceConfig } from "./types";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Trash2, Dices, Logs, ChevronDown, ChevronUp } from "lucide-react";
@@ -197,7 +197,7 @@ const RollSet: React.FC<{ roll: RollResult, isRejected: boolean, isDaggerheart?:
 };
 
 
-const CriteriaBadges: React.FC<{ config: any }> = ({ config }) => {
+const CriteriaBadges: React.FC<{ config: DiceConfig }> = ({ config }) => {
   const { rule, explode, reroll } = config;
   if (!rule && !explode && !reroll) return null;
 
