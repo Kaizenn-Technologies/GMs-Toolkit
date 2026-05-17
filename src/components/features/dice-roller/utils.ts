@@ -75,7 +75,7 @@ export function parseDiceNotation(input: string): Partial<DiceConfig> {
  */
 export function rollDice(config: DiceConfig): RollResult {
   const { count, sides, modifier = 0, explode, reroll, rule } = config;
-  let results: number[] = [];
+  const results: number[] = [];
 
   // Initial rolls
   for (let i = 0; i < count; i++) {
@@ -83,7 +83,7 @@ export function rollDice(config: DiceConfig): RollResult {
   }
 
   // Handle Keep/Drop
-  let kept = new Array(results.length).fill(true);
+  const kept = new Array(results.length).fill(true);
   if (rule) {
     const sortedIndices = results
       .map((val, idx) => ({ val, idx }))

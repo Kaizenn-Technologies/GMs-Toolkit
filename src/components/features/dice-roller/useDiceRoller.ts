@@ -17,11 +17,13 @@ export function useDiceRoller(addLog: (log: RollLog) => void) {
   });
 
   useEffect(() => {
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const cleaned = diceConfigs.map(({ isEditing, ...rest }) => rest);
     localStorage.setItem(PRESETS_KEY, JSON.stringify(cleaned));
   }, [diceConfigs]);
 
   useEffect(() => {
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const cleaned = groups.map(({ isEditing, ...rest }) => rest);
     localStorage.setItem(GROUPS_KEY, JSON.stringify(cleaned));
   }, [groups]);
@@ -96,9 +98,9 @@ export function useDiceRoller(addLog: (log: RollLog) => void) {
     const config = diceConfigs.find((c) => c.id === configId);
     if (!config) return;
 
-    let rolls: RollResult[] = [];
+    let rolls: RollResult[];
     let rejectedRolls: RollResult[] | undefined = undefined;
-    let total = 0;
+    let total: number;
 
     if (mode === "normal") {
       const result = rollDice(config);
@@ -145,9 +147,9 @@ export function useDiceRoller(addLog: (log: RollLog) => void) {
 
     if (groupConfigs.length === 0) return;
 
-    let rolls: RollResult[] = [];
+    let rolls: RollResult[];
     let rejectedRolls: RollResult[] | undefined = undefined;
-    let total = 0;
+    let total: number;
 
     if (mode === "normal") {
       rolls = groupConfigs.map((c) => rollDice(c));
@@ -212,9 +214,9 @@ export function useDiceRoller(addLog: (log: RollLog) => void) {
     
     if (!config.id) config.id = Date.now().toString() + Math.random().toString(36).substring(2, 9);
 
-    let rolls: RollResult[] = [];
+    let rolls: RollResult[];
     let rejectedRolls: RollResult[] | undefined = undefined;
-    let total = 0;
+    let total: number;
 
     if (mode === "normal" || isDaggerheart) {
       const result = rollDice(config as DiceConfig);
@@ -252,7 +254,7 @@ export function useDiceRoller(addLog: (log: RollLog) => void) {
       const result = rolls[0];
       const hope = result.results[0];
       const fear = result.results[1];
-      let outcome: "hope" | "fear" | "critical" = "hope";
+      let outcome: "hope" | "fear" | "critical";
       
       if (hope === fear) {
         outcome = "critical";

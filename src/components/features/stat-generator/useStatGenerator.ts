@@ -348,6 +348,7 @@ export function useStatGenerator() {
     const params = new URLSearchParams(location.search);
     if (!params.toString()) {
       if (activeTab === "standard") {
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         setSelectedStandardClass(CHOOSE_STANDARD_CLASS);
         setStandardScores(makeUnfilledStandardScores());
       }

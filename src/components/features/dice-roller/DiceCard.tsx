@@ -44,7 +44,7 @@ export const DiceCard: React.FC<DiceCardProps> = ({ config, onUpdate, onDelete, 
     transition,
     zIndex: isDragging ? 0 : isOverlay ? 100 : 1,
     opacity: isDragging ? 0.2 : 1,
-    visibility: isDragging && !isOverlay ? "visible" as any : "visible" as any,
+    visibility: (isDragging && !isOverlay ? "visible" : "visible") as "visible" | "hidden" | "collapse",
   };
 
   // The "hint line" effect
@@ -54,6 +54,7 @@ export const DiceCard: React.FC<DiceCardProps> = ({ config, onUpdate, onDelete, 
   // Sync internal editing state with prop if it changes (e.g. from hook)
   useEffect(() => {
     if (config.isEditing !== undefined) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setIsEditing(config.isEditing);
     }
   }, [config.isEditing]);
@@ -192,7 +193,7 @@ export const DiceCard: React.FC<DiceCardProps> = ({ config, onUpdate, onDelete, 
                 <div className="flex items-center gap-2 animate-in fade-in slide-in-from-left-1 duration-200">
                   <Select
                     value={config.rule.type}
-                    onValueChange={(val: any) => onUpdate({ rule: { ...config.rule!, type: val } })}
+                    onValueChange={(val: "keep" | "drop") => onUpdate({ rule: { ...config.rule!, type: val } })}
                   >
                     <SelectTrigger className="h-7 w-20 text-[10px] font-semibold uppercase">
                       <SelectValue />
@@ -204,7 +205,7 @@ export const DiceCard: React.FC<DiceCardProps> = ({ config, onUpdate, onDelete, 
                   </Select>
                   <Select
                     value={config.rule.target}
-                    onValueChange={(val: any) => onUpdate({ rule: { ...config.rule!, target: val } })}
+                    onValueChange={(val: "highest" | "lowest") => onUpdate({ rule: { ...config.rule!, target: val } })}
                   >
                     <SelectTrigger className="h-8 w-24 text-[10px] font-semibold uppercase">
                       <SelectValue />
