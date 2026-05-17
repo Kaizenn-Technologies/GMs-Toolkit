@@ -339,6 +339,16 @@ export function SettingsOverlay({
                       onCheckedChange={(v) => updateRoll({ colorDice: v })}
                     />
                   </SettingRow>
+
+                  <SettingRow
+                    label="Rolling animation"
+                    description="Enable a dynamic roll animation on the randomized text."
+                  >
+                    <Switch
+                      checked={settings.roll.rollingAnimation}
+                      onCheckedChange={(v) => updateRoll({ rollingAnimation: v })}
+                    />
+                  </SettingRow>
                 </div>
               </TabsContent>
             )}
@@ -373,6 +383,16 @@ export function SettingsOverlay({
                     <Switch
                       checked={settings.hp.showRollCounter}
                       onCheckedChange={(v) => updateHp({ showRollCounter: v })}
+                    />
+                  </SettingRow>
+
+                  <SettingRow
+                    label="Rolling animation"
+                    description="Enable a dynamic roll animation on the randomized text."
+                  >
+                    <Switch
+                      checked={settings.hp.rollingAnimation}
+                      onCheckedChange={(v) => updateHp({ rollingAnimation: v })}
                     />
                   </SettingRow>
                 </div>

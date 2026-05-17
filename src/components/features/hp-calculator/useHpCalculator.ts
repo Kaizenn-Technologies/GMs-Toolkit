@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect, useRef } from "react";
 import type { ClassSelection } from "@/types";
 import { classNames } from "@/lib/classes";
 import { calculateHP } from "@/lib/calculations";
@@ -82,6 +82,17 @@ export function useHpCalculator() {
   const [activeTab, setActiveTab] = useState<"average" | "rolled">(initialState.activeTab);
   const [rolledValues, setRolledValues] = useState<number[]>(initialState.rolledValues);
   const { copied, copyToClipboard } = useCopyToClipboard();
+  
+  const [isRolling, setIsRolling] = useState(false);
+  const rollIntervalRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (rollIntervalRef.current) {
+        window.clearInterval(rollIntervalRef.current);
+      }
+    };
+  }, []);
   
   const advanceShareMenu = settings.hp.advanceShareMenu;
   const showRollCounter = settings.hp.showRollCounter;
@@ -168,7 +179,10 @@ export function useHpCalculator() {
   let rollColorClass = "text-muted-foreground";
   let rollIcon = null;
 
-  if (diff > threshold) {
+  if (isRolling) {
+    rollColorClass = "text-muted-foreground";
+    rollIcon = null;
+  } else if (diff > threshold) {
     rollColorClass = "text-[#00c93cff] dark:text-[#10ff58ff]";
     rollIcon = "▲";
   } else if (diff < -threshold) {
@@ -177,12 +191,45 @@ export function useHpCalculator() {
   }
 
   const handleRollAgain = () => {
+    if (isRolling) return;
     setActiveTab("rolled");
-    setRolledValues(generateRolledValues(classSelections));
+
+    const finalRolledValues = generateRolledValues(classSelections);
+
     setRerollCountsByCombo((prev) => ({
       ...prev,
       [currentComboKey]: (prev[currentComboKey] ?? 0) + 1,
     }));
+
+    if (!settings.hp.rollingAnimation) {
+      setRolledValues(finalRolledValues);
+      return;
+    }
+
+    setIsRolling(true);
+
+    const duration = 800; // duration in ms
+    const intervalTime = 60; // interval in ms
+    const steps = duration / intervalTime;
+    let currentStep = 0;
+
+    if (rollIntervalRef.current) {
+      window.clearInterval(rollIntervalRef.current);
+    }
+
+    rollIntervalRef.current = window.setInterval(() => {
+      currentStep++;
+      if (currentStep >= steps) {
+        if (rollIntervalRef.current) {
+          window.clearInterval(rollIntervalRef.current);
+          rollIntervalRef.current = null;
+        }
+        setRolledValues(finalRolledValues);
+        setIsRolling(false);
+      } else {
+        setRolledValues(generateRolledValues(classSelections));
+      }
+    }, intervalTime);
   };
 
   const buildShareableCoreData = ({
@@ -262,5 +309,6 @@ export function useHpCalculator() {
     updateClassSelection,
     handleRollAgain,
     handleShareLink,
+    isRolling,
   };
 }

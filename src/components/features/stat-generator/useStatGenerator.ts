@@ -190,6 +190,17 @@ export function useStatGenerator() {
       return acc;
     }, {} as Record<Ability, { rolls: number[]; total: number }>),
   );
+  const [isRolling, setIsRolling] = useState(false);
+  const rollIntervalRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (rollIntervalRef.current) {
+        window.clearInterval(rollIntervalRef.current);
+      }
+    };
+  }, []);
+
   const [showAssignPanel, setShowAssignPanel] = useState(false);
 
   const activeTab: "pointbuy" | "roll" | "standard" =
@@ -210,7 +221,7 @@ export function useStatGenerator() {
         : activeTab === "roll" && showAssignPanel
           ? selectedStandardClass
           : selectedClass;
-  
+
   const primaryStatInfo = getPrimaryStatInfo(activeClassForPrimary);
   const primaryStats = primaryStatInfo.abilities;
   const primaryDisplay =
@@ -383,7 +394,7 @@ export function useStatGenerator() {
     if (wis !== null) nextScores.Wisdom = wis;
     if (cha !== null) nextScores.Charisma = cha;
     setScores(nextScores);
-    
+
     if (activeTab === "standard") {
       if (classFromUrl && classNames.includes(classFromUrl)) {
         setStandardScores(nextScores);
@@ -481,17 +492,57 @@ export function useStatGenerator() {
   };
 
   const rollAllStats = () => {
-    const next = {} as Record<Ability, { rolls: number[]; total: number }>;
+    if (isRolling) return;
+    setShowAssignPanel(false);
+
+    const finalRolls = {} as Record<Ability, { rolls: number[]; total: number }>;
     ABILITIES.forEach((ability) => {
       let rolls = Array.from({ length: 4 }, () => rollDie());
       if (settings.roll?.rerollOnes) {
         rolls = rolls.map((r) => (r === 1 ? rollDie() : r));
       }
       const total = computeTotalFromRolls(rolls);
-      next[ability] = { rolls, total };
+      finalRolls[ability] = { rolls, total };
     });
-    setRolledBoxes(next);
-    setShowAssignPanel(false);
+
+    if (!settings.roll?.rollingAnimation) {
+      setRolledBoxes(finalRolls);
+      return;
+    }
+
+    setIsRolling(true);
+
+    const duration = 800; // duration in ms
+    const intervalTime = 60; // interval in ms
+    const steps = duration / intervalTime;
+    let currentStep = 0;
+
+    if (rollIntervalRef.current) {
+      window.clearInterval(rollIntervalRef.current);
+    }
+
+    rollIntervalRef.current = window.setInterval(() => {
+      currentStep++;
+      if (currentStep >= steps) {
+        if (rollIntervalRef.current) {
+          window.clearInterval(rollIntervalRef.current);
+          rollIntervalRef.current = null;
+        }
+        setRolledBoxes(finalRolls);
+        setIsRolling(false);
+      } else {
+        const tempRolls = {} as Record<Ability, { rolls: number[]; total: number }>;
+        ABILITIES.forEach((ability) => {
+          let rolls = Array.from({ length: 4 }, () => rollDie());
+          if (settings.roll?.rerollOnes) {
+            rolls = rolls.map((r) => (r === 1 ? rollDie() : r));
+          }
+          const total = computeTotalFromRolls(rolls);
+          tempRolls[ability] = { rolls, total };
+        });
+        setRolledBoxes(tempRolls);
+      }
+    }, intervalTime);
   };
 
   const getRolledTotals = () => ABILITIES.map((ab) => rolledBoxes[ab].total);
@@ -605,6 +656,7 @@ export function useStatGenerator() {
     handleStandardReset,
     handleManualBonusChange,
     handleShareLink,
+    isRolling,
     rollAllStats,
     getRolledTotals,
     handleShuffleAssign,

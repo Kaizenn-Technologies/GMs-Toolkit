@@ -318,3 +318,26 @@ code {
     background-position: 100%;
   }
 }
+
+@keyframes dice-shake {
+  0% { transform: translate(0, 0) rotate(0deg); }
+  20% { transform: translate(-2px, 2px) rotate(-1.5deg); }
+  40% { transform: translate(2px, -1px) rotate(1.5deg); }
+  60% { transform: translate(-1px, -2px) rotate(-1deg); }
+  80% { transform: translate(2px, 2px) rotate(1deg); }
+  100% { transform: translate(0, 0) rotate(0deg); }
+}
+
+@keyframes number-flicker {
+  0% { opacity: 0.35; filter: blur(0.5px); transform: scale(0.96); }
+  50% { opacity: 1; filter: blur(0px); transform: scale(1.04); }
+  100% { opacity: 0.35; filter: blur(0.5px); transform: scale(0.96); }
+}
+
+@utility animate-dice-shake {
+  animation: dice-shake 0.15s infinite linear;
+}
+
+@utility animate-number-flicker {
+  animation: number-flicker 0.08s infinite alternate;
+}

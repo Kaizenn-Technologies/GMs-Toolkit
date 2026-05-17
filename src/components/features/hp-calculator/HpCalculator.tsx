@@ -46,6 +46,7 @@ export function HpCalculator() {
     updateClassSelection,
     handleRollAgain,
     handleShareLink,
+    isRolling,
   } = useHpCalculator();
 
   return (
@@ -216,7 +217,7 @@ export function HpCalculator() {
                 <TabsContent value="rolled" className="mt-6 space-y-6">
                   <HpTotalDisplay
                     total={rolledResult.totalHP}
-                    valueClassName={rollColorClass}
+                    valueClassName={`${rollColorClass} ${isRolling ? "animate-number-flicker" : ""}`}
                     tooltip={`Difference from average: ${diff > 0 ? `+${diff}` : diff}`}
                     icon={rollIcon ? <span className={`absolute -right-5 ${rollIcon === "▲" ? "top-0" : "top-1"} text-[18px]`}>{rollIcon}</span> : null}
                   />
@@ -237,9 +238,9 @@ export function HpCalculator() {
                   )}
 
                   <div className="flex flex-col gap-2 mt-4">
-                    <Button onClick={handleRollAgain} className="w-full m-0">
+                    <Button onClick={handleRollAgain} className="w-full m-0" disabled={isRolling}>
                       <Dices className="w-4 h-4 mr-2" />
-                      Roll Again
+                      {isRolling ? "Rolling..." : "Roll Again"}
                     </Button>
                     <ShareButton onClick={() => handleShareLink("rolled")} copied={copied} />
                   </div>

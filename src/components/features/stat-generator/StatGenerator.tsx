@@ -89,6 +89,7 @@ export function StatGenerator() {
     handleStandardReset,
     handleManualBonusChange,
     handleShareLink,
+    isRolling,
     rollAllStats,
     getRolledTotals,
     handleShuffleAssign,
@@ -586,22 +587,22 @@ export function StatGenerator() {
                   return (
                     <div
                       key={ability}
-                      className="bg-muted/20 border border-border/50 p-4 sm:p-6 flex flex-col items-center shadow-sm hover:border-border transition-colors group"
+                      className={`bg-muted/20 border border-border/50 p-4 sm:p-6 flex flex-col items-center shadow-sm hover:border-border transition-colors group ${isRolling ? "animate-dice-shake" : ""}`}
                     >
                       <div className="text-[12px] font-bold uppercase tracking-widest text-muted-foreground mb-3 group-hover:text-foreground transition-colors">
                         Roll {index + 1}
                       </div>
                       <div className="flex flex-col gap-2 items-center justify-center mb-4">
-                        <div className={`text-3xl sm:text-4xl font-bold tabular-nums ${totalColorClass} drop-shadow-sm ${total === 0 ? "text-muted-foreground/20" : ""}`}>
+                        <div className={`text-3xl sm:text-4xl font-bold tabular-nums ${totalColorClass} drop-shadow-sm ${total === 0 ? "text-muted-foreground/20" : ""} ${isRolling ? "animate-number-flicker" : ""}`}>
                           {total}
                         </div>
                         {total > 0 && (
-                          <div className={`text-sm border border-muted-foreground/20 bg-background/30 px-2 py-1 rounded font-bold ${getModifier(total) > 0 ? "text-emerald-500" : getModifier(total) < 0 ? "text-red-500" : "text-muted-foreground/60"}`}>
+                          <div className={`text-sm border border-muted-foreground/20 bg-background/30 px-2 py-1 rounded font-bold ${getModifier(total) > 0 ? "text-emerald-500" : getModifier(total) < 0 ? "text-red-500" : "text-muted-foreground/60"} ${isRolling ? "animate-number-flicker" : ""}`}>
                             {formatModifier(getModifier(total))}
                           </div>
                         )}
                       </div>
-                      <div className="text-xs font-medium text-muted-foreground/95 px-2 py-1 ">
+                      <div className={`text-xs font-medium text-muted-foreground/95 px-2 py-1 ${isRolling ? "animate-number-flicker" : ""}`}>
                         {displayed.map((d, i) => {
                           const isLast = i === displayed.length - 1;
                           const colorClass = settings.roll?.colorDice
@@ -622,7 +623,6 @@ export function StatGenerator() {
                               } : undefined}
                             >
                               {d === 0 ? "⠿" : d}
-                              {/* {i < displayed.length - 1 ? " +" : ""} */}
                             </span>
                           );
                         })}
@@ -633,14 +633,14 @@ export function StatGenerator() {
               </div>
 
               <div className="flex flex-wrap items-center gap-2">
-                <Button onClick={rollAllStats}>
+                <Button onClick={rollAllStats} disabled={isRolling}>
                   <Dices className="w-4 h-4 mr-2" />
-                  Roll Stats
+                  {isRolling ? "Rolling..." : "Roll Stats"}
                 </Button>
-                <Button variant="outline" onClick={handleAssignManually}>
+                <Button variant="outline" onClick={handleAssignManually} disabled={isRolling}>
                   Assign manually
                 </Button>
-                <Button variant="outline" onClick={handleShuffleAssign}>
+                <Button variant="outline" onClick={handleShuffleAssign} disabled={isRolling}>
                   <Shuffle className="w-4 h-4 mr-2" />
                   Shuffle
                 </Button>

@@ -49,11 +49,13 @@ export interface RollSettings {
   rerollOnes: boolean;
   sortDescending: boolean;
   colorDice: boolean;
+  rollingAnimation: boolean;
 }
 
 export interface HpSettings {
   advanceShareMenu: boolean;
   showRollCounter: boolean;
+  rollingAnimation: boolean;
 }
 
 // ─── Defaults ─────────────────────────────────────────────────────────────────
@@ -76,11 +78,13 @@ export const DEFAULT_ROLL_SETTINGS: RollSettings = {
   rerollOnes: false,
   sortDescending: true,
   colorDice: true,
+  rollingAnimation: true,
 };
 
 export const DEFAULT_HP_SETTINGS: HpSettings = {
   advanceShareMenu: false,
   showRollCounter: true,
+  rollingAnimation: true,
 };
 
 export const DEFAULT_DICE_ROLLER_SETTINGS: DiceRollerSettings = {
