@@ -39,7 +39,7 @@ export function StatGeneratorSelectorRow({
   primaryDisplay,
 }: StatGeneratorSelectorRowProps) {
   return (
-    <div className="bg-muted/30 border border-border/50 rounded-none p-4 mb-2 shadow-sm">
+    <div className="bg-muted/30 border border-border/50 rounded-none py-2 px-4 mb-2 shadow-sm">
       <div className="flex flex-row flex-wrap  lg:items-center gap-4 lg:gap-8">
         {/* Class Selection */}
         <div className="flex flex-col sm:flex-row sm:items-center gap-2 lg:gap-3 flex-1">

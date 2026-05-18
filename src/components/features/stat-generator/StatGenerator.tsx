@@ -305,13 +305,13 @@ export function StatGenerator() {
   };
 
   return (
-    <div className="flex flex-col gap-3">
+    <div className="flex flex-col gap-3 ">
       <PageHeader
         title="D&D 5.5e Stat Generator"
         description="Generate ability scores using Point Buy, dice rolls, or the Standard Array."
       />
 
-      <Card>
+      <Card className="bg-card/45">
         <CardContent className="pt-1">
           <Tabs
             value={activeTab}
@@ -404,10 +404,10 @@ export function StatGenerator() {
               <div className="hidden md:block border border-border/60 rounded-none overflow-hidden bg-card/30">
                 <table className="w-full text-sm border-collapse">
                   <thead>
-                    <tr className="bg-muted/50 text-[10px] font-bold text-muted-foreground uppercase tracking-widest border-b border-border/50">
+                    <tr className="bg-muted/50 text-[12px] font-bold text-muted-foreground uppercase tracking-widest border-b border-border/50">
                       <th className="text-left py-3 pl-4">Ability</th>
-                      <th className="text-center py-3">Score</th>
-                      <th className="text-center py-3">
+                      <th className="text-center">Score</th>
+                      <th className="text-center">
                         <TooltipProvider delay={100}>
                           <Tooltip>
                             <TooltipTrigger
@@ -424,10 +424,10 @@ export function StatGenerator() {
                         </TooltipProvider>
                       </th>
                       {featBonusEnabled && (
-                        <th className="text-center py-3">Feat Bonus</th>
+                        <th className="text-center">Feat Bonus</th>
                       )}
-                      <th className="text-center py-3">Total</th>
-                      <th className="text-center py-3 pr-4">
+                      <th className="text-center">Total</th>
+                      <th className="text-center ">
                         <TooltipProvider delay={100}>
                           <Tooltip>
                             <TooltipTrigger
@@ -474,7 +474,7 @@ export function StatGenerator() {
                             primaryTooltip={`Primary stat for ${selectedClass}`}
                           />
 
-                          <td className="py-3 px-2">
+                          <td className="">
                             <CenteredCellContent>
                               <StepperInput
                                 className="rounded-none w-28 bg-background/50"
@@ -488,7 +488,7 @@ export function StatGenerator() {
                             </CenteredCellContent>
                           </td>
 
-                          <td className="py-3 px-2">
+                          <td className="">
                             <CenteredCellContent>
                               {showBgStepper ? (
                                 <StepperInput
@@ -509,7 +509,7 @@ export function StatGenerator() {
                           </td>
 
                           {featBonusEnabled && (
-                            <td className="py-3 px-2">
+                            <td className="">
                               <CenteredCellContent>
                                 <StepperInput
                                   className="rounded-none w-28 bg-background/50"
@@ -524,11 +524,11 @@ export function StatGenerator() {
                             </td>
                           )}
 
-                          <td className="py-3 px-2 text-center">
+                          <td className="text-center">
                             <TotalScoreDisplay value={total} highlight={isAboveMax} />
                           </td>
 
-                          <td className="py-3 pr-4 text-center rounded-none">
+                          <td className="text-center rounded-none">
                             <ModifierDisplay
                               value={formatModifier(modifier)}
                               className={getModifierClass(modifier)}
@@ -572,7 +572,7 @@ export function StatGenerator() {
               )}
             </TabsContent>
 
-            <TabsContent value="roll" className="space-y-6">
+            <TabsContent value="roll" className="space-y-2">
               <div className=" grid grid-cols-2 sm:grid-cols-6 gap-3">
                 {ABILITIES.map((ability, index) => {
                   const box = rolledBoxes[ability];
@@ -596,11 +596,19 @@ export function StatGenerator() {
                         <div className={`text-3xl sm:text-4xl font-bold tabular-nums ${totalColorClass} drop-shadow-sm ${total === 0 ? "text-muted-foreground/20" : ""} ${isRolling ? "animate-number-flicker" : ""}`}>
                           {total}
                         </div>
-                        {total > 0 && (
-                          <div className={`text-sm border border-muted-foreground/20 bg-background/30 px-2 py-1 rounded font-bold ${getModifier(total) > 0 ? "text-emerald-500" : getModifier(total) < 0 ? "text-red-500" : "text-muted-foreground/60"} ${isRolling ? "animate-number-flicker" : ""}`}>
-                            {formatModifier(getModifier(total))}
-                          </div>
-                        )}
+                        <div
+                          className={`text-sm border border-muted-foreground/20 bg-background/30 px-2 py-1 rounded font-bold transition-all duration-200 tabular-nums ${
+                            total > 0
+                              ? getModifier(total) > 0
+                                ? "text-emerald-500"
+                                : getModifier(total) < 0
+                                  ? "text-red-500"
+                                  : "text-muted-foreground/60"
+                              : "invisible select-none opacity-0"
+                          } ${isRolling ? "animate-number-flicker" : ""}`}
+                        >
+                          {total > 0 ? formatModifier(getModifier(total)) : "+0"}
+                        </div>
                       </div>
                       <div className={`text-xs font-medium text-muted-foreground/95 px-2 py-1 ${isRolling ? "animate-number-flicker" : ""}`}>
                         {displayed.map((d, i) => {
@@ -728,13 +736,45 @@ export function StatGenerator() {
                   <div className="hidden md:block border border-border/60 rounded-none overflow-hidden bg-card/30">
                     <table className="w-full text-sm border-collapse">
                       <thead>
-                        <tr className="bg-muted/50 text-[10px] font-bold text-muted-foreground uppercase tracking-widest border-b border-border/50">
+                        <tr className="bg-muted/50 text-[12px] font-bold text-muted-foreground uppercase tracking-widest border-b border-border/50">
                           <th className="text-left py-3 pl-4">Ability</th>
-                          <th className="text-center py-3">Score</th>
-                          <th className="text-center py-3">Background</th>
-                          {featBonusEnabled && <th className="text-center py-3">Feat Bonus</th>}
-                          <th className="text-center py-3">Total</th>
-                          <th className="text-center py-3 pr-4">Modifier</th>
+                          <th className="text-center">Score</th>
+                          <th className="text-center">
+                            <TooltipProvider delay={100}>
+                              <Tooltip>
+                                <TooltipTrigger
+                                  render={
+                                    <span className="cursor-help border-b border-dashed border-muted-foreground/50">
+                                      Background
+                                    </span>
+                                  }
+                                />
+                                <TooltipContent>
+                                  <p>Max +{BG_BONUS_MAX} on one ability</p>
+                                </TooltipContent>
+                              </Tooltip>
+                            </TooltipProvider>
+                          </th>
+                          {featBonusEnabled && (
+                            <th className="text-center">Feat Bonus</th>
+                          )}
+                          <th className="text-center">Total</th>
+                          <th className="text-center ">
+                            <TooltipProvider delay={100}>
+                              <Tooltip>
+                                <TooltipTrigger
+                                  render={
+                                    <span className="cursor-help border-b border-dashed border-muted-foreground/50">
+                                      Modifier
+                                    </span>
+                                  }
+                                />
+                                <TooltipContent>
+                                  <p>Modifier=(Score - 10) / 2 (Rounded Down)</p>
+                                </TooltipContent>
+                              </Tooltip>
+                            </TooltipProvider>
+                          </th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-border/30">
@@ -769,7 +809,7 @@ export function StatGenerator() {
                                 isPrimary={isPrimary}
                                 primaryTooltip="Primary stat for selected class"
                               />
-                              <td className="py-3 px-2">
+                              <td className="">
                                 <CenteredCellContent>
                                   <Select value={score === null ? "" : String(score)} onValueChange={(val) => handleRolledAssignChange(ability, val)}>
                                     <SelectTrigger className="rounded-none w-28 bg-background/50">
@@ -786,7 +826,7 @@ export function StatGenerator() {
                                 </CenteredCellContent>
                               </td>
 
-                              <td className="py-3 px-2">
+                              <td className="">
                                 <CenteredCellContent>
                                   {isBgAbility ? (
                                     <StepperInput className="rounded-none w-28 bg-background/50" value={bgBonus} min={0} max={BG_BONUS_MAX} onChange={(val) => handleBgBonusChange(ability, val)} />
@@ -797,18 +837,18 @@ export function StatGenerator() {
                               </td>
 
                               {featBonusEnabled && (
-                                <td className="py-3 px-2">
+                                <td className="">
                                   <CenteredCellContent>
                                     <StepperInput className="rounded-none w-28 bg-background/50" value={manualBonus} min={0} max={MANUAL_BONUS_MAX} onChange={(val) => handleManualBonusChange(ability, val)} />
                                   </CenteredCellContent>
                                 </td>
                               )}
 
-                              <td className="py-3 px-2 text-center">
+                              <td className="text-center">
                                 <TotalScoreDisplay value={total ?? "—"} />
                               </td>
 
-                              <td className="py-3 pr-4 text-center rounded-none">
+                              <td className="text-center rounded-none">
                                 <ModifierDisplay
                                   value={modifier === null ? "—" : formatModifier(modifier)}
                                   className={getModifierClass(modifier)}
@@ -821,8 +861,8 @@ export function StatGenerator() {
                     </table>
                   </div>
 
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between pt-6 mt-4 gap-4 border-t border-border/40">
-                    <div className="flex flex-row justify-between">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between mt-2">
+                    <div className="flex flex-row justify-between gap-2">
                       <ShareButton onClick={handleShareAssigned} copied={copied} className="shadow-sm hover:shadow-md transition-all" />
                       <ResetButton onClick={handleAssignmentReset} className="shadow-sm hover:shadow-md transition-all" />
                     </div>
@@ -928,13 +968,13 @@ export function StatGenerator() {
               </div>
 
               {/* Desktop: Table */}
-              <div className="hidden md:block border border-border/60 rounded-none overflow-hidden bg-card/30">
+              <div className="hidden md:block border border-border/60 rounded-none overflow-hidden bg-card/30 mb-0">
                 <table className="w-full text-sm border-collapse">
                   <thead>
-                    <tr className="bg-muted/50 text-[10px] font-bold text-muted-foreground uppercase tracking-widest border-b border-border/50">
+                    <tr className="bg-muted/50 text-[12px] font-bold text-muted-foreground uppercase tracking-widest border-b border-border/50">
                       <th className="text-left py-3 pl-4">Ability</th>
-                      <th className="text-center py-3">Score</th>
-                      <th className="text-center py-3">
+                      <th className="text-center">Score</th>
+                      <th className="text-center">
                         <TooltipProvider delay={100}>
                           <Tooltip>
                             <TooltipTrigger
@@ -951,10 +991,10 @@ export function StatGenerator() {
                         </TooltipProvider>
                       </th>
                       {featBonusEnabled && (
-                        <th className="text-center py-3">Feat Bonus</th>
+                        <th className="text-center">Feat Bonus</th>
                       )}
-                      <th className="text-center py-3">Total</th>
-                      <th className="text-center py-3 pr-4">
+                      <th className="text-center">Total</th>
+                      <th className="text-center ">
                         <TooltipProvider delay={100}>
                           <Tooltip>
                             <TooltipTrigger
@@ -1003,7 +1043,7 @@ export function StatGenerator() {
                               : selectedStandardClass}`}
                           />
 
-                          <td className="py-3 px-2">
+                          <td className="">
                             <CenteredCellContent>
                               <Select
                                 value={score === null ? "" : String(score)}
@@ -1037,7 +1077,7 @@ export function StatGenerator() {
                             </CenteredCellContent>
                           </td>
 
-                          <td className="py-3 px-2">
+                          <td className="">
                             <CenteredCellContent>
                               {showBgStepper ? (
                                 <StepperInput
@@ -1058,7 +1098,7 @@ export function StatGenerator() {
                           </td>
 
                           {featBonusEnabled && (
-                            <td className="py-3 px-2">
+                            <td className="">
                               <CenteredCellContent>
                                 <StepperInput
                                   className="rounded-none w-28 bg-background/50"
@@ -1073,11 +1113,11 @@ export function StatGenerator() {
                             </td>
                           )}
 
-                          <td className="py-3 px-2 text-center">
+                          <td className="text-center">
                             <TotalScoreDisplay value={total ?? "—"} />
                           </td>
 
-                          <td className="py-3 pr-4 text-center rounded-none">
+                          <td className="text-center rounded-none">
                             <ModifierDisplay
                               value={modifier === null ? "—" : formatModifier(modifier)}
                               className={getModifierClass(modifier)}
@@ -1090,8 +1130,8 @@ export function StatGenerator() {
                 </table>
               </div>
 
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between pt-6 mt-2 gap-4 border-t border-border/40">
-                <div className="flex flex-row justify-between">
+              <div className="flex flex-col sm:flex-row sm:items-end justify-between mt-2">
+                <div className="flex flex-row justify-between gap-2 ">
                   <ResetButton onClick={handleStandardReset} className="shadow-sm hover:shadow-md transition-all" />
                   <ShareButton onClick={handleShareLink} copied={copied} className="shadow-sm hover:shadow-md transition-all" />
                 </div>
@@ -1216,7 +1256,7 @@ export function StatGenerator() {
               </h4>
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
               {/* Feats Section */}
               <div className="space-y-3">
                 <div className="flex items-center gap-1.5 text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">
@@ -1228,7 +1268,7 @@ export function StatGenerator() {
                   {/* Skilled Feat */}
                   <div className="bg-muted/10 border border-border/40 rounded-lg p-3 hover:bg-muted/20 transition-all group">
                     <div className="flex flex-wrap items-center justify-between gap-2 mb-1.5">
-                      <span className="font-bold text-sm text-foreground group-hover:text-primary transition-colors">
+                      <span className="font-semibold text-sm text-foreground group-hover:text-primary transition-colors">
                         Skilled
                       </span>
                       <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-emerald-500/10 border border-emerald-500/25 text-emerald-400">
@@ -1243,7 +1283,7 @@ export function StatGenerator() {
                   {/* ASI Feat */}
                   <div className="bg-muted/10 border border-border/40 rounded-lg p-3 hover:bg-muted/20 transition-all group">
                     <div className="flex flex-wrap items-center justify-between gap-2 mb-1.5">
-                      <span className="font-bold text-sm text-foreground group-hover:text-primary transition-colors">
+                      <span className="font-semibold text-sm text-foreground group-hover:text-primary transition-colors">
                         Ability Score Improvement
                       </span>
                       <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-blue-500/10 border border-blue-500/25 text-blue-400">
@@ -1258,7 +1298,7 @@ export function StatGenerator() {
                   {/* Resilient Feat */}
                   <div className="bg-muted/10 border border-border/40 rounded-lg p-3 hover:bg-muted/20 transition-all group">
                     <div className="flex flex-wrap items-center justify-between gap-2 mb-1.5">
-                      <span className="font-bold text-sm text-foreground group-hover:text-primary transition-colors">
+                      <span className="font-semibold text-sm text-foreground group-hover:text-primary transition-colors">
                         Resilient
                       </span>
                       <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-blue-500/10 border border-blue-500/25 text-blue-400">
@@ -1273,7 +1313,7 @@ export function StatGenerator() {
               </div>
 
               {/* Magical Items Section */}
-              <div className="space-y-3">
+              <div className="space-y-2">
                 <div className="flex items-center justify-between mb-1">
                   <div className="flex items-center gap-1.5 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
                     <Shield className="w-4 h-4 text-blue-500/80" />
@@ -1283,7 +1323,7 @@ export function StatGenerator() {
                     <Tooltip>
                       <TooltipTrigger
                         render={
-                          <span className="cursor-help text-[10px] font-semibold text-muted-foreground/80 bg-muted/40 border border-border/60 border-dashed rounded px-1.5 py-0.5 flex items-center gap-1 transition-colors hover:bg-muted/65">
+                          <span className="cursor-help text-[11px] font-semibold text-muted-foreground/80 bg-muted/40 border border-border/60 border-dashed rounded px-1.5 py-0.5 flex items-center gap-1 transition-colors hover:bg-muted/65">
                             <span className="text-blue-400">💠</span> Max 3 Attuned
                           </span>
                         }
@@ -1306,7 +1346,7 @@ export function StatGenerator() {
                         Sets your <strong className="text-foreground">INT to 20</strong> while worn. No effect if INT is already 20+.
                       </p>
                     </div>
-                    <div className="text-[10px] mt-1.5 flex items-center justify-between gap-2">
+                    <div className="text-[11px] mt-1.5 flex items-center justify-between gap-2">
                       <span className="text-blue-400/80 flex items-center gap-1">💠 Requires Attunement</span>
                       <span className="text-[10px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded bg-emerald-500/10 border border-emerald-500/25 text-emerald-400 shrink-0">
                         Uncommon
@@ -1318,13 +1358,13 @@ export function StatGenerator() {
                   <div className="bg-muted/10 border border-border/40 rounded-lg p-3 hover:bg-muted/20 transition-all flex flex-col justify-between">
                     <div>
                       <div className="mb-1">
-                        <span className="font-bold text-xs text-foreground">Gauntlets of Ogre Power</span>
+                        <span className=" text-xs text-foreground">Gauntlets of Ogre Power</span>
                       </div>
                       <p className="text-[11px] text-muted-foreground leading-relaxed">
                         Sets your <strong className="text-foreground">STR to 19</strong> while worn. No effect if STR is already 19+.
                       </p>
                     </div>
-                    <div className="text-[10px] mt-1.5 flex items-center justify-between gap-2">
+                    <div className="text-[11px] mt-1.5 flex items-center justify-between gap-2">
                       <span className="text-blue-400/80 flex items-center gap-1">💠 Requires Attunement</span>
                       <span className="text-[10px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded bg-emerald-500/10 border border-emerald-500/25 text-emerald-400 shrink-0">
                         Uncommon
@@ -1336,13 +1376,13 @@ export function StatGenerator() {
                   <div className="bg-muted/10 border border-border/40 rounded-lg p-3 hover:bg-muted/20 transition-all flex flex-col justify-between">
                     <div>
                       <div className="mb-1">
-                        <span className="font-bold text-xs text-foreground">Amulet of Health</span>
+                        <span className=" text-xs text-foreground">Amulet of Health</span>
                       </div>
                       <p className="text-[11px] text-muted-foreground leading-relaxed">
                         Sets your <strong className="text-foreground">CON to 19</strong> while worn. No effect if CON is already 19+.
                       </p>
                     </div>
-                    <div className="text-[10px] mt-1.5 flex items-center justify-between gap-2">
+                    <div className="text-[11px] mt-1.5 flex items-center justify-between gap-2">
                       <span className="text-blue-400/80 flex items-center gap-1">💠 Requires Attunement</span>
                       <span className="text-[10px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded bg-blue-500/10 border border-blue-500/25 text-blue-400 shrink-0">
                         Rare
@@ -1354,17 +1394,17 @@ export function StatGenerator() {
                   <div className="bg-muted/10 border border-border/40 rounded-lg p-3 hover:bg-muted/20 transition-all flex flex-col justify-between">
                     <div>
                       <div className="mb-1">
-                        <span className="font-bold text-xs text-foreground">Belt of Giant Strength</span>
+                        <span className=" text-xs text-foreground">Belt of Giant Strength</span>
                       </div>
                       <p className="text-[11px] text-muted-foreground leading-relaxed">
                         Sets your <strong className="text-foreground">STR to 21-29</strong> (depends on belt rarity). No effect if STR is higher.
                       </p>
                     </div>
-                    <div className="text-[10px] mt-1.5 flex items-center justify-between gap-2">
+                    <div className="text-[11px] mt-1.5 flex items-center justify-between gap-2">
                       <span className="text-blue-400/80 flex items-center gap-1">💠 Requires Attunement</span>
                       <span className="inline-block p-[1px] rounded bg-gradient-to-r from-red-500 via-green-400 via-blue-500 to-purple-500 shadow-[0_0_6px_rgba(239,68,68,0.15)] shrink-0">
                         <span className="block bg-card dark:bg-muted/90 rounded-[3px] px-1 py-0.2 flex items-center justify-center">
-                          <span className="text-[9px] font-bold uppercase tracking-wider text-transparent bg-clip-text bg-gradient-to-r from-red-500 via-green-400 via-blue-500 to-purple-500">
+                          <span className="text-[10px] font-bold uppercase tracking-wider text-transparent bg-clip-text bg-gradient-to-r from-red-500 via-green-400 via-blue-500 to-purple-500">
                             Variable
                           </span>
                         </span>
@@ -1373,8 +1413,8 @@ export function StatGenerator() {
                   </div>
                 </div>
 
-                {/* Attunement Warning Callout */}
-                <div className="bg-amber-500/5 border border-amber-500/20 rounded-lg p-3 mt-1.5 flex items-start gap-2.5">
+                {/* More Magical Items */}
+                <div className="bg-amber-500/5 border border-amber-500/20 rounded-lg p-3 flex items-start gap-2.5">
                   <AlertCircle className="w-4 h-4 text-amber-500 mt-0.5 shrink-0" />
                   <div>
                     <span className="font-bold text-xs text-amber-500 block mb-0.5">More Magic Items</span>
