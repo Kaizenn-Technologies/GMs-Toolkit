@@ -11,6 +11,7 @@ import { Switch } from "@/components/ui/switch";
 import { StepperInput } from "@/components/ui/stepper-input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useSettings } from "@/contexts/SettingsContext";
+import { useLocation } from "react-router-dom";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -158,7 +159,19 @@ export function SettingsOverlay({
     updateHp,
     updateDiceRoller,
   } = useSettings();
-  const defaultTab = enabledTabs[0] ?? "pointbuy";
+  const location = useLocation();
+
+  const getInitialTab = (): SettingsTabKey => {
+    const path = location.pathname;
+    if (path.includes("/stat-generator/pointbuy")) return "pointbuy";
+    if (path.includes("/stat-generator/rolled")) return "roll";
+    if (path.includes("/stat-generator/standard-array")) return "standard";
+    if (path.includes("/hp-calculator")) return "hp";
+    if (path.includes("/dm-dice-roller")) return "dice";
+    return enabledTabs[0] ?? "pointbuy";
+  };
+
+  const initialTab = getInitialTab();
   const shouldShowPointBuy = enabledTabs.includes("pointbuy");
   const shouldShowRoll = enabledTabs.includes("roll");
   const shouldShowStandard = enabledTabs.includes("standard");
@@ -253,10 +266,30 @@ export function SettingsOverlay({
                   onCheckedChange={(v) => updateSitewide({ showFooter: v })}
                 />
               </SettingRow>
+
+              <SettingRow
+                label="Show Skills & Saving Throws"
+                description="Show or hide the Skills & Saving Throws section."
+              >
+                <Switch
+                  checked={settings.sitewide.showSkills}
+                  onCheckedChange={(v) => updateSitewide({ showSkills: v })}
+                />
+              </SettingRow>
+
+              <SettingRow
+                label="Show Progression & Gear"
+                description="Show or hide the Progression & Gear Reference section."
+              >
+                <Switch
+                  checked={settings.sitewide.showProgression}
+                  onCheckedChange={(v) => updateSitewide({ showProgression: v })}
+                />
+              </SettingRow>
             </div>
           </div>
 
-          <Tabs defaultValue={defaultTab} className="h-full flex flex-col">
+          <Tabs key={`${isOpen}-${initialTab}`} defaultValue={initialTab} className="h-full flex flex-col">
             <div className="px-6 pt-4 shrink-0">
               <TabsList
                 className={`grid w-full ${
@@ -347,6 +380,16 @@ export function SettingsOverlay({
                     <Switch
                       checked={settings.roll.rollingAnimation}
                       onCheckedChange={(v) => updateRoll({ rollingAnimation: v })}
+                    />
+                  </SettingRow>
+
+                  <SettingRow
+                    label="Dice shake animation"
+                    description="Enable the physical shake animation on individual cards when rolling."
+                  >
+                    <Switch
+                      checked={settings.roll.diceShake}
+                      onCheckedChange={(v) => updateRoll({ diceShake: v })}
                     />
                   </SettingRow>
                 </div>

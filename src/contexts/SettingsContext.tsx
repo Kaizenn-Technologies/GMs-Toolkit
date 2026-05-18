@@ -35,6 +35,8 @@ export interface SitewideSettings {
   darkMode: boolean;
   showHeader: boolean;
   showFooter: boolean;
+  showSkills: boolean;
+  showProgression: boolean;
 }
 
 export interface AppSettings {
@@ -50,6 +52,7 @@ export interface RollSettings {
   sortDescending: boolean;
   colorDice: boolean;
   rollingAnimation: boolean;
+  diceShake: boolean;
 }
 
 export interface HpSettings {
@@ -64,6 +67,8 @@ export const DEFAULT_SITEWIDE_SETTINGS: SitewideSettings = {
   darkMode: true,
   showHeader: true,
   showFooter: true,
+  showSkills: true,
+  showProgression: true,
 };
 
 export const DEFAULT_POINT_BUY_SETTINGS: PointBuySettings = {
@@ -79,6 +84,7 @@ export const DEFAULT_ROLL_SETTINGS: RollSettings = {
   sortDescending: true,
   colorDice: true,
   rollingAnimation: true,
+  diceShake: true,
 };
 
 export const DEFAULT_HP_SETTINGS: HpSettings = {
@@ -120,7 +126,14 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
     const saved = localStorage.getItem("dnd_tools_settings");
     if (saved) {
       try {
-        return JSON.parse(saved);
+        const parsed = JSON.parse(saved);
+        return {
+          sitewide: { ...DEFAULT_SITEWIDE_SETTINGS, ...parsed.sitewide },
+          pointBuy: { ...DEFAULT_POINT_BUY_SETTINGS, ...parsed.pointBuy },
+          roll: { ...DEFAULT_ROLL_SETTINGS, ...parsed.roll },
+          hp: { ...DEFAULT_HP_SETTINGS, ...parsed.hp },
+          diceRoller: { ...DEFAULT_DICE_ROLLER_SETTINGS, ...parsed.diceRoller },
+        };
       } catch (e) {
         console.error("Failed to parse saved settings", e);
       }

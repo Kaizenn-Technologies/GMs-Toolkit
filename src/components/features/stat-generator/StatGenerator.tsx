@@ -305,14 +305,14 @@ export function StatGenerator() {
   };
 
   return (
-    <>
+    <div className="flex flex-col gap-3">
       <PageHeader
         title="D&D 5.5e Stat Generator"
         description="Generate ability scores using Point Buy, dice rolls, or the Standard Array."
       />
 
       <Card>
-        <CardContent className="pt-2">
+        <CardContent className="pt-1">
           <Tabs
             value={activeTab}
             onValueChange={(value) => {
@@ -328,13 +328,13 @@ export function StatGenerator() {
             }}
             className="w-full"
           >
-            <TabsList className="grid w-full grid-cols-3 mb-6">
+            <TabsList className="grid w-full grid-cols-3 mb-1">
               <TabsTrigger value="pointbuy">Point Buy</TabsTrigger>
               <TabsTrigger value="roll">Rolled Stats</TabsTrigger>
               <TabsTrigger value="standard">Standard Array</TabsTrigger>
             </TabsList>
 
-            <TabsContent value="pointbuy" className="space-y-6">
+            <TabsContent value="pointbuy" className="">
               <StatGeneratorSelectorRow
                 classValue={selectedClass}
                 onClassChange={(value) => {
@@ -353,7 +353,7 @@ export function StatGenerator() {
               />
 
               {/* Mobile: 2-col card grid */}
-              <div className="grid grid-cols-2 gap-2 md:hidden">
+              <div className="grid grid-cols-2 gap-2 md:hidden ">
                 {ABILITIES.map((ability) => {
                   const score = scores[ability];
                   const bgBonus = bgBonuses[ability];
@@ -373,20 +373,20 @@ export function StatGenerator() {
                         </div>
                         <span className={`text-sm font-bold tabular-nums ${getModifierClass(modifier)}`}>{formatModifier(modifier)}</span>
                       </div>
-                      <div className="flex-1 space-y-2">
-                        <div>
-                          <p className="text-[10px] uppercase tracking-wide text-muted-foreground mb-1">Score</p>
+                      <div>
+                        <div className="flex-1 space-y-2">
+                          <p className="text-[10px] uppercase tracking-wide text-muted-foreground">Score</p>
                           <StepperInput className="rounded-none w-full" value={score} min={clampedMin} max={clampedMax} onChange={(val) => handleScoreChange(ability, val)} />
                         </div>
                         {showBgStepper && (
                           <div>
-                            <p className="text-[10px] uppercase tracking-wide text-muted-foreground mb-1">BG Bonus</p>
+                            <p className="text-[10px] uppercase tracking-wide text-muted-foreground">BG Bonus</p>
                             <StepperInput className="rounded-none w-full" value={bgBonus} min={0} max={BG_BONUS_MAX} onChange={(val) => handleBgBonusChange(ability, val)} />
                           </div>
                         )}
                         {featBonusEnabled && (
                           <div>
-                            <p className="text-[10px] uppercase tracking-wide text-muted-foreground mb-1">Feat</p>
+                            <p className="text-[10px] uppercase tracking-wide text-muted-foreground">Feat</p>
                             <StepperInput className="rounded-none w-full" value={manualBonus} min={0} max={MANUAL_BONUS_MAX} onChange={(val) => handleManualBonusChange(ability, val)} />
                           </div>
                         )}
@@ -541,8 +541,8 @@ export function StatGenerator() {
                 </table>
               </div>
 
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between pt-6 mt-2 gap-4 border-t border-border/40">
-                <div className="flex flex-row justify-between">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between mt-2 gap-4">
+                <div className="flex flex-row justify-between gap-2">
                   <ResetButton onClick={handleReset} className="shadow-sm hover:shadow-md transition-all" />
                   <ShareButton onClick={handleShareLink} copied={copied} className="shadow-sm hover:shadow-md transition-all" />
                 </div>
@@ -587,7 +587,7 @@ export function StatGenerator() {
                   return (
                     <div
                       key={ability}
-                      className={`bg-muted/20 border border-border/50 p-4 sm:p-6 flex flex-col items-center shadow-sm hover:border-border transition-colors group ${isRolling ? "animate-dice-shake" : ""}`}
+                      className={`bg-muted/20 border border-border/50 p-4 sm:p-6 flex flex-col items-center shadow-sm hover:border-border transition-colors group ${isRolling && settings.roll?.diceShake ? "animate-dice-shake" : ""}`}
                     >
                       <div className="text-[12px] font-bold uppercase tracking-widest text-muted-foreground mb-3 group-hover:text-foreground transition-colors">
                         Roll {index + 1}
@@ -617,7 +617,7 @@ export function StatGenerator() {
                               key={i}
                               className={`${colorClass} ${isLast ? "text-muted-foreground/95 opacity-60 border-dashed" : "bg-background/50"} mx-0.5 rounded-none border border-border/30 px-2 py-1 ${d === 0 ? "text-muted-foreground/20" : ""}`}
                               style={isLast && d > 0 ? {
-                                backgroundColor: '#222222',
+                                backgroundColor: settings.sitewide.darkMode ? '#222222ff' : '#fee2e2',
                                 backgroundImage: `url("data:image/svg+xml,%3Csvg width='40' height='40' viewBox='0 0 40 40' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='%23ff5656' fill-opacity='0.4' fill-rule='evenodd'%3E%3Cpath d='M0 40L40 0H20L0 20M40 40V20L20 40'/%3E%3C/g%3E%3C/svg%3E")`,
                                 backgroundSize: '12px 12px'
                               } : undefined}
@@ -1111,97 +1111,104 @@ export function StatGenerator() {
       </Card>
 
       {/* Skills & Saving Throws Section */}
-      <Card className="mt-6 border-border bg-card/45 backdrop-blur-sm">
-        <CardContent className="">
-          <div className="flex flex-col md:flex-row md:items-center justify-between pb-2 mb-2 border-b border-border/40 gap-4">
-            <div>
-              <h3 className="text-lg font-bold tracking-tight">Skills &amp; Saving Throws</h3>
-              <p className="text-xs text-muted-foreground mt-0.5">
-                Select class for automatic saving throws.
-              </p>
-            </div>
+      {settings.sitewide.showSkills ? (
+        <Card className="border-border bg-card/45 backdrop-blur-sm">
+          <CardContent className="">
+            <div className="flex flex-col md:flex-row md:items-center justify-between pb-2 mb-2 border-b border-border/40 gap-4">
+              <div>
+                <h3 className="text-lg font-bold tracking-tight">Skills &amp; Saving Throws</h3>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  Select class for automatic saving throws.
+                </p>
+              </div>
 
-            <div className="flex flex-wrap items-center gap-4">
-              <div className="flex items-center gap-2 px-3 py-1.5">
-                <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Character Level:</span>
-                <StepperInput
-                  value={level}
-                  onChange={setLevel}
-                  min={1}
-                  max={20}
-                  className="w-24 bg-background/50 h-7"
+              <div className="flex flex-wrap items-center gap-4">
+                <div className="flex items-center gap-2 px-3 py-1.5">
+                  <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Character Level:</span>
+                  <StepperInput
+                    value={level}
+                    onChange={setLevel}
+                    min={1}
+                    max={20}
+                    className="w-24 bg-background/50 h-7"
+                  />
+                </div>
+
+                <div className="flex items-center gap-2 px-3 py-1.5">
+                  <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Proficiency Bonus:</span>
+                  <span className="text-sm font-extrabold text-primary font-mono px-2 py-0.5 rounded border border-primary/20">
+                    +{profBonus}
+                  </span>
+                </div>
+                <ResetButton
+                  onClick={handleSkillsReset}
+                  className="shadow-sm hover:shadow-md transition-all h-8"
                 />
               </div>
-
-              <div className="flex items-center gap-2 px-3 py-1.5">
-                <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Proficiency Bonus:</span>
-                <span className="text-sm font-extrabold text-primary font-mono px-2 py-0.5 rounded border border-primary/20">
-                  +{profBonus}
-                </span>
-              </div>
-              <ResetButton
-                onClick={handleSkillsReset}
-                className="shadow-sm hover:shadow-md transition-all h-8"
-              />
             </div>
-          </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {ABILITIES.map((ability) => {
-              const skills = SKILL_MAPPING[ability];
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {ABILITIES.map((ability) => {
+                const skills = SKILL_MAPPING[ability];
 
-              return (
-                <div key={ability} className="flex flex-col border border-border bg-card/60 backdrop-blur-sm rounded-lg shadow-sm hover:shadow-md transition-all">
-                  {/* Ability Header with Integrated Saving Throw */}
-                  <div className="bg-muted/60 py-2 px-3 text-center border-b border-border/50 flex items-center justify-between rounded-t-lg">
-                    <div className="flex items-center gap-2 min-w-0">
-                      <SkillDropdown
-                        state={savingThrowsState[ability]}
-                        isBard={activeClass === "Bard"}
-                        isSkill={false}
-                        onChange={(state) => handleSavingThrowChange(ability, state)}
-                      />
-                      <span className="text-xs uppercase tracking-widest text-foreground font-bold truncate">
-                        <span className="hidden sm:inline lg:hidden xl:inline">{ability}</span>
-                        <span className="sm:hidden lg:inline xl:hidden">{ability.slice(0, 3)}</span> Saving Throw
+                return (
+                  <div key={ability} className="flex flex-col border border-border bg-card/60 backdrop-blur-sm rounded-lg shadow-sm hover:shadow-md transition-all">
+                    {/* Ability Header with Integrated Saving Throw */}
+                    <div className="bg-muted/60 py-2 px-3 text-center border-b border-border/50 flex items-center justify-between rounded-t-lg">
+                      <div className="flex items-center gap-2 min-w-0">
+                        <SkillDropdown
+                          state={savingThrowsState[ability]}
+                          isBard={activeClass === "Bard"}
+                          isSkill={false}
+                          onChange={(state) => handleSavingThrowChange(ability, state)}
+                        />
+                        <span className="text-xs uppercase tracking-widest text-foreground font-bold truncate">
+                          <span className="hidden sm:inline lg:hidden xl:inline">{ability}</span>
+                          <span className="sm:hidden lg:inline xl:hidden">{ability.slice(0, 3)}</span> Saving Throw
+                        </span>
+                      </div>
+                      <span className={`font-mono font-bold text-md bg-background/60 px-2 py-0.5 min-w-[32px] text-center rounded shrink-0 ${getModifierClass(getSavingThrowValueRaw(ability))}`}>
+                        {getSavingThrowValue(ability)}
                       </span>
                     </div>
-                    <span className={`font-mono font-bold text-md bg-background/60 px-2 py-0.5 min-w-[32px] text-center rounded shrink-0 ${getModifierClass(getSavingThrowValueRaw(ability))}`}>
-                      {getSavingThrowValue(ability)}
-                    </span>
-                  </div>
 
-                  {/* Body with Skills (if any) */}
-                  {skills.length > 0 && (
-                    <div className="flex-1 p-3 ">
-                      {skills.map((skill, index) => (
-                        <div key={skill} className="flex items-center justify-between text-sm py-1">
-                          <div className="flex items-center gap-1.5 min-w-0">
-                            <SkillDropdown
-                              state={skillsState[skill] || "none"}
-                              isBard={activeClass === "Bard"}
-                              isSkill={true}
-                              onChange={(state) => handleSkillChange(skill, state)}
-                              openUpward={index >= 2}
-                            />
-                            <span className="truncate" title={skill}>
-                              {skill}
+                    {/* Body with Skills (if any) */}
+                    {skills.length > 0 && (
+                      <div className="flex-1 p-3 ">
+                        {skills.map((skill, index) => (
+                          <div key={skill} className="flex items-center justify-between text-sm py-1">
+                            <div className="flex items-center gap-1.5 min-w-0">
+                              <SkillDropdown
+                                state={skillsState[skill] || "none"}
+                                isBard={activeClass === "Bard"}
+                                isSkill={true}
+                                onChange={(state) => handleSkillChange(skill, state)}
+                                openUpward={index >= 2}
+                              />
+                              <span className="truncate" title={skill}>
+                                {skill}
+                              </span>
+                            </div>
+                            <div className="flex-1 mx-2 pt-1 border-b border-dashed border-muted-foreground/40 self-center" />
+                            <span className={`font-mono font-bold text-xs bg-background/60 border border-border px-1.5 py-0.5 min-w-[28px] text-center rounded shrink-0 ${getModifierClass(getSkillValueRaw(ability, skill))}`}>
+                              {getSkillValue(ability, skill)}
                             </span>
                           </div>
-                          <div className="flex-1 mx-2 pt-1 border-b border-dashed border-muted-foreground/40 self-center" />
-                          <span className={`font-mono font-bold text-xs bg-background/60 border border-border px-1.5 py-0.5 min-w-[28px] text-center rounded shrink-0 ${getModifierClass(getSkillValueRaw(ability, skill))}`}>
-                            {getSkillValue(ability, skill)}
-                          </span>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-          {/* Reference & Progression Helper */}
-          <div className="mt-8 pt-6 border-t border-border/40">
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </CardContent>
+        </Card>
+      ) : null}
+
+      {/* Reference & Progression Helper */}
+      {settings.sitewide.showProgression ? (
+        <Card className="border-border bg-card/45 backdrop-blur-sm">
+          <CardContent className="">
             <div className="flex items-center gap-2 mb-4">
               <BookOpen className="w-5 h-5 text-primary/80" />
               <h4 className="text-sm font-bold uppercase tracking-wider text-foreground">
@@ -1212,7 +1219,7 @@ export function StatGenerator() {
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               {/* Feats Section */}
               <div className="space-y-3">
-                <div className="flex items-center gap-1.5 text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1">
+                <div className="flex items-center gap-1.5 text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">
                   <Sparkles className="w-4 h-4 text-amber-500/80" />
                   <span>Feats &amp; Ability Score Increases</span>
                 </div>
@@ -1292,76 +1299,76 @@ export function StatGenerator() {
                   {/* Headband of Intellect */}
                   <div className="bg-muted/10 border border-border/40 rounded-lg p-3 hover:bg-muted/20 transition-all flex flex-col justify-between">
                     <div>
-                      <div className="flex items-center justify-between gap-2 mb-1">
-                        <span className="font-bold text-xs text-foreground truncate">Headband of Intellect</span>
-                        <span className="text-[10px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded bg-emerald-500/10 border border-emerald-500/25 text-emerald-400 shrink-0">
-                          Uncommon
-                        </span>
+                      <div className="mb-1">
+                        <span className="font-bold text-xs text-foreground">Headband of Intellect</span>
                       </div>
                       <p className="text-[11px] text-muted-foreground leading-relaxed">
                         Sets your <strong className="text-foreground">INT to 20</strong> while worn. No effect if INT is already 20+.
                       </p>
                     </div>
-                    <div className="text-[10px] text-blue-400/80 mt-1.5 flex items-center gap-1">
-                      <span>💠 Requires Attunement</span>
+                    <div className="text-[10px] mt-1.5 flex items-center justify-between gap-2">
+                      <span className="text-blue-400/80 flex items-center gap-1">💠 Requires Attunement</span>
+                      <span className="text-[10px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded bg-emerald-500/10 border border-emerald-500/25 text-emerald-400 shrink-0">
+                        Uncommon
+                      </span>
                     </div>
                   </div>
 
                   {/* Gauntlets of Ogre Power */}
                   <div className="bg-muted/10 border border-border/40 rounded-lg p-3 hover:bg-muted/20 transition-all flex flex-col justify-between">
                     <div>
-                      <div className="flex items-center justify-between gap-2 mb-1">
-                        <span className="font-bold text-xs text-foreground truncate">Gauntlets of Ogre Power</span>
-                        <span className="text-[10px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded bg-emerald-500/10 border border-emerald-500/25 text-emerald-400 shrink-0">
-                          Uncommon
-                        </span>
+                      <div className="mb-1">
+                        <span className="font-bold text-xs text-foreground">Gauntlets of Ogre Power</span>
                       </div>
                       <p className="text-[11px] text-muted-foreground leading-relaxed">
                         Sets your <strong className="text-foreground">STR to 19</strong> while worn. No effect if STR is already 19+.
                       </p>
                     </div>
-                    <div className="text-[10px] text-blue-400/80 mt-1.5 flex items-center gap-1">
-                      <span>💠 Requires Attunement</span>
+                    <div className="text-[10px] mt-1.5 flex items-center justify-between gap-2">
+                      <span className="text-blue-400/80 flex items-center gap-1">💠 Requires Attunement</span>
+                      <span className="text-[10px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded bg-emerald-500/10 border border-emerald-500/25 text-emerald-400 shrink-0">
+                        Uncommon
+                      </span>
                     </div>
                   </div>
 
                   {/* Amulet of Health */}
                   <div className="bg-muted/10 border border-border/40 rounded-lg p-3 hover:bg-muted/20 transition-all flex flex-col justify-between">
                     <div>
-                      <div className="flex items-center justify-between gap-2 mb-1">
-                        <span className="font-bold text-xs text-foreground truncate">Amulet of Health</span>
-                        <span className="text-[10px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded bg-blue-500/10 border border-blue-500/25 text-blue-400 shrink-0">
-                          Rare
-                        </span>
+                      <div className="mb-1">
+                        <span className="font-bold text-xs text-foreground">Amulet of Health</span>
                       </div>
                       <p className="text-[11px] text-muted-foreground leading-relaxed">
                         Sets your <strong className="text-foreground">CON to 19</strong> while worn. No effect if CON is already 19+.
                       </p>
                     </div>
-                    <div className="text-[10px] text-blue-400/80 mt-1.5 flex items-center gap-1">
-                      <span>💠 Requires Attunement</span>
+                    <div className="text-[10px] mt-1.5 flex items-center justify-between gap-2">
+                      <span className="text-blue-400/80 flex items-center gap-1">💠 Requires Attunement</span>
+                      <span className="text-[10px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded bg-blue-500/10 border border-blue-500/25 text-blue-400 shrink-0">
+                        Rare
+                      </span>
                     </div>
                   </div>
 
                   {/* Belt of Giant Strength */}
                   <div className="bg-muted/10 border border-border/40 rounded-lg p-3 hover:bg-muted/20 transition-all flex flex-col justify-between">
                     <div>
-                      <div className="flex items-center justify-between gap-2 mb-1">
-                        <span className="font-bold text-xs text-foreground truncate">Belt of Giant Strength</span>
-                        <span className="inline-block p-[1px] rounded bg-gradient-to-r from-red-500 via-green-400 via-blue-500 to-purple-500 shadow-[0_0_6px_rgba(239,68,68,0.15)] shrink-0">
-                          <span className="block bg-card dark:bg-muted/90 rounded-[3px] px-1 py-0.2 flex items-center justify-center">
-                            <span className="text-[9px] font-bold uppercase tracking-wider text-transparent bg-clip-text bg-gradient-to-r from-red-500 via-green-400 via-blue-500 to-purple-500">
-                              Variable
-                            </span>
-                          </span>
-                        </span>
+                      <div className="mb-1">
+                        <span className="font-bold text-xs text-foreground">Belt of Giant Strength</span>
                       </div>
                       <p className="text-[11px] text-muted-foreground leading-relaxed">
                         Sets your <strong className="text-foreground">STR to 21-29</strong> (depends on belt rarity). No effect if STR is higher.
                       </p>
                     </div>
-                    <div className="text-[10px] text-blue-400/80 mt-1.5 flex items-center gap-1">
-                      <span>💠 Requires Attunement</span>
+                    <div className="text-[10px] mt-1.5 flex items-center justify-between gap-2">
+                      <span className="text-blue-400/80 flex items-center gap-1">💠 Requires Attunement</span>
+                      <span className="inline-block p-[1px] rounded bg-gradient-to-r from-red-500 via-green-400 via-blue-500 to-purple-500 shadow-[0_0_6px_rgba(239,68,68,0.15)] shrink-0">
+                        <span className="block bg-card dark:bg-muted/90 rounded-[3px] px-1 py-0.2 flex items-center justify-center">
+                          <span className="text-[9px] font-bold uppercase tracking-wider text-transparent bg-clip-text bg-gradient-to-r from-red-500 via-green-400 via-blue-500 to-purple-500">
+                            Variable
+                          </span>
+                        </span>
+                      </span>
                     </div>
                   </div>
                 </div>
@@ -1378,11 +1385,11 @@ export function StatGenerator() {
                 </div>
               </div>
             </div>
-          </div>
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
+      ) : null}
 
-    </>
+    </div>
   );
 }
 
