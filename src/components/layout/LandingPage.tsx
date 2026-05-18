@@ -12,29 +12,29 @@ export function LandingPage() {
     {
       title: "HP Calculator",
       description: "Sleek party management. Track HP, temp HP, and status for your entire table in one view.",
-      icon: <Calculator className="w-12 h-12 text-blue-400" />,
+      icon: <Calculator className="w-12 h-12 text-blue-600 dark:text-blue-400" />,
       path: "/hp-calculator",
-      gradient: "from-blue-600/20 via-blue-900/10 to-transparent",
+      gradient: "from-blue-500/5 via-blue-500/0 to-transparent dark:from-blue-600/20 dark:via-blue-900/10 dark:to-transparent",
       accent: "bg-blue-500",
-      shadow: "hover:shadow-blue-500/20",
+      shadow: "hover:shadow-blue-500/5 dark:hover:shadow-blue-500/20",
     },
     {
       title: "Stat Generator",
       description: "Character creation redefined. Point Buy, Standard Array, and custom rolling with real-time feedback.",
-      icon: <Users className="w-12 h-12 text-emerald-400" />,
+      icon: <Users className="w-12 h-12 text-emerald-600 dark:text-emerald-400" />,
       path: "/stat-generator/pointbuy",
-      gradient: "from-emerald-600/20 via-emerald-900/10 to-transparent",
+      gradient: "from-emerald-500/5 via-emerald-500/0 to-transparent dark:from-emerald-600/20 dark:via-emerald-900/10 dark:to-transparent",
       accent: "bg-emerald-500",
-      shadow: "hover:shadow-emerald-500/20",
+      shadow: "hover:shadow-emerald-500/5 dark:hover:shadow-emerald-500/20",
     },
     {
       title: "DM Dice Roller",
       description: "High-density rolling. Advantage, custom groups, and native Daggerheart support for fast-paced play.",
-      icon: <Dices className="w-12 h-12 text-purple-400" />,
+      icon: <Dices className="w-12 h-12 text-purple-600 dark:text-purple-400" />,
       path: "/dm-dice-roller",
-      gradient: "from-purple-600/20 via-purple-900/10 to-transparent",
+      gradient: "from-purple-500/5 via-purple-500/0 to-transparent dark:from-purple-600/20 dark:via-purple-900/10 dark:to-transparent",
       accent: "bg-purple-500",
-      shadow: "hover:shadow-purple-500/20",
+      shadow: "hover:shadow-purple-500/5 dark:hover:shadow-purple-500/20",
     },
   ];
 
@@ -74,12 +74,12 @@ export function LandingPage() {
             onClick={() => navigate(feature.path)}
           >
             <div className={`
-              relative h-full p-8 rounded-3xl border border-white/10 
-              bg-black backdrop-blur-xl 
+              relative h-full p-8 rounded-3xl border border-border/80 dark:border-white/10 
+              bg-card dark:bg-black backdrop-blur-xl 
               transition-all duration-500 ease-out
-              hover:border-white/20 hover:-translate-y-4 hover:rotate-1
+              hover:border-border hover:-translate-y-4 hover:rotate-1 dark:hover:border-white/20
               cursor-pointer overflow-hidden
-              ${feature.shadow} shadow-2xl
+              ${feature.shadow} shadow-md dark:shadow-2xl
             `}>
               {/* Subtle Gradient Overlay */}
               <div className={`absolute inset-0 bg-gradient-to-br ${feature.gradient} opacity-50 group-hover:opacity-100 transition-opacity duration-500`} />
@@ -88,25 +88,22 @@ export function LandingPage() {
               <div className={`absolute top-0 left-0 right-0 h-1 ${feature.accent} opacity-20 group-hover:opacity-100 transition-opacity duration-500`} />
 
               <div className="relative z-10 space-y-6">
-                <div className="inline-flex p-4 rounded-2xl bg-white/5 border border-white/10 group-hover:scale-110 group-hover:bg-white/10 transition-all duration-500 shadow-inner">
+                <div className="inline-flex p-4 rounded-2xl bg-muted dark:bg-white/5 border border-border dark:border-white/10 group-hover:scale-110 group-hover:bg-muted/80 dark:group-hover:bg-white/10 transition-all duration-500 shadow-inner">
                   {feature.icon}
                 </div>
 
                 <div className="space-y-3">
-                  <h3 className="text-2xl font-bold text-white group-hover:text-primary transition-colors duration-300">
+                  <h3 className="text-2xl font-bold text-foreground dark:text-white group-hover:text-primary transition-colors duration-300">
                     {feature.title}
                   </h3>
-                  <p className="text-neutral-400 group-hover:text-neutral-200 leading-relaxed transition-colors duration-300">
+                  <p className="text-muted-foreground dark:text-neutral-400 group-hover:text-foreground dark:group-hover:text-neutral-200 leading-relaxed transition-colors duration-300">
                     {feature.description}
                   </p>
                 </div>
-                {/* <div className="pt-4 flex items-center text-sm font-semibold text-primary opacity-0 group-hover:opacity-100 translate-x-[-10px] group-hover:translate-x-0 transition-all duration-500">
-                  Enter Feature <ArrowRight className="ml-2 w-4 h-4" />
-                </div> */}
               </div>
 
               {/* Decorative Corner Element */}
-              <div className="absolute -bottom-10 -right-10 w-32 h-32 bg-white/5 rounded-full blur-2xl group-hover:bg-white/10 transition-colors duration-500" />
+              <div className="absolute -bottom-10 -right-10 w-32 h-32 bg-foreground/5 dark:bg-white/5 rounded-full blur-2xl group-hover:bg-foreground/10 dark:group-hover:bg-white/10 transition-colors duration-500" />
             </div>
           </div>
         ))}
