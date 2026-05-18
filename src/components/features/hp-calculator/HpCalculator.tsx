@@ -17,6 +17,7 @@ import { HpTotalDisplay } from "./HpTotalDisplay";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { ResetButton, ShareButton } from "@/components/ui/action-buttons";
 import { CUSTOM_CLASS_NAME, CUSTOM_HIT_DIE_OPTIONS } from "@/lib/constants";
+import { ShareModal } from "@/components/features/ShareModal";
 import { useHpCalculator, hpClassOptions } from "./useHpCalculator";
 
 export function HpCalculator() {
@@ -47,6 +48,9 @@ export function HpCalculator() {
     handleRollAgain,
     handleShareLink,
     isRolling,
+    isShareModalOpen,
+    setIsShareModalOpen,
+    shareModalProps,
   } = useHpCalculator();
 
   return (
@@ -250,6 +254,14 @@ export function HpCalculator() {
           </Card>
         </div>
       </div>
+
+      {shareModalProps && (
+        <ShareModal
+          isOpen={isShareModalOpen}
+          onClose={() => setIsShareModalOpen(false)}
+          {...shareModalProps}
+        />
+      )}
     </>
   );
 }

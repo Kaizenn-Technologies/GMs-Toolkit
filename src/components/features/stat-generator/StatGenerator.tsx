@@ -1,4 +1,4 @@
-import { Dices, Shuffle, BookOpen, Sparkles, Shield, AlertCircle } from "lucide-react";
+import { Dices, Shuffle, BookOpen, Sparkles, Shield, AlertCircle, RotateCcw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Select,
@@ -31,6 +31,7 @@ import {
 import { PageHeader } from "@/components/layout/PageHeader";
 import { ResetButton, ShareButton } from "@/components/ui/action-buttons";
 
+import { ShareModal } from "@/components/features/ShareModal";
 import { StatGeneratorSelectorRow } from "./StatGeneratorSelectorRow";
 import {
   AbilityNameCell,
@@ -97,6 +98,8 @@ export function StatGenerator() {
     handleRolledAssignChange,
     handleAssignmentReset,
     handleShareAssigned,
+    handleRollsReset,
+    rollCount,
     level,
     setLevel,
     skillsState,
@@ -104,6 +107,13 @@ export function StatGenerator() {
     savingThrowsState,
     setSavingThrowsState,
     handleSkillsReset,
+    isShareModalOpen,
+    setIsShareModalOpen,
+    shareModalProps,
+    sharedName,
+    sharedRolls,
+    sharedTimestamp,
+    sharedTimezone,
   } = useStatGenerator();
 
   const pointsColor = getPoolStatusClass(remaining);
@@ -197,6 +207,34 @@ export function StatGenerator() {
         title="D&D 5.5e Stat Generator"
         description="Generate ability scores using Point Buy, dice rolls, or the Standard Array."
       />
+
+      {sharedName && (
+        <div className="border border-blue-400 bg-blue-400/10 p-4 rounded-none text-left flex flex-col gap-1.5 shadow-sm animate-in fade-in duration-300">
+          <p className="text-[14px] font-bold text-primary uppercase tracking-wider">
+            Verified Character Load
+          </p>
+          <div className="flex flex-wrap gap-x-6 gap-y-1.5 text-xs text-muted-foreground font-mono">
+            {sharedName && (
+              <p>
+                Name: <span className="text-foreground font-semibold">{sharedName}</span>
+              </p>
+            )}
+            {sharedRolls !== null && (
+              <p>
+                Rolls: <span className="text-foreground font-semibold">{sharedRolls}</span>
+              </p>
+            )}
+            {sharedTimestamp && (
+              <p>
+                Timestamp: <span className="text-foreground font-semibold">
+                  {new Date(sharedTimestamp).toLocaleString()}
+                  {sharedTimezone ? ` (${sharedTimezone})` : ""}
+                </span>
+              </p>
+            )}
+          </div>
+        </div>
+      )}
 
       <Card className="bg-card/45">
         <CardContent className="pt-1">
@@ -429,10 +467,6 @@ export function StatGenerator() {
               </div>
 
               <div className="flex flex-col sm:flex-row sm:items-center justify-between mt-2 gap-4">
-                <div className="flex flex-row justify-between gap-2">
-                  <ResetButton onClick={handleReset} className="shadow-sm hover:shadow-md transition-all" />
-                  <ShareButton onClick={handleShareLink} copied={copied} className="shadow-sm hover:shadow-md transition-all" />
-                </div>
 
                 <div className="flex flex-wrap items-center gap-3 sm:gap-4">
                   <PoolStatus
@@ -449,6 +483,10 @@ export function StatGenerator() {
                     valueClassName={pointsColor}
                   />
                 </div>
+                <div className="flex flex-row justify-between gap-2">
+                  <ResetButton onClick={handleReset} className="shadow-sm hover:shadow-md transition-all" />
+                  <ShareButton onClick={handleShareLink} copied={copied} className="shadow-sm hover:shadow-md transition-all" />
+                </div>
               </div>
 
               {remaining < 0 && (
@@ -459,8 +497,17 @@ export function StatGenerator() {
               )}
             </TabsContent>
 
-            <TabsContent value="roll" className="space-y-2">
-              <div className=" grid grid-cols-2 sm:grid-cols-6 gap-3">
+            <TabsContent value="roll" className="space-y-4">
+              <div className="flex flex-row justify-between items-center border-b border-border/40 pb-2">
+                <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
+                  Ability Score Dice Pools (4d6 drop lowest)
+                </p>
+                <div className="flex items-center gap-1.5 font-mono text-[11px] text-muted-foreground bg-muted/40 border border-border/30 px-2 py-0.5 rounded-none">
+                  <span className="font-semibold uppercase tracking-wider text-[9px] text-muted-foreground/80">Reroll Count:</span>
+                  <span className="text-primary font-bold text-xs">{rollCount}</span>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-6 gap-3">
                 {ABILITIES.map((ability, index) => {
                   const box = rolledBoxes[ability];
                   const rolls = box?.rolls ?? [0, 0, 0, 0];
@@ -484,20 +531,19 @@ export function StatGenerator() {
                           {total}
                         </div>
                         <div
-                          className={`text-sm border border-muted-foreground/20 bg-background/30 px-2 py-1 rounded font-bold transition-all duration-200 tabular-nums ${
-                            total > 0
-                              ? getModifier(total) > 0
-                                ? "text-emerald-500"
-                                : getModifier(total) < 0
-                                  ? "text-red-500"
-                                  : "text-muted-foreground/60"
-                              : "invisible select-none opacity-0"
-                          } ${isRolling ? "animate-number-flicker" : ""}`}
+                          className={`text-sm border border-muted-foreground/20 bg-background/30 px-2 py-1 rounded font-bold transition-all duration-200 tabular-nums ${total > 0
+                            ? getModifier(total) > 0
+                              ? "text-emerald-500"
+                              : getModifier(total) < 0
+                                ? "text-red-500"
+                                : "text-muted-foreground/60"
+                            : "invisible select-none opacity-0"
+                            } ${isRolling ? "animate-number-flicker" : ""}`}
                         >
                           {total > 0 ? formatModifier(getModifier(total)) : "+0"}
                         </div>
                       </div>
-                      <div className={`text-xs font-medium text-muted-foreground/95 px-2 py-1 ${isRolling ? "animate-number-flicker" : ""}`}>
+                      <div className={`flex flex-row flex-nowrap justify-center items-center gap-1 text-xs font-medium text-muted-foreground/95 px-1 py-1 w-full ${isRolling ? "animate-number-flicker" : ""}`}>
                         {displayed.map((d, i) => {
                           const isLast = i === displayed.length - 1;
                           const colorClass = settings.roll?.colorDice
@@ -510,7 +556,7 @@ export function StatGenerator() {
                           return (
                             <span
                               key={i}
-                              className={`${colorClass} ${isLast ? "text-muted-foreground/95 opacity-60 border-dashed" : "bg-background/50"} mx-0.5 rounded-none border border-border/30 px-2 py-1 ${d === 0 ? "text-muted-foreground/20" : ""}`}
+                              className={`${colorClass} ${isLast ? "text-muted-foreground/95 opacity-60 border-dashed" : "bg-background/50"} rounded-none border border-border/30 px-2 py-1 ${d === 0 ? "text-muted-foreground/20" : ""}`}
                               style={isLast && d > 0 ? {
                                 backgroundColor: settings.sitewide.darkMode ? '#222222ff' : '#fee2e2',
                                 backgroundImage: `url("data:image/svg+xml,%3Csvg width='40' height='40' viewBox='0 0 40 40' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='%23ff5656' fill-opacity='0.4' fill-rule='evenodd'%3E%3Cpath d='M0 40L40 0H20L0 20M40 40V20L20 40'/%3E%3C/g%3E%3C/svg%3E")`,
@@ -527,18 +573,27 @@ export function StatGenerator() {
                 })}
               </div>
 
-              <div className="flex flex-wrap items-center gap-2">
-                <Button onClick={rollAllStats} disabled={isRolling}>
-                  <Dices className="w-4 h-4 mr-2" />
-                  {isRolling ? "Rolling..." : "Roll Stats"}
-                </Button>
-                <Button variant="outline" onClick={handleAssignManually} disabled={isRolling}>
-                  Assign manually
-                </Button>
-                <Button variant="outline" onClick={handleShuffleAssign} disabled={isRolling}>
-                  <Shuffle className="w-4 h-4 mr-2" />
-                  Shuffle
-                </Button>
+              <div className="flex flex-col md:flex-row md:items-center gap-2 md:gap-2">
+                <div className="flex flex-wrap items-center justify-center gap-2">
+                  <Button onClick={rollAllStats} disabled={isRolling} className="w-32">
+                    <Dices className="w-4 h-4 mr-2" />
+                    {isRolling ? "Rolling..." : "Roll Stats"}
+                  </Button>
+                  <Button variant="outline" onClick={handleRollsReset} disabled={isRolling}>
+                    <RotateCcw className="w-4 h-4 mr-2" />
+                    Reset
+                  </Button>
+                </div>
+                <div className="hidden md:block md:flex-1"></div>
+                <div className="flex flex-wrap items-center justify-center gap-2">
+                  <Button variant="outline" onClick={handleAssignManually} disabled={isRolling}>
+                    Assign manually
+                  </Button>
+                  <Button variant="outline" onClick={handleShuffleAssign} disabled={isRolling}>
+                    <Shuffle className="w-4 h-4 mr-2" />
+                    Shuffle
+                  </Button>
+                </div>
               </div>
 
               {showAssignPanel && (
@@ -749,10 +804,6 @@ export function StatGenerator() {
                   </div>
 
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between mt-2">
-                    <div className="flex flex-row justify-between gap-2">
-                      <ShareButton onClick={handleShareAssigned} copied={copied} className="shadow-sm hover:shadow-md transition-all" />
-                      <ResetButton onClick={handleAssignmentReset} className="shadow-sm hover:shadow-md transition-all" />
-                    </div>
                     <div className="flex items-center gap-3">
                       <PoolStatus
                         label="Background"
@@ -760,6 +811,10 @@ export function StatGenerator() {
                         max={bgBonusPool}
                         valueClassName={bgPoolColor}
                       />
+                    </div>
+                    <div className="flex flex-row justify-between gap-2">
+                      <ShareButton onClick={handleShareAssigned} copied={copied} className="shadow-sm hover:shadow-md transition-all" />
+                      <ResetButton onClick={handleAssignmentReset} className="shadow-sm hover:shadow-md transition-all" />
                     </div>
                   </div>
                 </div>
@@ -1018,10 +1073,6 @@ export function StatGenerator() {
               </div>
 
               <div className="flex flex-col sm:flex-row sm:items-end justify-between mt-2">
-                <div className="flex flex-row justify-between gap-2 ">
-                  <ResetButton onClick={handleStandardReset} className="shadow-sm hover:shadow-md transition-all" />
-                  <ShareButton onClick={handleShareLink} copied={copied} className="shadow-sm hover:shadow-md transition-all" />
-                </div>
 
                 <div className="flex flex-wrap items-center gap-3 sm:gap-4">
                   <PoolStatus
@@ -1030,6 +1081,10 @@ export function StatGenerator() {
                     max={bgBonusPool}
                     valueClassName={bgPoolColor}
                   />
+                </div>
+                <div className="flex flex-row justify-between gap-2 ">
+                  <ResetButton onClick={handleStandardReset} className="shadow-sm hover:shadow-md transition-all" />
+                  <ShareButton onClick={handleShareLink} copied={copied} className="shadow-sm hover:shadow-md transition-all" />
                 </div>
               </div>
             </TabsContent>
@@ -1316,6 +1371,13 @@ export function StatGenerator() {
         </Card>
       ) : null}
 
+      {shareModalProps && (
+        <ShareModal
+          isOpen={isShareModalOpen}
+          onClose={() => setIsShareModalOpen(false)}
+          {...shareModalProps}
+        />
+      )}
     </div>
   );
 }

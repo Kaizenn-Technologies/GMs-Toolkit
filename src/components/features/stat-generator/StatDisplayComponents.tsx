@@ -94,7 +94,7 @@ export function PoolStatus({
 }) {
   return (
     <div className="flex items-center gap-2 bg-muted/40 px-3 py-1.5 rounded-none border border-border/50 shadow-sm">
-      <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">{label}</span>
+      <span className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">{label}</span>
       <div className="flex items-center font-bold tabular-nums">
         <span className={valueClassName}>{value}</span>
         <span className="text-muted-foreground/60 mx-0.5">/</span>

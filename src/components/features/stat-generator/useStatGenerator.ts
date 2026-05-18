@@ -13,8 +13,6 @@ import {
   manualBonusParamKeys,
   parseClampedIntParam,
   scoreParamKeys,
-  setAbilityParams,
-  setOptionalAbilityParams,
 } from "@/lib/stat-generator-url";
 import type { Ability, PrimaryStat, Skills } from "@/types";
 import { useSettings } from "@/contexts/SettingsContext";
@@ -128,11 +126,6 @@ function makeUnfilledStandardScores(): Record<Ability, number | null> {
   return createAbilityRecord<number | null>(null);
 }
 
-function encodeRolledPool(
-  rolledBoxes: Record<Ability, { rolls: number[]; total: number }>,
-): string {
-  return ABILITIES.map((ability) => rolledBoxes[ability].rolls.join(".")).join("_");
-}
 
 function decodeRolledPool(
   raw: string,
@@ -192,7 +185,16 @@ export function useStatGenerator() {
   const [manualBonuses, setManualBonuses] = useState<Record<Ability, number>>(
     defaultManualBonuses(),
   );
-  const { copied, copyToClipboard } = useCopyToClipboard();
+  const { copied } = useCopyToClipboard();
+
+  // Share Modal States
+  const [isShareModalOpen, setIsShareModalOpen] = useState(false);
+  const [shareModalProps, setShareModalProps] = useState<any>(null);
+  const [sharedName, setSharedName] = useState("");
+  const [sharedRolls, setSharedRolls] = useState<number | null>(null);
+  const [sharedTimestamp, setSharedTimestamp] = useState("");
+  const [sharedTimezone, setSharedTimezone] = useState("");
+
   // Rolled stats state
   const [rolledBoxes, setRolledBoxes] = useState<
     Record<Ability, { rolls: number[]; total: number }>
@@ -203,6 +205,7 @@ export function useStatGenerator() {
     }, {} as Record<Ability, { rolls: number[]; total: number }>),
   );
   const [isRolling, setIsRolling] = useState(false);
+  const [rollCount, setRollCount] = useState<number>(0);
   const rollIntervalRef = useRef<number | null>(null);
 
   useEffect(() => {
@@ -541,34 +544,34 @@ export function useStatGenerator() {
     });
   };
 
-  const handleShareLink = async () => {
-    const shareUrl = new URL(window.location.href);
-    shareUrl.pathname = STAT_TAB_ROUTES[activeTab];
-    shareUrl.search = "";
-
+  const handleShareLink = () => {
     try {
       const code = getEncodedCodeForCurrentState("point_buy");
-      shareUrl.searchParams.set("code", code);
+      const isRandom = activeTab === "roll";
+      setShareModalProps({
+        encodedData: code,
+        characterName: sharedName || "",
+        isRandomized: isRandom,
+        rollMeta: isRandom ? { rolls: rollCount, timestamp: new Date().toISOString() } : undefined,
+        onGenerateUrl: (name: string) => {
+          const shareUrl = new URL(window.location.origin + window.location.pathname);
+          shareUrl.pathname = STAT_TAB_ROUTES[activeTab];
+          shareUrl.search = "";
+          
+          const unixTs = Math.floor(Date.now() / 1000);
+          const tz = Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC";
+          const formattedName = name.trim() || "Unnamed Character";
+          
+          // Encode as [name][unixtimestamp][rolls][Timezone][Original url format]
+          const encodedCode = `[${formattedName}][${unixTs}][${rollCount}][${tz}][${code}]`;
+          shareUrl.searchParams.set("code", encodedCode);
+          return shareUrl.toString();
+        }
+      });
+      setIsShareModalOpen(true);
     } catch (e) {
-      console.error("Failed to generate share URL code, falling back to legacy params:", (e as Error).message);
-      const activeScores = activeTab === "standard" ? standardScores : scores;
-      const params = shareUrl.searchParams;
-      params.set(
-        "class",
-        activeTab === "standard"
-          ? selectedStandardClass === CHOOSE_STANDARD_CLASS
-            ? ""
-            : selectedStandardClass
-          : selectedClass,
-      );
-      params.set("background", selectedBackground);
-      setOptionalAbilityParams(params, activeScores, scoreParamKeys);
-      setAbilityParams(params, bgBonuses, backgroundBonusParamKeys);
-      params.set("feat", featBonusEnabled ? "1" : "0");
-      setAbilityParams(params, manualBonuses, manualBonusParamKeys);
+      console.error("Failed to generate code:", e);
     }
-
-    await copyToClipboard(shareUrl.toString());
   };
 
   useEffect(() => {
@@ -580,7 +583,45 @@ export function useStatGenerator() {
 
     if (codeFromUrl) {
       try {
-        const decoded = decodeCharacter(codeFromUrl);
+        let nameParam: string | null = null;
+        let rollsParam: string | null = null;
+        let tsParam: string | null = null;
+        let tzParam: string | null = null;
+        let codeToDecode = codeFromUrl;
+
+        // Pattern match: [name][unixtimestamp][rolls][Timezone][Original url format]
+        const match = codeFromUrl.match(/^\[(.*?)\]\[(.*?)\]\[(.*?)\]\[(.*?)\]\[(.*?)\]$/);
+        if (match) {
+          nameParam = match[1];
+          tsParam = match[2];
+          rollsParam = match[3];
+          tzParam = match[4];
+          codeToDecode = match[5];
+        } else {
+          nameParam = params.get("name");
+          rollsParam = params.get("rolls");
+          tsParam = params.get("ts");
+        }
+
+        const decoded = decodeCharacter(codeToDecode);
+
+        if (nameParam) setSharedName(nameParam);
+        if (rollsParam) {
+          const rollsVal = Number(rollsParam);
+          setSharedRolls(rollsVal);
+          setRollCount(rollsVal);
+        }
+        if (tsParam) {
+          const tsVal = Number(tsParam);
+          if (!isNaN(tsVal) && tsVal < 100000000000) {
+            setSharedTimestamp(new Date(tsVal * 1000).toISOString());
+          } else {
+            setSharedTimestamp(tsParam);
+          }
+        }
+        if (tzParam) {
+          setSharedTimezone(tzParam);
+        }
 
         // Hydrate Stats
         if (decoded.stats.method === "point_buy") {
@@ -806,6 +847,7 @@ export function useStatGenerator() {
   const rollAllStats = () => {
     if (isRolling) return;
     setShowAssignPanel(false);
+    setRollCount((prev) => prev + 1);
 
     const finalRolls = {} as Record<Ability, { rolls: number[]; total: number }>;
     ABILITIES.forEach((ability) => {
@@ -910,27 +952,49 @@ export function useStatGenerator() {
     setStandardScores(makeUnfilledStandardScores());
   };
 
-  const handleShareAssigned = async () => {
-    const shareUrl = new URL(window.location.href);
-    shareUrl.pathname = STAT_TAB_ROUTES.roll;
-    shareUrl.search = "";
+  const handleRollsReset = () => {
+    setRolledBoxes(
+      ABILITIES.reduce((acc, ability) => {
+        acc[ability] = { rolls: [0, 0, 0, 0], total: 0 };
+        return acc;
+      }, {} as Record<Ability, { rolls: number[]; total: number }>)
+    );
+    setSharedRolls(null);
+    setSharedName("");
+    setSharedTimestamp("");
+    setSharedTimezone("");
+    setRollCount(0);
+    setShowAssignPanel(false);
+    handleAssignmentReset();
+  };
 
+  const handleShareAssigned = () => {
     try {
       const code = getEncodedCodeForCurrentState("rolled");
-      shareUrl.searchParams.set("code", code);
+      setShareModalProps({
+        encodedData: code,
+        characterName: sharedName || "",
+        isRandomized: true,
+        rollMeta: { rolls: rollCount, timestamp: new Date().toISOString() },
+        onGenerateUrl: (name: string) => {
+          const shareUrl = new URL(window.location.origin + window.location.pathname);
+          shareUrl.pathname = STAT_TAB_ROUTES.roll;
+          shareUrl.search = "";
+          
+          const unixTs = Math.floor(Date.now() / 1000);
+          const tz = Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC";
+          const formattedName = name.trim() || "Unnamed Character";
+          
+          // Encode as [name][unixtimestamp][rolls][Timezone][Original url format]
+          const encodedCode = `[${formattedName}][${unixTs}][${rollCount}][${tz}][${code}]`;
+          shareUrl.searchParams.set("code", encodedCode);
+          return shareUrl.toString();
+        }
+      });
+      setIsShareModalOpen(true);
     } catch (e) {
-      console.error("Failed to generate rolled share URL code, falling back to legacy params:", (e as Error).message);
-      const params = shareUrl.searchParams;
-      params.set("class", selectedStandardClass === CHOOSE_STANDARD_CLASS ? "" : selectedStandardClass);
-      params.set("background", selectedBackground);
-      setOptionalAbilityParams(params, standardScores, scoreParamKeys);
-      setAbilityParams(params, bgBonuses, backgroundBonusParamKeys);
-      params.set("feat", featBonusEnabled ? "1" : "0");
-      setAbilityParams(params, manualBonuses, manualBonusParamKeys);
-      params.set(ROLLED_POOL_PARAM, encodeRolledPool(rolledBoxes));
+      console.error("Failed to generate code:", e);
     }
-
-    await copyToClipboard(shareUrl.toString());
   };
 
   return {
@@ -983,6 +1047,8 @@ export function useStatGenerator() {
     handleRolledAssignChange,
     handleAssignmentReset,
     handleShareAssigned,
+    handleRollsReset,
+    rollCount,
     level,
     setLevel,
     skillsState,
@@ -990,5 +1056,12 @@ export function useStatGenerator() {
     savingThrowsState,
     setSavingThrowsState,
     handleSkillsReset,
+    isShareModalOpen,
+    setIsShareModalOpen,
+    shareModalProps,
+    sharedName,
+    sharedRolls,
+    sharedTimestamp,
+    sharedTimezone,
   };
 }

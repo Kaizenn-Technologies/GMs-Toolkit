@@ -81,7 +81,11 @@ export function useHpCalculator() {
   const [hillDwarf, setHillDwarf] = useState(initialState.hillDwarf);
   const [activeTab, setActiveTab] = useState<"average" | "rolled">(initialState.activeTab);
   const [rolledValues, setRolledValues] = useState<number[]>(initialState.rolledValues);
-  const { copied, copyToClipboard } = useCopyToClipboard();
+  const { copied } = useCopyToClipboard();
+  
+  // Share Modal States
+  const [isShareModalOpen, setIsShareModalOpen] = useState(false);
+  const [shareModalProps, setShareModalProps] = useState<any>(null);
   
   const [isRolling, setIsRolling] = useState(false);
   const rollIntervalRef = useRef<number | null>(null);
@@ -94,7 +98,6 @@ export function useHpCalculator() {
     };
   }, []);
   
-  const advanceShareMenu = settings.hp.advanceShareMenu;
   const showRollCounter = settings.hp.showRollCounter;
   
   const initialComboKey = useMemo(
@@ -258,28 +261,31 @@ export function useHpCalculator() {
     });
   };
 
-  const handleShareLink = async (shareMode: "average" | "rolled") => {
-    const shouldPromptForName = shareMode === "rolled" && advanceShareMenu;
-    const promptedName = shouldPromptForName
-      ? window.prompt("Enter character name")?.trim()
-      : "";
-
-    if (shouldPromptForName && promptedName === undefined) {
-      return;
+  const handleShareLink = (shareMode: "average" | "rolled") => {
+    try {
+      const isRandom = shareMode === "rolled";
+      setShareModalProps({
+        encodedData: "",
+        characterName: sharedNameFromLink || "",
+        isRandomized: isRandom,
+        rollMeta: isRandom ? { rolls: rerollCountForCurrentCombo, timestamp: new Date().toISOString() } : undefined,
+        onGenerateUrl: (name: string) => {
+          const shareUrl = new URL(window.location.href);
+          shareUrl.search = "";
+          shareUrl.searchParams.set(
+            "core",
+            buildShareableCoreData({
+              name: name.trim(),
+              includeRolls: isRandom,
+            })
+          );
+          return shareUrl.toString();
+        }
+      });
+      setIsShareModalOpen(true);
+    } catch (e) {
+      console.error("Failed to generate HP share link:", e);
     }
-    const characterName = promptedName ?? "";
-
-    const shareUrl = new URL(window.location.href);
-    shareUrl.search = "";
-    shareUrl.searchParams.set(
-      "core",
-      buildShareableCoreData({
-        name: characterName,
-        includeRolls: shareMode === "rolled",
-      })
-    );
-
-    await copyToClipboard(shareUrl.toString());
   };
 
   return {
@@ -310,5 +316,8 @@ export function useHpCalculator() {
     handleRollAgain,
     handleShareLink,
     isRolling,
+    isShareModalOpen,
+    setIsShareModalOpen,
+    shareModalProps,
   };
 }
