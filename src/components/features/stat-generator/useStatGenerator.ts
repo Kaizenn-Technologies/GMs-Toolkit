@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/set-state-in-effect */
 import { useEffect, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { classes, classNames } from "@/lib/classes";
@@ -5,6 +6,7 @@ import { backgrounds, backgroundNames } from "@/lib/backgrounds";
 import {
   ABILITIES,
   createAbilityRecord,
+  getModifier,
 } from "@/lib/stat-generator";
 import {
   backgroundBonusParamKeys,
@@ -14,9 +16,19 @@ import {
   setAbilityParams,
   setOptionalAbilityParams,
 } from "@/lib/stat-generator-url";
-import type { Ability, PrimaryStat } from "@/types";
+import type { Ability, PrimaryStat, Skills } from "@/types";
 import { useSettings } from "@/contexts/SettingsContext";
 import { useCopyToClipboard } from "@/hooks/useCopyToClipboard";
+import {
+  encodeCharacter,
+  decodeCharacter,
+  matchRolledBoxesToAssignments,
+} from "@/utils/statUrlEncoding";
+import type {
+  PointBuyData,
+  RolledData,
+  SkillsData,
+} from "@/utils/statUrlEncoding";
 
 export const BG_BONUS_MAX = 2;
 export const MANUAL_BONUS_MAX = 20;
@@ -149,7 +161,7 @@ function decodeRolledPool(
 }
 
 export function useStatGenerator() {
-  const { settings, openSettings } = useSettings();
+  const { settings, openSettings, updatePointBuy } = useSettings();
   const location = useLocation();
   const navigate = useNavigate();
   const hasHydratedFromUrl = useRef(false);
@@ -202,6 +214,135 @@ export function useStatGenerator() {
   }, []);
 
   const [showAssignPanel, setShowAssignPanel] = useState(false);
+
+  // Skills and Saving Throws state
+  const [level, setLevel] = useState<number>(1);
+  const [skillsState, setSkillsState] = useState<Record<string, "none" | "prof" | "expertise">>(() => {
+    return {
+      Athletics: "none",
+      Acrobatics: "none",
+      "Sleight of Hand": "none",
+      Stealth: "none",
+      Arcana: "none",
+      History: "none",
+      Investigation: "none",
+      Nature: "none",
+      Religion: "none",
+      "Animal Handling": "none",
+      Insight: "none",
+      Medicine: "none",
+      Perception: "none",
+      Survival: "none",
+      Deception: "none",
+      Intimidation: "none",
+      Performance: "none",
+      Persuasion: "none",
+    };
+  });
+
+  const [savingThrowsState, setSavingThrowsState] = useState<Record<Ability, "none" | "prof" | "expertise">>(() => {
+    return {
+      Strength: "none",
+      Dexterity: "none",
+      Constitution: "none",
+      Intelligence: "none",
+      Wisdom: "none",
+      Charisma: "none",
+    };
+  });
+
+  const activeClass =
+    location.pathname === STAT_TAB_ROUTES.standard && selectedStandardClass === CHOOSE_STANDARD_CLASS
+      ? ""
+      : location.pathname === STAT_TAB_ROUTES.standard
+        ? selectedStandardClass
+        : location.pathname === STAT_TAB_ROUTES.roll && showAssignPanel
+          ? selectedStandardClass
+          : selectedClass;
+
+  // Autofill saving throws when active class changes
+  useEffect(() => {
+    if (!activeClass || activeClass === CHOOSE_STANDARD_CLASS) {
+      setSavingThrowsState({
+        Strength: "none",
+        Dexterity: "none",
+        Constitution: "none",
+        Intelligence: "none",
+        Wisdom: "none",
+        Charisma: "none",
+      });
+      return;
+    }
+
+    const activeClassData = Object.values(classes).find((c) => c.name === activeClass);
+    const activeSavingThrows = (activeClassData?.savingThrows ?? []) as Ability[];
+
+    setSavingThrowsState((prev) => {
+      const next = { ...prev };
+      ABILITIES.forEach((ability) => {
+        if (activeSavingThrows.includes(ability)) {
+          next[ability] = "prof";
+        } else {
+          next[ability] = "none";
+        }
+      });
+      return next;
+    });
+  }, [activeClass]);
+
+  const handleSkillsReset = () => {
+    setSkillsState({
+      Athletics: "none",
+      Acrobatics: "none",
+      "Sleight of Hand": "none",
+      Stealth: "none",
+      Arcana: "none",
+      History: "none",
+      Investigation: "none",
+      Nature: "none",
+      Religion: "none",
+      "Animal Handling": "none",
+      Insight: "none",
+      Medicine: "none",
+      Perception: "none",
+      Survival: "none",
+      Deception: "none",
+      Intimidation: "none",
+      Performance: "none",
+      Persuasion: "none",
+    });
+
+    if (!activeClass || activeClass === CHOOSE_STANDARD_CLASS) {
+      setSavingThrowsState({
+        Strength: "none",
+        Dexterity: "none",
+        Constitution: "none",
+        Intelligence: "none",
+        Wisdom: "none",
+        Charisma: "none",
+      });
+    } else {
+      const activeClassData = Object.values(classes).find((c) => c.name === activeClass);
+      const activeSavingThrows = (activeClassData?.savingThrows ?? []) as Ability[];
+      setSavingThrowsState(() => {
+        const next: Record<Ability, "none" | "prof" | "expertise"> = {
+          Strength: "none",
+          Dexterity: "none",
+          Constitution: "none",
+          Intelligence: "none",
+          Wisdom: "none",
+          Charisma: "none",
+        };
+        ABILITIES.forEach((ability) => {
+          if (activeSavingThrows.includes(ability)) {
+            next[ability] = "prof";
+          }
+        });
+        return next;
+      });
+    }
+    setLevel(1);
+  };
 
   const activeTab: "pointbuy" | "roll" | "standard" =
     location.pathname === STAT_TAB_ROUTES.standard
@@ -328,26 +469,104 @@ export function useStatGenerator() {
     setManualBonuses((prev) => ({ ...prev, [ability]: clamped }));
   };
 
+  const getEncodedCodeForCurrentState = (method: "point_buy" | "rolled"): string => {
+    let stats: PointBuyData | RolledData;
+
+    if (method === "point_buy") {
+      const activeScores = activeTab === "standard" ? standardScores : scores;
+      const abilityScores = {} as Record<Ability, number>;
+      for (const ab of ABILITIES) {
+        abilityScores[ab] = (activeScores[ab] !== null ? activeScores[ab] : minPurchasable) as number;
+      }
+
+      stats = {
+        method: "point_buy",
+        className: activeTab === "standard" ? selectedStandardClass : selectedClass,
+        backgroundName: selectedBackground,
+        asiEnabled: enforceAsiFromBackground,
+        abilityScores,
+        backgroundBonus: bgBonuses,
+        featBonus: featBonusEnabled ? manualBonuses : createAbilityRecord(0),
+      };
+    } else {
+      const rolls = matchRolledBoxesToAssignments(rolledBoxes, standardScores);
+      stats = {
+        method: "rolled",
+        rolls,
+      };
+    }
+
+    // 2. Skills
+    const proficiencies: Skills[] = [];
+    const expertises: Skills[] = [];
+
+    for (const [skillName, profState] of Object.entries(skillsState)) {
+      if (profState === "prof" || profState === "expertise") {
+        proficiencies.push(skillName as Skills);
+      }
+      if (profState === "expertise") {
+        expertises.push(skillName as Skills);
+      }
+    }
+
+    const savingThrows: Ability[] = [];
+    for (const ab of ABILITIES) {
+      if (savingThrowsState[ab] === "prof" || savingThrowsState[ab] === "expertise") {
+        savingThrows.push(ab);
+      }
+    }
+
+    // Determine CON modifier
+    let conMod = 0;
+    const activeScores = activeTab === "standard" ? standardScores : scores;
+    const baseScore = method === "point_buy" ? activeScores.Constitution : standardScores.Constitution;
+    if (baseScore !== null) {
+      const bgBonus = bgBonuses.Constitution || 0;
+      const manualBonus = manualBonuses.Constitution || 0;
+      const total = baseScore + bgBonus + (featBonusEnabled ? manualBonus : 0);
+      conMod = getModifier(total);
+    }
+
+    const skillsData: SkillsData = {
+      isBard: (activeTab === "standard" ? selectedStandardClass : selectedClass) === "Bard",
+      conMod,
+      savingThrows,
+      proficiencies,
+      expertises,
+    };
+
+    return encodeCharacter({
+      stats,
+      skills: skillsData,
+    });
+  };
+
   const handleShareLink = async () => {
     const shareUrl = new URL(window.location.href);
     shareUrl.pathname = STAT_TAB_ROUTES[activeTab];
     shareUrl.search = "";
 
-    const activeScores = activeTab === "standard" ? standardScores : scores;
-    const params = shareUrl.searchParams;
-    params.set(
-      "class",
-      activeTab === "standard"
-        ? selectedStandardClass === CHOOSE_STANDARD_CLASS
-          ? ""
-          : selectedStandardClass
-        : selectedClass,
-    );
-    params.set("background", selectedBackground);
-    setOptionalAbilityParams(params, activeScores, scoreParamKeys);
-    setAbilityParams(params, bgBonuses, backgroundBonusParamKeys);
-    params.set("feat", featBonusEnabled ? "1" : "0");
-    setAbilityParams(params, manualBonuses, manualBonusParamKeys);
+    try {
+      const code = getEncodedCodeForCurrentState("point_buy");
+      shareUrl.searchParams.set("code", code);
+    } catch (e) {
+      console.error("Failed to generate share URL code, falling back to legacy params:", (e as Error).message);
+      const activeScores = activeTab === "standard" ? standardScores : scores;
+      const params = shareUrl.searchParams;
+      params.set(
+        "class",
+        activeTab === "standard"
+          ? selectedStandardClass === CHOOSE_STANDARD_CLASS
+            ? ""
+            : selectedStandardClass
+          : selectedClass,
+      );
+      params.set("background", selectedBackground);
+      setOptionalAbilityParams(params, activeScores, scoreParamKeys);
+      setAbilityParams(params, bgBonuses, backgroundBonusParamKeys);
+      params.set("feat", featBonusEnabled ? "1" : "0");
+      setAbilityParams(params, manualBonuses, manualBonusParamKeys);
+    }
 
     await copyToClipboard(shareUrl.toString());
   };
@@ -357,9 +576,102 @@ export function useStatGenerator() {
     hasHydratedFromUrl.current = true;
 
     const params = new URLSearchParams(location.search);
+    const codeFromUrl = params.get("code");
+
+    if (codeFromUrl) {
+      try {
+        const decoded = decodeCharacter(codeFromUrl);
+
+        // Hydrate Stats
+        if (decoded.stats.method === "point_buy") {
+          const pbData = decoded.stats;
+
+          if (pbData.className && pbData.className !== "z") {
+            setSelectedClass(pbData.className);
+            setSelectedStandardClass(pbData.className);
+          }
+          if (pbData.backgroundName && pbData.backgroundName !== "z") {
+            setSelectedBackground(pbData.backgroundName);
+          }
+
+          setScores(pbData.abilityScores);
+          setStandardScores(pbData.abilityScores);
+          setBgBonuses(pbData.backgroundBonus);
+
+          // Feats
+          const hasFeatBonus = ABILITIES.some((ab) => pbData.featBonus[ab] > 0);
+          setFeatBonusEnabled(hasFeatBonus);
+          setManualBonuses(pbData.featBonus);
+
+          // System setting enforcement (Section 2.4)
+          if (pbData.asiEnabled && !enforceAsiFromBackground) {
+            const confirmed = window.confirm(
+              "The shared character has ASI from Background enabled, but your settings have it turned OFF.\n\nWould you like to enable it to load this build?"
+            );
+            if (confirmed) {
+              updatePointBuy({ enforceAsiFromBackground: true });
+            } else {
+              return;
+            }
+          }
+
+        } else if (decoded.stats.method === "rolled") {
+          const rolledData = decoded.stats;
+          const nextRolledBoxes = {} as Record<Ability, { rolls: number[]; total: number }>;
+          const nextStandardScores = createAbilityRecord<number | null>(null);
+
+          rolledData.rolls.forEach((r, idx) => {
+            const ab = ABILITIES[idx];
+            const rollsArr = r.roll.split("").map(Number);
+            const sum = rollsArr.reduce((s, v) => s + v, 0);
+            const min = Math.min(...rollsArr);
+            const total = sum - min;
+
+            nextRolledBoxes[ab] = { rolls: rollsArr, total };
+
+            if (r.assignment !== "unassigned") {
+              nextStandardScores[r.assignment] = total;
+            }
+          });
+
+          setRolledBoxes(nextRolledBoxes);
+          setStandardScores(nextStandardScores);
+          setShowAssignPanel(true);
+        }
+
+        // Hydrate Skills & Saving Throws
+        if (decoded.skills) {
+          const sk = decoded.skills;
+
+          // Saves
+          const nextSaves = createAbilityRecord<"none" | "prof" | "expertise">("none");
+          sk.savingThrows.forEach((ab) => {
+            nextSaves[ab] = "prof";
+          });
+          setSavingThrowsState(nextSaves);
+
+          // Proficiencies and expertises
+          const nextSkills = {} as Record<string, "none" | "prof" | "expertise">;
+          Object.keys(skillsState).forEach((skName) => {
+            nextSkills[skName] = "none";
+          });
+
+          sk.proficiencies.forEach((skName) => {
+            nextSkills[skName] = "prof";
+          });
+          sk.expertises.forEach((skName) => {
+            nextSkills[skName] = "expertise";
+          });
+          setSkillsState(nextSkills);
+        }
+
+        return; // Hydrated successfully!
+      } catch (error) {
+        console.error("Failed to decode share code:", error);
+      }
+    }
     if (!params.toString()) {
       if (activeTab === "standard") {
-        // eslint-disable-next-line react-hooks/set-state-in-effect
         setSelectedStandardClass(CHOOSE_STANDARD_CLASS);
         setStandardScores(makeUnfilledStandardScores());
       }
@@ -602,14 +914,21 @@ export function useStatGenerator() {
     const shareUrl = new URL(window.location.href);
     shareUrl.pathname = STAT_TAB_ROUTES.roll;
     shareUrl.search = "";
-    const params = shareUrl.searchParams;
-    params.set("class", selectedStandardClass === CHOOSE_STANDARD_CLASS ? "" : selectedStandardClass);
-    params.set("background", selectedBackground);
-    setOptionalAbilityParams(params, standardScores, scoreParamKeys);
-    setAbilityParams(params, bgBonuses, backgroundBonusParamKeys);
-    params.set("feat", featBonusEnabled ? "1" : "0");
-    setAbilityParams(params, manualBonuses, manualBonusParamKeys);
-    params.set(ROLLED_POOL_PARAM, encodeRolledPool(rolledBoxes));
+
+    try {
+      const code = getEncodedCodeForCurrentState("rolled");
+      shareUrl.searchParams.set("code", code);
+    } catch (e) {
+      console.error("Failed to generate rolled share URL code, falling back to legacy params:", (e as Error).message);
+      const params = shareUrl.searchParams;
+      params.set("class", selectedStandardClass === CHOOSE_STANDARD_CLASS ? "" : selectedStandardClass);
+      params.set("background", selectedBackground);
+      setOptionalAbilityParams(params, standardScores, scoreParamKeys);
+      setAbilityParams(params, bgBonuses, backgroundBonusParamKeys);
+      params.set("feat", featBonusEnabled ? "1" : "0");
+      setAbilityParams(params, manualBonuses, manualBonusParamKeys);
+      params.set(ROLLED_POOL_PARAM, encodeRolledPool(rolledBoxes));
+    }
 
     await copyToClipboard(shareUrl.toString());
   };
@@ -664,5 +983,12 @@ export function useStatGenerator() {
     handleRolledAssignChange,
     handleAssignmentReset,
     handleShareAssigned,
+    level,
+    setLevel,
+    skillsState,
+    setSkillsState,
+    savingThrowsState,
+    setSavingThrowsState,
+    handleSkillsReset,
   };
 }

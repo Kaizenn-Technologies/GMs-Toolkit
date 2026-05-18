@@ -31,3 +31,4 @@ dist-ssr
 !.env.example
 
 dev-dist/*
+shareURL-spec-abilityscore.md

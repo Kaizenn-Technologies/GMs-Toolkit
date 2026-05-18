@@ -17,7 +17,7 @@ import {
 } from "@/components/ui/tooltip";
 import { useState, useEffect, useRef } from "react";
 import { StepperInput } from "@/components/ui/stepper-input";
-import { classes, classNames } from "@/lib/classes";
+import { classNames } from "@/lib/classes";
 import { backgroundNames } from "@/lib/backgrounds";
 import type { Ability } from "@/types";
 import {
@@ -97,132 +97,19 @@ export function StatGenerator() {
     handleRolledAssignChange,
     handleAssignmentReset,
     handleShareAssigned,
+    level,
+    setLevel,
+    skillsState,
+    setSkillsState,
+    savingThrowsState,
+    setSavingThrowsState,
+    handleSkillsReset,
   } = useStatGenerator();
 
   const pointsColor = getPoolStatusClass(remaining);
   const bgPoolColor = getPoolStatusClass(bgBonusRemaining);
 
-  // Skills and Saving Throws state
-  const [level, setLevel] = useState<number>(1);
-  const [skillsState, setSkillsState] = useState<Record<string, "none" | "prof" | "expertise">>(() => {
-    return {
-      Athletics: "none",
-      Acrobatics: "none",
-      "Sleight of Hand": "none",
-      Stealth: "none",
-      Arcana: "none",
-      History: "none",
-      Investigation: "none",
-      Nature: "none",
-      Religion: "none",
-      "Animal Handling": "none",
-      Insight: "none",
-      Medicine: "none",
-      Perception: "none",
-      Survival: "none",
-      Deception: "none",
-      Intimidation: "none",
-      Performance: "none",
-      Persuasion: "none",
-    };
-  });
-
-  const [savingThrowsState, setSavingThrowsState] = useState<Record<Ability, "none" | "prof" | "expertise">>(() => {
-    return {
-      Strength: "none",
-      Dexterity: "none",
-      Constitution: "none",
-      Intelligence: "none",
-      Wisdom: "none",
-      Charisma: "none",
-    };
-  });
-
   const activeClass = activeTab === "pointbuy" ? selectedClass : selectedStandardClass;
-
-  // Autofill saving throws when active class changes
-  useEffect(() => {
-    if (!activeClass || activeClass === CHOOSE_STANDARD_CLASS) {
-      setSavingThrowsState({
-        Strength: "none",
-        Dexterity: "none",
-        Constitution: "none",
-        Intelligence: "none",
-        Wisdom: "none",
-        Charisma: "none",
-      });
-      return;
-    }
-
-    const activeClassData = Object.values(classes).find((c) => c.name === activeClass);
-    const activeSavingThrows = (activeClassData?.savingThrows ?? []) as Ability[];
-
-    setSavingThrowsState((prev) => {
-      const next = { ...prev };
-      ABILITIES.forEach((ability) => {
-        if (activeSavingThrows.includes(ability)) {
-          next[ability] = "prof";
-        } else {
-          next[ability] = "none";
-        }
-      });
-      return next;
-    });
-  }, [activeClass]);
-
-  const handleSkillsReset = () => {
-    setSkillsState({
-      Athletics: "none",
-      Acrobatics: "none",
-      "Sleight of Hand": "none",
-      Stealth: "none",
-      Arcana: "none",
-      History: "none",
-      Investigation: "none",
-      Nature: "none",
-      Religion: "none",
-      "Animal Handling": "none",
-      Insight: "none",
-      Medicine: "none",
-      Perception: "none",
-      Survival: "none",
-      Deception: "none",
-      Intimidation: "none",
-      Performance: "none",
-      Persuasion: "none",
-    });
-
-    if (!activeClass || activeClass === CHOOSE_STANDARD_CLASS) {
-      setSavingThrowsState({
-        Strength: "none",
-        Dexterity: "none",
-        Constitution: "none",
-        Intelligence: "none",
-        Wisdom: "none",
-        Charisma: "none",
-      });
-    } else {
-      const activeClassData = Object.values(classes).find((c) => c.name === activeClass);
-      const activeSavingThrows = (activeClassData?.savingThrows ?? []) as Ability[];
-      setSavingThrowsState(() => {
-        const next: Record<Ability, "none" | "prof" | "expertise"> = {
-          Strength: "none",
-          Dexterity: "none",
-          Constitution: "none",
-          Intelligence: "none",
-          Wisdom: "none",
-          Charisma: "none",
-        };
-        ABILITIES.forEach((ability) => {
-          if (activeSavingThrows.includes(ability)) {
-            next[ability] = "prof";
-          }
-        });
-        return next;
-      });
-    }
-    setLevel(1);
-  };
 
   const profBonus = Math.floor((level - 1) / 4) + 2;
 
@@ -236,7 +123,7 @@ export function StatGenerator() {
   };
 
   const getAbilityModifier = (ability: Ability): number | null => {
-    let baseScore: number | null = null;
+    let baseScore: number | null;
     if (activeTab === "pointbuy") {
       baseScore = scores[ability];
     } else {
