@@ -1,6 +1,7 @@
 import { Settings } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useSettings } from "@/contexts/SettingsContext";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "../ui/tooltip";
 
 interface HeaderProps {
   activeTab: "hp" | "point-buy" | "dice-roller" | "landing";
@@ -16,7 +17,7 @@ export function Header({ activeTab, setActiveTab }: HeaderProps) {
       <nav className="flex items-center h-12 sm:h-14 px-3 sm:px-4 text-sm font-medium">
         {/* Left: Logo (takes 1/3 of space or matches right) */}
         <div className="flex-1 flex items-center">
-          <div 
+          <div
             className="flex items-center gap-2 shrink-0 cursor-pointer transition-opacity hover:opacity-80"
             onClick={() => setActiveTab("landing")}
           >
@@ -28,6 +29,20 @@ export function Header({ activeTab, setActiveTab }: HeaderProps) {
             <span className="font-bold text-sm sm:text-base hidden lg:inline tracking-tight">
               GM's Toolkit
             </span>
+            <TooltipProvider delay={100}>
+              <Tooltip>
+                <TooltipTrigger
+                  render={
+                    <span className="text-xs font-semibold text-muted-foreground border border-muted-foreground rounded px-1 cursor-help">
+                      BETA
+                    </span>
+                  }
+                />
+                <TooltipContent className="font-semibold text-muted py-1 px-2" side="right">
+                  Public BETA v0.6.2
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
           </div>
         </div>
 
