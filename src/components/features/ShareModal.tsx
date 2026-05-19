@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import QRCode from "qrcode";
-import { X, Copy, Check, QrCode, AlertTriangle } from "lucide-react";
+import { X, Copy, Check, QrCode, AlertTriangle, Info } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
@@ -241,19 +241,28 @@ export function ShareModal({
               <p className="text-xs font-semibold text-foreground uppercase tracking-wider">
                 Share with Friends
               </p>
-              <p className="text-xs leading-relaxed">
+              <div className="text-xs leading-relaxed">
+                {/* info callout */}
+                <div className="flex flex-row gap-2 border border-blue-400 rounded px-3 py-2 mt-1 mb-0 bg-blue-500/5 rounded">
+                  <div className="flex items-center pr-0.5">
+                    <Info className="w-4 h-4 text-blue-400" />
+                  </div>
+                  <span className="text-blue-400 font-medium ">
+                    The links are not reliable yet for rolled stats, they will be fixed soon.
+                  </span>
+                </div>
                 {isRandomized && (
+                  // Randomized rolls disclosure note
                   <div className="flex flex-row gap-2 border border-orange-400 rounded px-3 py-2 mt-1 mb-0 bg-amber-500/5 rounded">
                     <div className="flex items-center pr-0.5">
                       <AlertTriangle className="w-4 h-4 text-orange-400" />
                     </div>
-
                     <span className="text-orange-400 font-medium ">
                       If randomized rolls were used (HP or Ability Scores), the number of rolls, timestamp, and character name are included for verification.
                     </span>
                   </div>
                 )}
-              </p>
+              </div>
             </div>
 
             {/* Character Name Input */}
