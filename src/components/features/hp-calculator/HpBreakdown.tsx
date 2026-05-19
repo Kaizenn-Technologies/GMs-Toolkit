@@ -4,8 +4,8 @@ import type { BreakdownItem } from "@/types";
 export function HpBreakdown({ items }: { items: BreakdownItem[] }) {
   return (
     <div>
-      <div className="text-xs font-semibold text-muted-foreground mb-3">
-        Breakdown:
+      <div className="text-xs font-semibold text-muted-foreground mb-2">
+        Breakdown
       </div>
       <div className="text-xs font-mono bg-muted p-3 space-y-1">
         <TooltipProvider delay={100}>

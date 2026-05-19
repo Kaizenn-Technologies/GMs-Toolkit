@@ -14,19 +14,21 @@ import {
   parseClampedIntParam,
   scoreParamKeys,
 } from "@/lib/stat-generator-url";
-import type { Ability, PrimaryStat, Skills } from "@/types";
+import type { Ability, PrimaryStat } from "@/types";
 import { useSettings } from "@/contexts/SettingsContext";
 import { useCopyToClipboard } from "@/hooks/useCopyToClipboard";
 import {
   encodeCharacter,
+} from "@/utils/encoding";
+import {
   decodeCharacter,
   matchRolledBoxesToAssignments,
-} from "@/utils/statUrlEncoding";
+} from "@/utils/decoding";
 import type {
   PointBuyData,
   RolledData,
   SkillsData,
-} from "@/utils/statUrlEncoding";
+} from "@/utils/encoding";
 
 export const BG_BONUS_MAX = 2;
 export const MANUAL_BONUS_MAX = 20;
@@ -189,6 +191,7 @@ export function useStatGenerator() {
 
   // Share Modal States
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [shareModalProps, setShareModalProps] = useState<any>(null);
   const [sharedName, setSharedName] = useState("");
   const [sharedRolls, setSharedRolls] = useState<number | null>(null);
@@ -472,7 +475,7 @@ export function useStatGenerator() {
     setManualBonuses((prev) => ({ ...prev, [ability]: clamped }));
   };
 
-  const getEncodedCodeForCurrentState = (method: "point_buy" | "rolled"): string => {
+  const getEncodedCodeForCurrentState = (method: "point_buy" | "rolled", name?: string): string => {
     let stats: PointBuyData | RolledData;
 
     if (method === "point_buy") {
@@ -500,15 +503,15 @@ export function useStatGenerator() {
     }
 
     // 2. Skills
-    const proficiencies: Skills[] = [];
-    const expertises: Skills[] = [];
+    const proficiencies: string[] = [];
+    const expertises: string[] = [];
 
     for (const [skillName, profState] of Object.entries(skillsState)) {
       if (profState === "prof" || profState === "expertise") {
-        proficiencies.push(skillName as Skills);
+        proficiencies.push(skillName);
       }
       if (profState === "expertise") {
-        expertises.push(skillName as Skills);
+        expertises.push(skillName);
       }
     }
 
@@ -541,15 +544,18 @@ export function useStatGenerator() {
     return encodeCharacter({
       stats,
       skills: skillsData,
+      metadata: {
+        name,
+        rollCount: method === "point_buy" ? 0 : rollCount,
+      }
     });
   };
 
   const handleShareLink = () => {
     try {
-      const code = getEncodedCodeForCurrentState("point_buy");
       const isRandom = activeTab === "roll";
       setShareModalProps({
-        encodedData: code,
+        encodedData: "",
         characterName: sharedName || "",
         isRandomized: isRandom,
         rollMeta: isRandom ? { rolls: rollCount, timestamp: new Date().toISOString() } : undefined,
@@ -558,13 +564,8 @@ export function useStatGenerator() {
           shareUrl.pathname = STAT_TAB_ROUTES[activeTab];
           shareUrl.search = "";
           
-          const unixTs = Math.floor(Date.now() / 1000);
-          const tz = Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC";
-          const formattedName = name.trim() || "Unnamed Character";
-          
-          // Encode as [name][unixtimestamp][rolls][Timezone][Original url format]
-          const encodedCode = `[${formattedName}][${unixTs}][${rollCount}][${tz}][${code}]`;
-          shareUrl.searchParams.set("code", encodedCode);
+          const code = getEncodedCodeForCurrentState("point_buy", name.trim());
+          shareUrl.searchParams.set("code", code);
           return shareUrl.toString();
         }
       });
@@ -583,44 +584,20 @@ export function useStatGenerator() {
 
     if (codeFromUrl) {
       try {
-        let nameParam: string | null = null;
-        let rollsParam: string | null = null;
-        let tsParam: string | null = null;
-        let tzParam: string | null = null;
-        let codeToDecode = codeFromUrl;
+        const decoded = decodeCharacter(codeFromUrl);
 
-        // Pattern match: [name][unixtimestamp][rolls][Timezone][Original url format]
-        const match = codeFromUrl.match(/^\[(.*?)\]\[(.*?)\]\[(.*?)\]\[(.*?)\]\[(.*?)\]$/);
-        if (match) {
-          nameParam = match[1];
-          tsParam = match[2];
-          rollsParam = match[3];
-          tzParam = match[4];
-          codeToDecode = match[5];
-        } else {
-          nameParam = params.get("name");
-          rollsParam = params.get("rolls");
-          tsParam = params.get("ts");
-        }
-
-        const decoded = decodeCharacter(codeToDecode);
-
-        if (nameParam) setSharedName(nameParam);
-        if (rollsParam) {
-          const rollsVal = Number(rollsParam);
-          setSharedRolls(rollsVal);
-          setRollCount(rollsVal);
-        }
-        if (tsParam) {
-          const tsVal = Number(tsParam);
-          if (!isNaN(tsVal) && tsVal < 100000000000) {
-            setSharedTimestamp(new Date(tsVal * 1000).toISOString());
-          } else {
-            setSharedTimestamp(tsParam);
+        if (decoded.metadata) {
+          if (decoded.metadata.name) setSharedName(decoded.metadata.name);
+          if (decoded.metadata.rollCount !== undefined) {
+            setSharedRolls(decoded.metadata.rollCount);
+            setRollCount(decoded.metadata.rollCount);
           }
-        }
-        if (tzParam) {
-          setSharedTimezone(tzParam);
+          if (decoded.metadata.unixTime) {
+            setSharedTimestamp(new Date(decoded.metadata.unixTime * 1000).toISOString());
+          }
+          if (decoded.metadata.offset) {
+            setSharedTimezone(decoded.metadata.offset);
+          }
         }
 
         // Hydrate Stats
@@ -646,14 +623,7 @@ export function useStatGenerator() {
 
           // System setting enforcement (Section 2.4)
           if (pbData.asiEnabled && !enforceAsiFromBackground) {
-            const confirmed = window.confirm(
-              "The shared character has ASI from Background enabled, but your settings have it turned OFF.\n\nWould you like to enable it to load this build?"
-            );
-            if (confirmed) {
-              updatePointBuy({ enforceAsiFromBackground: true });
-            } else {
-              return;
-            }
+            updatePointBuy({ enforceAsiFromBackground: true });
           }
 
         } else if (decoded.stats.method === "rolled") {
@@ -678,32 +648,6 @@ export function useStatGenerator() {
           setRolledBoxes(nextRolledBoxes);
           setStandardScores(nextStandardScores);
           setShowAssignPanel(true);
-        }
-
-        // Hydrate Skills & Saving Throws
-        if (decoded.skills) {
-          const sk = decoded.skills;
-
-          // Saves
-          const nextSaves = createAbilityRecord<"none" | "prof" | "expertise">("none");
-          sk.savingThrows.forEach((ab) => {
-            nextSaves[ab] = "prof";
-          });
-          setSavingThrowsState(nextSaves);
-
-          // Proficiencies and expertises
-          const nextSkills = {} as Record<string, "none" | "prof" | "expertise">;
-          Object.keys(skillsState).forEach((skName) => {
-            nextSkills[skName] = "none";
-          });
-
-          sk.proficiencies.forEach((skName) => {
-            nextSkills[skName] = "prof";
-          });
-          sk.expertises.forEach((skName) => {
-            nextSkills[skName] = "expertise";
-          });
-          setSkillsState(nextSkills);
         }
 
         return; // Hydrated successfully!
@@ -833,6 +777,8 @@ export function useStatGenerator() {
     clampedMin,
     location.search,
     minPurchasable,
+    enforceAsiFromBackground,
+    updatePointBuy,
   ]);
 
   const rollDie = () => Math.floor(Math.random() * 6) + 1;
@@ -970,9 +916,8 @@ export function useStatGenerator() {
 
   const handleShareAssigned = () => {
     try {
-      const code = getEncodedCodeForCurrentState("rolled");
       setShareModalProps({
-        encodedData: code,
+        encodedData: "",
         characterName: sharedName || "",
         isRandomized: true,
         rollMeta: { rolls: rollCount, timestamp: new Date().toISOString() },
@@ -981,13 +926,8 @@ export function useStatGenerator() {
           shareUrl.pathname = STAT_TAB_ROUTES.roll;
           shareUrl.search = "";
           
-          const unixTs = Math.floor(Date.now() / 1000);
-          const tz = Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC";
-          const formattedName = name.trim() || "Unnamed Character";
-          
-          // Encode as [name][unixtimestamp][rolls][Timezone][Original url format]
-          const encodedCode = `[${formattedName}][${unixTs}][${rollCount}][${tz}][${code}]`;
-          shareUrl.searchParams.set("code", encodedCode);
+          const code = getEncodedCodeForCurrentState("rolled", name.trim());
+          shareUrl.searchParams.set("code", code);
           return shareUrl.toString();
         }
       });

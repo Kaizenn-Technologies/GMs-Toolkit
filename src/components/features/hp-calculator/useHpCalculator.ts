@@ -7,8 +7,8 @@ import {
   buildCoreData,
   buildRollEntries,
   classSelectionsToClassInput,
-} from "@/utils/coreDataEncoder";
-import { decodedClassesToSelections, parseCoreData } from "@/utils/coreDataDecoder";
+} from "@/utils/encoding";
+import { decodedClassesToSelections, parseCoreData } from "@/utils/decoding";
 import { useSettings } from "@/contexts/SettingsContext";
 import { useCopyToClipboard } from "@/hooks/useCopyToClipboard";
 
@@ -43,6 +43,8 @@ function getInitialHpState() {
     rolledValues: generateRolledValues(INITIAL_CLASS_SELECTIONS),
     initialRerolls: 0,
     sharedName: "",
+    sharedTimestamp: "",
+    sharedTimezone: "",
   };
 
   try {
@@ -66,6 +68,8 @@ function getInitialHpState() {
         : generateRolledValues(classSelections),
       initialRerolls: decoded.metadata?.rerolls ?? 0,
       sharedName: decoded.metadata?.name ?? "",
+      sharedTimestamp: decoded.metadata?.unixTime ? new Date(decoded.metadata.unixTime * 1000).toISOString() : "",
+      sharedTimezone: decoded.metadata?.offset ?? "",
     };
   } catch {
     return fallback;
@@ -85,6 +89,7 @@ export function useHpCalculator() {
   
   // Share Modal States
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [shareModalProps, setShareModalProps] = useState<any>(null);
   
   const [isRolling, setIsRolling] = useState(false);
@@ -112,7 +117,7 @@ export function useHpCalculator() {
   const currentComboKey = useMemo(() => buildClassComboKey(classSelections), [classSelections]);
   const rerollCountForCurrentCombo = rerollCountsByCombo[currentComboKey] ?? 0;
   const sharedNameFromLink = initialState.sharedName.trim();
-  const shouldShowMetaPanel = sharedNameFromLink.length > 0 || showRollCounter;
+  const shouldShowMetaPanel = sharedNameFromLink.length > 0;
 
   const addClassSelection = () => {
     const newId = (Math.max(...classSelections.map((c) => parseInt(c.id)), 0) + 1).toString();
@@ -308,6 +313,9 @@ export function useHpCalculator() {
     sharedNameFromLink,
     showRollCounter,
     rerollCountForCurrentCombo,
+    sharedTimestamp: initialState.sharedTimestamp,
+    sharedTimezone: initialState.sharedTimezone,
+    initialRerolls: initialState.initialRerolls,
     openSettings,
     addClassSelection,
     handleResetClassSelections,
