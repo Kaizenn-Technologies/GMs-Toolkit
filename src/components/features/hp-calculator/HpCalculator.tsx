@@ -18,6 +18,7 @@ import { PageHeader } from "@/components/layout/PageHeader";
 import { ResetButton, ShareButton } from "@/components/ui/action-buttons";
 import { CUSTOM_CLASS_NAME, CUSTOM_HIT_DIE_OPTIONS } from "@/lib/constants";
 import { ShareModal } from "@/components/features/ShareModal";
+import { VerifiedLoadPanel } from "@/components/features/VerifiedLoadPanel";
 import { useHpCalculator, hpClassOptions } from "./useHpCalculator";
 
 export function HpCalculator() {
@@ -41,6 +42,9 @@ export function HpCalculator() {
     sharedNameFromLink,
     showRollCounter,
     rerollCountForCurrentCombo,
+    sharedTimestamp,
+    sharedTimezone,
+    initialRerolls,
     addClassSelection,
     handleResetClassSelections,
     removeClassSelection,
@@ -212,34 +216,43 @@ export function HpCalculator() {
                   <TabsTrigger value="rolled">Rolled</TabsTrigger>
                 </TabsList>
 
-                <TabsContent value="average" className="mt-6 space-y-6">
-                  <HpTotalDisplay total={result.totalHP} />
+                <TabsContent value="average" className="flex flex-col gap-2">
+                  <HpTotalDisplay className="mt-6 mb-4" total={result.totalHP} />
                   <HpBreakdown items={result.breakdown} />
                   <ShareButton onClick={() => handleShareLink("average")} copied={copied} className="w-full m-0" />
                 </TabsContent>
 
-                <TabsContent value="rolled" className="mt-6 space-y-6">
+                <TabsContent value="rolled" className="flex flex-col gap-2">
+                  {showRollCounter && (
+                    <div className="flex justify-end -mb-4 mt-1">
+                      <div className="flex items-center gap-1.5 font-mono text-[11px] text-muted-foreground bg-muted/40 border border-border/30 px-2 py-0.5 rounded-none">
+                        <span className="font-semibold uppercase tracking-wider text-[10px] text-muted-foreground/80">Reroll Count:</span>
+                        <span className="text-primary font-bold text-sm">{rerollCountForCurrentCombo}</span>
+                      </div>
+                    </div>
+                  )}
+
                   <HpTotalDisplay
+                    className="mt-6 mb-4"
                     total={rolledResult.totalHP}
                     valueClassName={`${rollColorClass} ${isRolling ? "animate-number-flicker" : ""}`}
                     tooltip={`Difference from average: ${diff > 0 ? `+${diff}` : diff}`}
                     icon={rollIcon ? <span className={`absolute -right-5 ${rollIcon === "▲" ? "top-0" : "top-1"} text-[18px]`}>{rollIcon}</span> : null}
                   />
 
-                  <div className="mb-2">
+                  {activeTab === "rolled" && shouldShowMetaPanel && (
+                    <VerifiedLoadPanel
+                      name={sharedNameFromLink}
+                      rolls={initialRerolls > 0 ? initialRerolls : null}
+                      timestamp={sharedTimestamp}
+                      timezone={sharedTimezone}
+                      className="mb-2"
+                    />
+                  )}
+
+                  <div>
                     <HpBreakdown items={rolledResult.breakdown} />
                   </div>
-
-                  {activeTab === "rolled" && shouldShowMetaPanel && (
-                    <div className="mt-3 mb-2 border border-border/70 bg-muted/40 px-3 py-2 text-sm">
-                      {sharedNameFromLink.length > 0 && (
-                        <p>Character: <span className="font-medium">{sharedNameFromLink}</span></p>
-                      )}
-                      {showRollCounter && (
-                        <p>Rolls done: <span className="font-medium">{rerollCountForCurrentCombo}</span></p>
-                      )}
-                    </div>
-                  )}
 
                   <div className="flex flex-col gap-2 mt-4">
                     <Button onClick={handleRollAgain} className="w-full m-0" disabled={isRolling}>

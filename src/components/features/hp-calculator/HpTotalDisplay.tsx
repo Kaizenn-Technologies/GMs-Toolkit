@@ -6,6 +6,7 @@ interface HpTotalDisplayProps {
   valueClassName?: string;
   tooltip?: string;
   icon?: ReactNode;
+  className?: string;
 }
 
 export function HpTotalDisplay({
@@ -13,6 +14,7 @@ export function HpTotalDisplay({
   valueClassName,
   tooltip,
   icon,
+  className,
 }: HpTotalDisplayProps) {
   const value = (
     <div className={`text-5xl font-bold mb-2 ${valueClassName ?? ""}`.trim()}>
@@ -21,8 +23,8 @@ export function HpTotalDisplay({
   );
 
   return (
-    <div className="p-2 pb-0">
-      <div className="text-center">
+    <div className="p-0 pb-0">
+      <div className={`text-center ${className ?? ""}`.trim()}>
         {tooltip ? (
           <TooltipProvider delay={100}>
             <Tooltip>

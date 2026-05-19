@@ -32,6 +32,7 @@ import { PageHeader } from "@/components/layout/PageHeader";
 import { ResetButton, ShareButton } from "@/components/ui/action-buttons";
 
 import { ShareModal } from "@/components/features/ShareModal";
+import { VerifiedLoadPanel } from "@/components/features/VerifiedLoadPanel";
 import { StatGeneratorSelectorRow } from "./StatGeneratorSelectorRow";
 import {
   AbilityNameCell,
@@ -208,33 +209,12 @@ export function StatGenerator() {
         description="Generate ability scores using Point Buy, dice rolls, or the Standard Array."
       />
 
-      {sharedName && (
-        <div className="border border-blue-400 bg-blue-400/10 p-4 rounded-none text-left flex flex-col gap-1.5 shadow-sm animate-in fade-in duration-300">
-          <p className="text-[14px] font-bold text-primary uppercase tracking-wider">
-            Verified Character Load
-          </p>
-          <div className="flex flex-wrap gap-x-6 gap-y-1.5 text-xs text-muted-foreground font-mono">
-            {sharedName && (
-              <p>
-                Name: <span className="text-foreground font-semibold">{sharedName}</span>
-              </p>
-            )}
-            {sharedRolls !== null && (
-              <p>
-                Rolls: <span className="text-foreground font-semibold">{sharedRolls}</span>
-              </p>
-            )}
-            {sharedTimestamp && (
-              <p>
-                Timestamp: <span className="text-foreground font-semibold">
-                  {new Date(sharedTimestamp).toLocaleString()}
-                  {sharedTimezone ? ` (${sharedTimezone})` : ""}
-                </span>
-              </p>
-            )}
-          </div>
-        </div>
-      )}
+      <VerifiedLoadPanel
+        name={sharedName}
+        rolls={sharedRolls}
+        timestamp={sharedTimestamp}
+        timezone={sharedTimezone}
+      />
 
       <Card className="bg-card/45">
         <CardContent className="pt-1">

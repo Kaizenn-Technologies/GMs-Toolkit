@@ -39,7 +39,7 @@ export function Header({ activeTab, setActiveTab }: HeaderProps) {
                   }
                 />
                 <TooltipContent className="font-semibold text-muted py-1 px-2" side="right">
-                  Public BETA v0.6.2
+                  Public BETA v0.6.3
                 </TooltipContent>
               </Tooltip>
             </TooltipProvider>
