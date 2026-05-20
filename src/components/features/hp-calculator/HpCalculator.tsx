@@ -240,7 +240,7 @@ export function HpCalculator() {
                     icon={rollIcon ? <span className={`absolute -right-5 ${rollIcon === "▲" ? "top-0" : "top-1"} text-[18px]`}>{rollIcon}</span> : null}
                   />
 
-                  {activeTab === "rolled" && shouldShowMetaPanel && (
+                  {shouldShowMetaPanel && (
                     <VerifiedLoadPanel
                       name={sharedNameFromLink}
                       rolls={initialRerolls > 0 ? initialRerolls : null}

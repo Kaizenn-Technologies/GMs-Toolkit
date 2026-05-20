@@ -85,7 +85,7 @@ export function useHpCalculator() {
   const [hillDwarf, setHillDwarf] = useState(initialState.hillDwarf);
   const [activeTab, setActiveTab] = useState<"average" | "rolled">(initialState.activeTab);
   const [rolledValues, setRolledValues] = useState<number[]>(initialState.rolledValues);
-  const { copied } = useCopyToClipboard();
+  const { copied, copyToClipboard } = useCopyToClipboard();
   
   // Share Modal States
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
@@ -117,7 +117,10 @@ export function useHpCalculator() {
   const currentComboKey = useMemo(() => buildClassComboKey(classSelections), [classSelections]);
   const rerollCountForCurrentCombo = rerollCountsByCombo[currentComboKey] ?? 0;
   const sharedNameFromLink = initialState.sharedName.trim();
-  const shouldShowMetaPanel = sharedNameFromLink.length > 0;
+  const shouldShowMetaPanel =
+    sharedNameFromLink.length > 0 ||
+    initialState.initialRerolls > 0 ||
+    initialState.sharedTimestamp.trim().length > 0;
 
   const addClassSelection = () => {
     const newId = (Math.max(...classSelections.map((c) => parseInt(c.id)), 0) + 1).toString();
@@ -125,7 +128,12 @@ export function useHpCalculator() {
 
     const nextSelections = [
       ...classSelections,
-      { id: newId, className: availableClass, level: 1 },
+      {
+        id: newId,
+        className: availableClass,
+        level: 1,
+        customHitDie: availableClass === CUSTOM_CLASS_NAME ? CUSTOM_HIT_DIE_OPTIONS[0] : undefined,
+      },
     ];
     setClassSelections(nextSelections);
     setRolledValues(generateRolledValues(nextSelections));
@@ -269,6 +277,20 @@ export function useHpCalculator() {
   const handleShareLink = (shareMode: "average" | "rolled") => {
     try {
       const isRandom = shareMode === "rolled";
+      if (settings.sitewide.disableSharePrompt) {
+        const shareUrl = new URL(window.location.href);
+        shareUrl.search = "";
+        shareUrl.searchParams.set(
+          "core",
+          buildShareableCoreData({
+            name: "",
+            includeRolls: isRandom,
+          })
+        );
+        copyToClipboard(shareUrl.toString());
+        return;
+      }
+
       setShareModalProps({
         encodedData: "",
         characterName: sharedNameFromLink || "",

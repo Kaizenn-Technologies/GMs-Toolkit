@@ -2,7 +2,7 @@ import { classes } from "../lib/classes";
 import { CUSTOM_CLASS_NAME } from "../lib/constants";
 import type { ClassSelection } from "@/types";
 import type { Ability } from "@/types";
-import { CLASS_ORDER } from "./encoding";
+import { CLASS_ORDER, CODE_TO_SKILL } from "./encoding";
 
 // Reverse Class Letters Map
 export const LETTER_TO_CLASS: Record<string, string> = Object.fromEntries(
@@ -292,9 +292,17 @@ export interface DecodedRolledData {
     rolls: RolledRoll[];
 }
 
+export interface DecodedSkillsData {
+    isBard: boolean;
+    conMod: number;
+    savingThrows: Ability[];
+    proficiencies: string[];
+    expertises: string[];
+}
+
 export interface DecodedCharacter {
     stats: DecodedPointBuyData | DecodedRolledData;
-    skills?: unknown;
+    skills?: DecodedSkillsData;
     metadata?: {
         name?: string;
         unixTime?: number;
@@ -303,10 +311,77 @@ export interface DecodedCharacter {
     };
 }
 
+export function decodeSkills(skillsStr: string): DecodedSkillsData | undefined {
+    if (!skillsStr) return undefined;
+
+    const isBard = skillsStr[0] === "1";
+    let idx = 1;
+
+    // Parse conMod
+    let conModStr = "";
+    while (idx < skillsStr.length && !["s", "p", "e"].includes(skillsStr[idx])) {
+        conModStr += skillsStr[idx];
+        idx++;
+    }
+    const conMod = parseInt(conModStr, 10) || 0;
+
+    const savingThrows: Ability[] = [];
+    const proficiencies: string[] = [];
+    const expertises: string[] = [];
+
+    // Parse s section if present
+    if (idx < skillsStr.length && skillsStr[idx] === "s") {
+        idx++; // skip 's'
+        while (idx < skillsStr.length && !["p", "e"].includes(skillsStr[idx])) {
+            const letter = skillsStr[idx];
+            const ability = LETTERS_TO_ABILITY[letter.toUpperCase()];
+            if (ability) {
+                savingThrows.push(ability);
+            }
+            idx++;
+        }
+    }
+
+    // Parse p section if present
+    if (idx < skillsStr.length && skillsStr[idx] === "p") {
+        idx++; // skip 'p'
+        while (idx < skillsStr.length && skillsStr[idx] !== "e") {
+            const code = skillsStr.substring(idx, idx + 2);
+            const skillName = CODE_TO_SKILL[code];
+            if (skillName) {
+                proficiencies.push(skillName);
+            }
+            idx += 2;
+        }
+    }
+
+    // Parse e section if present
+    if (idx < skillsStr.length && skillsStr[idx] === "e") {
+        idx++; // skip 'e'
+        while (idx < skillsStr.length) {
+            const code = skillsStr.substring(idx, idx + 2);
+            const skillName = CODE_TO_SKILL[code];
+            if (skillName) {
+                expertises.push(skillName);
+            }
+            idx += 2;
+        }
+    }
+
+    return {
+        isBard,
+        conMod,
+        savingThrows,
+        proficiencies,
+        expertises,
+    };
+}
+
 export function decodeCharacter(shareString: string): DecodedCharacter {
     const { coredata, rolled, metadata } = parseSegments(shareString);
 
     let stats: DecodedPointBuyData | DecodedRolledData;
+    let decodedSkills: DecodedSkillsData | undefined;
 
     if (coredata.startsWith("tPB")) {
         let idx = 3;
@@ -332,7 +407,10 @@ export function decodeCharacter(shareString: string): DecodedCharacter {
         const bb = consumeTag("bb", 12);
         const fbv = consumeTag("fbv", 12);
 
-        const className = cl === "z" ? "Choose a class" : LETTER_TO_CLASS[cl.toUpperCase()] || "Choose a class";
+        const classKey = cl === "z" ? undefined : LETTER_TO_CLASS[cl.toUpperCase()];
+        const className = classKey && classes[classKey as keyof typeof classes]
+            ? classes[classKey as keyof typeof classes].name
+            : "Choose a class";
         const backgroundName = bg === "z" ? "Sage" : LETTER_TO_BG[bg.toUpperCase()] || "Sage";
         const asiEnabled = asi === "1";
 
@@ -363,6 +441,9 @@ export function decodeCharacter(shareString: string): DecodedCharacter {
             backgroundBonus,
             featBonus,
         };
+
+        const skillsSuffix = coredata.substring(idx);
+        decodedSkills = decodeSkills(skillsSuffix);
     } else {
         const rollsList: RolledRoll[] = [];
         let rIdx = 0;
@@ -383,6 +464,8 @@ export function decodeCharacter(shareString: string): DecodedCharacter {
             method: "rolled",
             rolls: rollsList,
         };
+
+        decodedSkills = decodeSkills(coredata);
     }
 
     let decodedMetadata: DecodedCharacter["metadata"] = undefined;
@@ -407,6 +490,7 @@ export function decodeCharacter(shareString: string): DecodedCharacter {
 
     return {
         stats,
+        skills: decodedSkills,
         metadata: decodedMetadata,
     };
 }

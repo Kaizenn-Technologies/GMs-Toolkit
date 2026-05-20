@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import QRCode from "qrcode";
 import { X, Copy, Check, QrCode, AlertTriangle, Info } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -30,26 +30,25 @@ export function ShareModal({
   onGenerateUrl,
 }: ShareModalProps) {
   const [localName, setLocalName] = useState(characterName);
+  const [prevCharacterName, setPrevCharacterName] = useState(characterName);
   const [copied, setCopied] = useState(false);
-  const [shareUrl, setShareUrl] = useState("");
   const [qrError, setQrError] = useState<string | null>(null);
 
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const inputRef = useRef<HTMLInputElement | null>(null);
 
-  // Initialize and update localName when characterName prop changes
-  useEffect(() => {
-    if (isOpen) {
-      setLocalName(characterName);
-    }
-  }, [isOpen, characterName]);
+  // Sync state with props during render if characterName prop changes
+  if (characterName !== prevCharacterName) {
+    setLocalName(characterName);
+    setPrevCharacterName(characterName);
+  }
 
-  // Generate share URL dynamically when state changes
-  useEffect(() => {
-    if (!isOpen) return;
+  // Generate share URL dynamically without state to avoid cascading renders
+  const shareUrl = useMemo(() => {
+    if (!isOpen) return "";
 
     if (onGenerateUrl) {
-      setShareUrl(onGenerateUrl(localName));
+      return onGenerateUrl(localName);
     } else {
       // Default URL builder
       const url = new URL(window.location.href);
@@ -67,7 +66,7 @@ export function ShareModal({
           rollMeta?.timestamp || new Date().toISOString()
         );
       }
-      setShareUrl(url.toString());
+      return url.toString();
     }
   }, [isOpen, encodedData, localName, isRandomized, rollMeta, onGenerateUrl]);
 
@@ -248,7 +247,7 @@ export function ShareModal({
                     <Info className="w-4 h-4 text-blue-400" />
                   </div>
                   <span className="text-blue-400 font-medium ">
-                    The links are not reliable yet for rolled stats, they will be fixed soon.
+                    Plese report any discrepency you find after sharing link via <a className="font-medium underline" href="https://discord.gg/nBzSVyHfMy">discord</a>.
                   </span>
                 </div>
                 {isRandomized && (
