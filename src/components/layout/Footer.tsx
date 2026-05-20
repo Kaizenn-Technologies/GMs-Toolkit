@@ -10,19 +10,34 @@ export function Footer() {
       <span>2026</span>
       <span className="hidden sm:inline">|</span>
       <a
-        href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.en"
+        href="https://www.gnu.org/licenses/gpl-3.0.html"
         target="_blank"
         rel="noopener noreferrer"
-        className="hover:text-foreground transition-colors flex items-center"
-        title="Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International License"
+        className="hover:text-foreground transition-colors flex items-center gap-1.5"
+        title="GNU General Public License v3.0"
       >
-        <span className="flex items-center ml-2 space-x-1">
-          <img src="https://mirrors.creativecommons.org/presskit/icons/cc.svg" alt="" className="h-4 w-4 dark:invert opacity-80" />
-          <img src="https://mirrors.creativecommons.org/presskit/icons/by.svg" alt="" className="h-4 w-4 dark:invert opacity-80" />
-          <img src="https://mirrors.creativecommons.org/presskit/icons/nc.svg" alt="" className="h-4 w-4 dark:invert opacity-80" />
-          <img src="https://mirrors.creativecommons.org/presskit/icons/sa.svg" alt="" className="h-4 w-4 dark:invert opacity-80" />
-        </span>
+        <span>🄯 GPLv3</span>
       </a>
+      <span className="hidden sm:inline">|</span>
+      <a
+        href="https://discord.gg/nBzSVyHfMy"
+        target="_blank"
+        rel="noopener noreferrer"
+        className="hover:text-foreground transition-colors flex items-center gap-1.5"
+        title="Discord"
+      >
+        <span>Discord</span>
+      </a>
+      {/* <span className="hidden sm:inline">|</span>
+      <a
+        href="https://github.com/"
+        target="_blank"
+        rel="noopener noreferrer"
+        className="hover:text-foreground transition-colors flex items-center gap-1.5"
+        title="Source Code"
+      >
+        <span>Source Code</span>
+      </a> */}
       <span className="hidden sm:inline">|</span>
       <span>
         Made with 🩵 by{" "}

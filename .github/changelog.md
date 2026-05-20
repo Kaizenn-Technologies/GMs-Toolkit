@@ -1,5 +1,14 @@
 # Changelog
 
+## [v0.7.2]
+
+### Added
+- GPLv3 LICENSE
+
+### Fixed
+- Cleaned up the sourcecode
+- Updated Packages and fixed vulnerability issues
+
 ## [v0.7.1]
 
 ### Fixed
