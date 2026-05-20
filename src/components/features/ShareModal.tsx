@@ -17,7 +17,7 @@ export interface ShareModalProps {
     rolls?: number;
     timestamp?: string;
   };
-  onGenerateUrl?: (name: string) => string;
+  onGenerateUrl?: (name: string) => string | Promise<string>;
 }
 
 export function ShareModal({
@@ -49,7 +49,20 @@ export function ShareModal({
     if (!isOpen) return;
 
     if (onGenerateUrl) {
-      setShareUrl(onGenerateUrl(localName));
+      const generated = onGenerateUrl(localName);
+      if (generated instanceof Promise) {
+        setShareUrl(""); // Temporarily empty to trigger loading state in UI
+        generated
+          .then((url) => {
+            setShareUrl(url);
+          })
+          .catch((err) => {
+            console.error("Failed to generate async share URL:", err);
+            setShareUrl("Error generating secure link");
+          });
+      } else {
+        setShareUrl(generated);
+      }
     } else {
       // Default URL builder
       const url = new URL(window.location.href);
@@ -167,6 +180,7 @@ export function ShareModal({
   }, [isOpen, onClose]);
 
   const handleCopy = async () => {
+    if (!shareUrl) return;
     try {
       await navigator.clipboard.writeText(shareUrl);
       setCopied(true);
@@ -292,7 +306,7 @@ export function ShareModal({
                 <input
                   type="text"
                   readOnly
-                  value={shareUrl}
+                  value={shareUrl || "Generating secure link..."}
                   aria-label="Generated Share Link"
                   className="flex-1 h-8 px-2 border border-border bg-muted/20 text-xs font-mono select-all overflow-x-auto whitespace-nowrap outline-none focus:border-primary/50"
                 />
@@ -303,6 +317,7 @@ export function ShareModal({
                         <Button
                           variant={copied ? "default" : "outline"}
                           size="sm"
+                          disabled={!shareUrl}
                           onClick={handleCopy}
                           aria-label="Copy share link"
                           className={`h-8 min-w-[76px] transition-all duration-200 ${copied

@@ -19,6 +19,7 @@ import { useSettings } from "@/contexts/SettingsContext";
 import { useCopyToClipboard } from "@/hooks/useCopyToClipboard";
 import {
   encodeCharacter,
+  getSecureShareUrl,
 } from "@/utils/encoding";
 import {
   decodeCharacter,
@@ -559,14 +560,9 @@ export function useStatGenerator() {
         characterName: sharedName || "",
         isRandomized: isRandom,
         rollMeta: isRandom ? { rolls: rollCount, timestamp: new Date().toISOString() } : undefined,
-        onGenerateUrl: (name: string) => {
-          const shareUrl = new URL(window.location.origin + window.location.pathname);
-          shareUrl.pathname = STAT_TAB_ROUTES[activeTab];
-          shareUrl.search = "";
-          
+        onGenerateUrl: async (name: string) => {
           const code = getEncodedCodeForCurrentState("point_buy", name.trim());
-          shareUrl.searchParams.set("code", code);
-          return shareUrl.toString();
+          return await getSecureShareUrl(code);
         }
       });
       setIsShareModalOpen(true);
@@ -580,7 +576,21 @@ export function useStatGenerator() {
     hasHydratedFromUrl.current = true;
 
     const params = new URLSearchParams(location.search);
-    const codeFromUrl = params.get("code");
+
+    // 1. Try reading the secure in-memory payload (ensure it doesn't belong to HP)
+    const sharedData = sessionStorage.getItem("shared_character_data");
+    let codeFromUrl = "";
+    
+    if (sharedData && !sharedData.includes("c:tHP")) {
+      codeFromUrl = sharedData;
+      sessionStorage.removeItem("shared_character_data");
+    } else {
+      // 2. Fallback to legacy URL sharing
+      const code = params.get("code");
+      if (code) {
+        codeFromUrl = code;
+      }
+    }
 
     if (codeFromUrl) {
       try {
@@ -921,14 +931,9 @@ export function useStatGenerator() {
         characterName: sharedName || "",
         isRandomized: true,
         rollMeta: { rolls: rollCount, timestamp: new Date().toISOString() },
-        onGenerateUrl: (name: string) => {
-          const shareUrl = new URL(window.location.origin + window.location.pathname);
-          shareUrl.pathname = STAT_TAB_ROUTES.roll;
-          shareUrl.search = "";
-          
+        onGenerateUrl: async (name: string) => {
           const code = getEncodedCodeForCurrentState("rolled", name.trim());
-          shareUrl.searchParams.set("code", code);
-          return shareUrl.toString();
+          return await getSecureShareUrl(code);
         }
       });
       setIsShareModalOpen(true);
