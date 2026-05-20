@@ -286,6 +286,16 @@ export function SettingsOverlay({
                   onCheckedChange={(v) => updateSitewide({ showProgression: v })}
                 />
               </SettingRow>
+
+              <SettingRow
+                label="Disable Share Prompt"
+                description="Directly copy the share link to clipboard with a blank character name, bypassing the share modal."
+              >
+                <Switch
+                  checked={settings.sitewide.disableSharePrompt}
+                  onCheckedChange={(v) => updateSitewide({ disableSharePrompt: v })}
+                />
+              </SettingRow>
             </div>
           </div>
 

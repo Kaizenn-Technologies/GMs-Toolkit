@@ -37,6 +37,7 @@ export interface SitewideSettings {
   showFooter: boolean;
   showSkills: boolean;
   showProgression: boolean;
+  disableSharePrompt: boolean;
 }
 
 export interface AppSettings {
@@ -69,6 +70,7 @@ export const DEFAULT_SITEWIDE_SETTINGS: SitewideSettings = {
   showFooter: true,
   showSkills: true,
   showProgression: true,
+  disableSharePrompt: false,
 };
 
 export const DEFAULT_POINT_BUY_SETTINGS: PointBuySettings = {

@@ -3,6 +3,31 @@ import { CUSTOM_CLASS_NAME } from "../lib/constants";
 import type { ClassSelection } from "@/types";
 import type { Ability } from "@/types";
 
+export const SKILL_TO_CODE: Record<string, string> = {
+    "Athletics": "A1",
+    "Acrobatics": "B1",
+    "Sleight of Hand": "B2",
+    "Stealth": "B3",
+    "Arcana": "D1",
+    "History": "D2",
+    "Investigation": "D3",
+    "Nature": "D4",
+    "Religion": "D5",
+    "Animal Handling": "E1",
+    "Insight": "E2",
+    "Medicine": "E3",
+    "Perception": "E4",
+    "Survival": "E5",
+    "Deception": "F1",
+    "Intimidation": "F2",
+    "Performance": "F3",
+    "Persuasion": "F4",
+};
+
+export const CODE_TO_SKILL: Record<string, string> = Object.fromEntries(
+    Object.entries(SKILL_TO_CODE).map(([name, code]) => [code, name])
+);
+
 // Class Mapping Definitions
 export const CLASS_ORDER = [
     "barbarian",
@@ -322,6 +347,49 @@ export function encodeCharacter(character: EncodedCharacter): string {
             rolledStr += `${roll.roll}${assignmentChar}`;
         }
         rolled = rolledStr;
+    }
+
+    if (character.skills) {
+        const sk = character.skills;
+        const hasSaves = sk.savingThrows && sk.savingThrows.length > 0;
+        const hasProfs = sk.proficiencies && sk.proficiencies.length > 0;
+        const hasExps = sk.expertises && sk.expertises.length > 0;
+        const isBardVal = sk.isBard ? 1 : 0;
+        const conModVal = sk.conMod;
+
+        // Check if ANY of the conditions to include the skills segment are met
+        if (isBardVal === 1 || conModVal !== 0 || hasSaves || hasProfs || hasExps) {
+            let skillsStr = `${isBardVal}${conModVal}`;
+
+            if (hasSaves) {
+                const sortedSaves = [...sk.savingThrows]
+                    .map((ab) => ABILITY_LETTERS[ab])
+                    .filter(Boolean)
+                    .sort()
+                    .join("");
+                skillsStr += `s${sortedSaves}`;
+            }
+
+            if (hasProfs) {
+                const sortedProfs = sk.proficiencies
+                    .map((name) => SKILL_TO_CODE[name])
+                    .filter(Boolean)
+                    .sort()
+                    .join("");
+                skillsStr += `p${sortedProfs}`;
+            }
+
+            if (hasExps) {
+                const sortedExps = sk.expertises
+                    .map((name) => SKILL_TO_CODE[name])
+                    .filter(Boolean)
+                    .sort()
+                    .join("");
+                skillsStr += `e${sortedExps}`;
+            }
+
+            coredata += skillsStr;
+        }
     }
 
     // Metadata (m:)

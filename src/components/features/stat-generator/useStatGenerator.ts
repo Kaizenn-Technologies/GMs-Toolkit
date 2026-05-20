@@ -160,6 +160,7 @@ export function useStatGenerator() {
   const location = useLocation();
   const navigate = useNavigate();
   const hasHydratedFromUrl = useRef(false);
+  const ignoreClassChangeRef = useRef(false);
   const pb = settings.pointBuy;
 
   const {
@@ -187,7 +188,7 @@ export function useStatGenerator() {
   const [manualBonuses, setManualBonuses] = useState<Record<Ability, number>>(
     defaultManualBonuses(),
   );
-  const { copied } = useCopyToClipboard();
+  const { copied, copyToClipboard } = useCopyToClipboard();
 
   // Share Modal States
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
@@ -268,6 +269,11 @@ export function useStatGenerator() {
 
   // Autofill saving throws when active class changes
   useEffect(() => {
+    if (ignoreClassChangeRef.current) {
+      ignoreClassChangeRef.current = false;
+      return;
+    }
+
     if (!activeClass || activeClass === CHOOSE_STANDARD_CLASS) {
       setSavingThrowsState({
         Strength: "none",
@@ -554,6 +560,17 @@ export function useStatGenerator() {
   const handleShareLink = () => {
     try {
       const isRandom = activeTab === "roll";
+      if (settings.sitewide.disableSharePrompt) {
+        const shareUrl = new URL(window.location.origin + window.location.pathname);
+        shareUrl.pathname = STAT_TAB_ROUTES[activeTab];
+        shareUrl.search = "";
+        
+        const code = getEncodedCodeForCurrentState(isRandom ? "rolled" : "point_buy", "");
+        shareUrl.searchParams.set("code", code);
+        copyToClipboard(shareUrl.toString());
+        return;
+      }
+
       setShareModalProps({
         encodedData: "",
         characterName: sharedName || "",
@@ -564,7 +581,7 @@ export function useStatGenerator() {
           shareUrl.pathname = STAT_TAB_ROUTES[activeTab];
           shareUrl.search = "";
           
-          const code = getEncodedCodeForCurrentState("point_buy", name.trim());
+          const code = getEncodedCodeForCurrentState(isRandom ? "rolled" : "point_buy", name.trim());
           shareUrl.searchParams.set("code", code);
           return shareUrl.toString();
         }
@@ -584,6 +601,7 @@ export function useStatGenerator() {
 
     if (codeFromUrl) {
       try {
+        ignoreClassChangeRef.current = true;
         const decoded = decodeCharacter(codeFromUrl);
 
         if (decoded.metadata) {
@@ -650,6 +668,70 @@ export function useStatGenerator() {
           setShowAssignPanel(true);
         }
 
+        // Hydrate Skills and Saving Throws
+        const classNameToUse = decoded.stats.method === "point_buy" ? decoded.stats.className : "";
+        const activeClassData = Object.values(classes).find((c) => c.name === classNameToUse);
+        const defaultSaves = (activeClassData?.savingThrows ?? []) as Ability[];
+
+        const nextSaves: Record<Ability, "none" | "prof" | "expertise"> = {
+          Strength: "none",
+          Dexterity: "none",
+          Constitution: "none",
+          Intelligence: "none",
+          Wisdom: "none",
+          Charisma: "none",
+        };
+
+        const nextSkills: Record<string, "none" | "prof" | "expertise"> = {
+          Athletics: "none",
+          Acrobatics: "none",
+          "Sleight of Hand": "none",
+          Stealth: "none",
+          Arcana: "none",
+          History: "none",
+          Investigation: "none",
+          Nature: "none",
+          Religion: "none",
+          "Animal Handling": "none",
+          Insight: "none",
+          Medicine: "none",
+          Perception: "none",
+          Survival: "none",
+          Deception: "none",
+          Intimidation: "none",
+          Performance: "none",
+          Persuasion: "none",
+        };
+
+        // Apply class defaults (saving throws)
+        defaultSaves.forEach((ability) => {
+          nextSaves[ability] = "prof";
+        });
+
+        // If skills suffix exists, fully hydrate from URL (overriding defaults if present)
+        if (decoded.skills) {
+          const sk = decoded.skills;
+
+          // Apply decoded saving throws (reset saves to "none" first, then apply decoded saves)
+          ABILITIES.forEach((ability) => {
+            nextSaves[ability] = "none";
+          });
+          sk.savingThrows.forEach((ability) => {
+            nextSaves[ability] = "prof";
+          });
+
+          // Apply proficiencies and expertises
+          sk.proficiencies.forEach((skill) => {
+            nextSkills[skill] = "prof";
+          });
+          sk.expertises.forEach((skill) => {
+            nextSkills[skill] = "expertise";
+          });
+        }
+
+        setSavingThrowsState(nextSaves);
+        setSkillsState(nextSkills);
+
         return; // Hydrated successfully!
       } catch (error) {
         console.error("Failed to decode share code:", error);
@@ -664,14 +746,22 @@ export function useStatGenerator() {
     }
 
     const classFromUrl = params.get("class");
-    if (classFromUrl && classNames.includes(classFromUrl)) {
-      setSelectedClass(classFromUrl);
-      setSelectedStandardClass(classFromUrl);
+    const matchedClass = classFromUrl
+      ? classNames.find((c) => c.toLowerCase() === classFromUrl.toLowerCase())
+      : null;
+
+    if (matchedClass) {
+      setSelectedClass(matchedClass);
+      setSelectedStandardClass(matchedClass);
     }
 
     const bgFromUrl = params.get("background");
-    if (bgFromUrl && backgroundNames.includes(bgFromUrl)) {
-      setSelectedBackground(bgFromUrl);
+    const matchedBg = bgFromUrl
+      ? backgroundNames.find((b) => b.toLowerCase() === bgFromUrl.toLowerCase())
+      : null;
+
+    if (matchedBg) {
+      setSelectedBackground(matchedBg);
     }
 
     const scoreMinForTab = activeTab === "pointbuy" ? clampedMin : 3;
@@ -693,7 +783,7 @@ export function useStatGenerator() {
     setScores(nextScores);
 
     if (activeTab === "standard") {
-      if (classFromUrl && classNames.includes(classFromUrl)) {
+      if (matchedClass) {
         setStandardScores(nextScores);
       } else {
         setSelectedStandardClass(CHOOSE_STANDARD_CLASS);
@@ -916,6 +1006,17 @@ export function useStatGenerator() {
 
   const handleShareAssigned = () => {
     try {
+      if (settings.sitewide.disableSharePrompt) {
+        const shareUrl = new URL(window.location.origin + window.location.pathname);
+        shareUrl.pathname = STAT_TAB_ROUTES.roll;
+        shareUrl.search = "";
+        
+        const code = getEncodedCodeForCurrentState("rolled", "");
+        shareUrl.searchParams.set("code", code);
+        copyToClipboard(shareUrl.toString());
+        return;
+      }
+
       setShareModalProps({
         encodedData: "",
         characterName: sharedName || "",
