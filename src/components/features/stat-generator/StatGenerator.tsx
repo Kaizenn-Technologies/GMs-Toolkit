@@ -16,6 +16,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { useState, useEffect, useRef } from "react";
+import { createPortal } from "react-dom";
 import { StepperInput } from "@/components/ui/stepper-input";
 import { classNames } from "@/lib/classes";
 import { backgroundNames } from "@/lib/backgrounds";
@@ -1372,18 +1373,48 @@ interface SkillDropdownProps {
 
 function SkillDropdown({ state, isBard, isSkill, onChange, openUpward }: SkillDropdownProps) {
   const [isOpen, setIsOpen] = useState(false);
+  const [coords, setCoords] = useState<{ top: number; left: number; width: number; height: number } | null>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const buttonRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
     if (!isOpen) return;
+
     const handleOutsideClick = (e: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+      const target = e.target as HTMLElement;
+      if (
+        dropdownRef.current && !dropdownRef.current.contains(target) &&
+        !target.closest(".skill-dropdown-portal")
+      ) {
         setIsOpen(false);
       }
     };
+
+    const handleScroll = () => {
+      setIsOpen(false);
+    };
+
     document.addEventListener("mousedown", handleOutsideClick);
-    return () => document.removeEventListener("mousedown", handleOutsideClick);
+    window.addEventListener("scroll", handleScroll, { capture: true, passive: true });
+
+    return () => {
+      document.removeEventListener("mousedown", handleOutsideClick);
+      window.removeEventListener("scroll", handleScroll, { capture: true });
+    };
   }, [isOpen]);
+
+  const handleToggle = () => {
+    if (!isOpen && buttonRef.current) {
+      const rect = buttonRef.current.getBoundingClientRect();
+      setCoords({
+        top: rect.top,
+        left: rect.left,
+        width: rect.width,
+        height: rect.height,
+      });
+    }
+    setIsOpen(!isOpen);
+  };
 
   const renderIcon = (s: "none" | "prof" | "expertise", interactive = true) => {
     const baseClass = `w-4 h-4 cursor-pointer shrink-0 transition-transform ${interactive ? "hover:scale-110 active:scale-95" : ""}`;
@@ -1419,20 +1450,23 @@ function SkillDropdown({ state, isBard, isSkill, onChange, openUpward }: SkillDr
   return (
     <div className="relative inline-block" ref={dropdownRef}>
       <button
+        ref={buttonRef}
         type="button"
-        onClick={() => setIsOpen(!isOpen)}
+        onClick={handleToggle}
         className="flex items-center justify-center w-6 h-6 rounded hover:bg-muted/80 focus:outline-none transition-colors"
         title={`Change Proficiency (Current: ${state === "none" ? (isSkill && isBard ? "Jack of All Trades" : "None") : state === "prof" ? "Proficient" : "Expertise"})`}
       >
         {renderIcon(state)}
       </button>
 
-      {isOpen && (
+      {isOpen && coords && createPortal(
         <div
-          className={`absolute left-0 z-50 w-44 rounded-md border border-border bg-popover p-1 shadow-md animate-in fade-in duration-150 ${openUpward
-            ? "bottom-full mb-1 slide-in-from-bottom-1"
-            : "top-full mt-1 slide-in-from-top-1"
-            }`}
+          className="fixed z-[9999] w-44 rounded-md border border-border bg-popover p-1 shadow-md animate-in fade-in duration-150 skill-dropdown-portal"
+          style={{
+            left: `${coords.left}px`,
+            top: openUpward ? `${coords.top - 4}px` : `${coords.top + coords.height + 4}px`,
+            transform: openUpward ? "translateY(-100%)" : "none",
+          }}
         >
           <button
             type="button"
@@ -1469,7 +1503,8 @@ function SkillDropdown({ state, isBard, isSkill, onChange, openUpward }: SkillDr
               <span>Expertise (+ 2x PROF)</span>
             </button>
           )}
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );

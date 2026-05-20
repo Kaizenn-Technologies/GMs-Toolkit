@@ -20,6 +20,7 @@ import { CUSTOM_CLASS_NAME, CUSTOM_HIT_DIE_OPTIONS } from "@/lib/constants";
 import { ShareModal } from "@/components/features/ShareModal";
 import { VerifiedLoadPanel } from "@/components/features/VerifiedLoadPanel";
 import { useHpCalculator, hpClassOptions } from "./useHpCalculator";
+import { useSettings } from "@/contexts/SettingsContext";
 
 export function HpCalculator() {
   const {
@@ -56,6 +57,9 @@ export function HpCalculator() {
     setIsShareModalOpen,
     shareModalProps,
   } = useHpCalculator();
+
+  const { settings } = useSettings();
+  const showBreakdown = settings.hp.showBreakdown;
 
   return (
     <>
@@ -218,7 +222,7 @@ export function HpCalculator() {
 
                 <TabsContent value="average" className="flex flex-col gap-2">
                   <HpTotalDisplay className="mt-6 mb-4" total={result.totalHP} />
-                  <HpBreakdown items={result.breakdown} />
+                  {showBreakdown && <HpBreakdown items={result.breakdown} />}
                   <ShareButton onClick={() => handleShareLink("average")} copied={copied} className="w-full m-0" />
                 </TabsContent>
 
@@ -250,9 +254,7 @@ export function HpCalculator() {
                     />
                   )}
 
-                  <div>
-                    <HpBreakdown items={rolledResult.breakdown} />
-                  </div>
+                    {showBreakdown && <HpBreakdown items={rolledResult.breakdown} />}
 
                   <div className="flex flex-col gap-2 mt-4">
                     <Button onClick={handleRollAgain} className="w-full m-0" disabled={isRolling}>

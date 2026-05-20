@@ -193,17 +193,22 @@ export function useHpCalculator() {
   const threshold = Math.abs(conModifier) + (tough ? 2 : 0) + (hillDwarf ? 1 : 0);
 
   let rollColorClass = "text-muted-foreground";
-  let rollIcon = null;
+  let rollIcon: string | null = null;
 
   if (isRolling) {
     rollColorClass = "text-muted-foreground";
     rollIcon = null;
-  } else if (diff > threshold) {
-    rollColorClass = "text-[#00c93cff] dark:text-[#10ff58ff]";
-    rollIcon = "▲";
-  } else if (diff < -threshold) {
-    rollColorClass = "text-[#ff3d3d]";
-    rollIcon = "▼";
+  } else {
+    // Always show arrow direction
+    if (diff > 0) rollIcon = "▲";
+    else if (diff < 0) rollIcon = "▼";
+
+    // Only color when exceeding threshold
+    if (diff > threshold) {
+      rollColorClass = "text-[#00c93cff] dark:text-[#10ff58ff]";
+    } else if (diff < -threshold) {
+      rollColorClass = "text-[#ff3d3d]";
+    }
   }
 
   const handleRollAgain = () => {

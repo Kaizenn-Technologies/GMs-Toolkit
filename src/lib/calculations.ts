@@ -101,8 +101,12 @@ export const calculateHP = (
                 ? `(${calcString}) = ${levelHP}`
                 : `${calcString} = ${levelHP}`;
 
+            const displayName = selection.className === CUSTOM_CLASS_NAME
+                ? `${selection.className} [d${hitDie}]`
+                : selection.className;
+
             breakdown.push({
-                label: `${selection.className} Level ${characterLevel}`,
+                label: `${displayName} Level ${characterLevel}`,
                 value: valueStr,
                 tooltip: tooltipString
             });

@@ -420,16 +420,6 @@ export function SettingsOverlay({
               <TabsContent value="hp" className="flex-1 px-6 pb-6 mt-0 pt-2">
                 <div className="space-y-2">
                   <SettingRow
-                    label="Advance Share Menu"
-                    description="Prompt for character name before copying a share link."
-                  >
-                    <Switch
-                      checked={settings.hp.advanceShareMenu}
-                      onCheckedChange={(v) => updateHp({ advanceShareMenu: v })}
-                    />
-                  </SettingRow>
-
-                  <SettingRow
                     label="Show Roll Counter"
                     description="Show reroll count in the rolled result panel."
                   >
@@ -446,6 +436,16 @@ export function SettingsOverlay({
                     <Switch
                       checked={settings.hp.rollingAnimation}
                       onCheckedChange={(v) => updateHp({ rollingAnimation: v })}
+                    />
+                  </SettingRow>
+
+                  <SettingRow
+                    label="Show Breakdown"
+                    description="Show or hide the per-level HP breakdown panel."
+                  >
+                    <Switch
+                      checked={settings.hp.showBreakdown}
+                      onCheckedChange={(v) => updateHp({ showBreakdown: v })}
                     />
                   </SettingRow>
                 </div>

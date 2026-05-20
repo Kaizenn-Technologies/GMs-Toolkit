@@ -57,9 +57,9 @@ export interface RollSettings {
 }
 
 export interface HpSettings {
-  advanceShareMenu: boolean;
   showRollCounter: boolean;
   rollingAnimation: boolean;
+  showBreakdown: boolean;
 }
 
 // ─── Defaults ─────────────────────────────────────────────────────────────────
@@ -90,9 +90,9 @@ export const DEFAULT_ROLL_SETTINGS: RollSettings = {
 };
 
 export const DEFAULT_HP_SETTINGS: HpSettings = {
-  advanceShareMenu: false,
   showRollCounter: true,
   rollingAnimation: true,
+  showBreakdown: true,
 };
 
 export const DEFAULT_DICE_ROLLER_SETTINGS: DiceRollerSettings = {
