@@ -7,7 +7,6 @@ import {
   buildCoreData,
   buildRollEntries,
   classSelectionsToClassInput,
-  getSecureShareUrl,
 } from "@/utils/encoding";
 import { decodedClassesToSelections, parseCoreData } from "@/utils/decoding";
 import { useSettings } from "@/contexts/SettingsContext";
@@ -49,25 +48,11 @@ function getInitialHpState() {
   };
 
   try {
-    let coreDataStr = "";
+    const params = new URLSearchParams(window.location.search);
+    const core = params.get("core");
+    if (!core) return fallback;
 
-    // 1. Try reading the secure in-memory payload
-    const sharedData = sessionStorage.getItem("shared_character_data");
-    if (sharedData && sharedData.includes("c:tHP")) {
-      coreDataStr = sharedData;
-      sessionStorage.removeItem("shared_character_data");
-    } else {
-      // 2. Fallback to legacy URL sharing
-      const params = new URLSearchParams(window.location.search);
-      const core = params.get("core");
-      if (core) {
-        coreDataStr = core;
-      }
-    }
-
-    if (!coreDataStr) return fallback;
-
-    const decoded = parseCoreData(coreDataStr);
+    const decoded = parseCoreData(core);
     const nextSelections = decodedClassesToSelections(decoded.classes);
     const classSelections = nextSelections.length > 0 ? nextSelections : INITIAL_CLASS_SELECTIONS;
     const hasRolls = decoded.rolls.length > 0;
@@ -289,12 +274,17 @@ export function useHpCalculator() {
         characterName: sharedNameFromLink || "",
         isRandomized: isRandom,
         rollMeta: isRandom ? { rolls: rerollCountForCurrentCombo, timestamp: new Date().toISOString() } : undefined,
-        onGenerateUrl: async (name: string) => {
-          const coreDataStr = buildShareableCoreData({
-            name: name.trim(),
-            includeRolls: isRandom,
-          });
-          return await getSecureShareUrl(coreDataStr);
+        onGenerateUrl: (name: string) => {
+          const shareUrl = new URL(window.location.href);
+          shareUrl.search = "";
+          shareUrl.searchParams.set(
+            "core",
+            buildShareableCoreData({
+              name: name.trim(),
+              includeRolls: isRandom,
+            })
+          );
+          return shareUrl.toString();
         }
       });
       setIsShareModalOpen(true);

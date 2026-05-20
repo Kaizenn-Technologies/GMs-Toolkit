@@ -333,19 +333,3 @@ export function encodeCharacter(character: EncodedCharacter): string {
 
     return `v1;c:${coredata};r:${rolled};m:${metadata}`;
 }
-
-export async function getSecureShareUrl(encodedData: string): Promise<string> {
-    const response = await fetch("/api/encrypt", {
-        method: "POST",
-        headers: {
-            "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ data: encodedData }),
-    });
-    if (!response.ok) {
-        throw new Error("Failed to encrypt share data");
-    }
-    const json = await response.json() as { encrypted: string };
-    return `${window.location.origin}/s/${json.encrypted}`;
-}
-
