@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import type { DiceConfig, DiceGroup as IDiceGroup } from "./types";
 import { DiceCard } from "./DiceCard";
 import { DiceGroup } from "./DiceGroup";
@@ -10,10 +10,16 @@ import {
   Plus,
   Dices,
   FolderPlus,
-  Zap
+  Zap,
+  CheckSquare,
+  Download,
+  ChevronDown,
+  Copy,
+  Upload
 } from "lucide-react";
 import { parseDiceNotation } from "./utils";
 import { clsx } from "clsx";
+import { ImportModal } from "./ImportModal";
 import {
   DndContext,
   KeyboardSensor,
@@ -53,6 +59,7 @@ interface DiceBuilderProps {
   onReorderGroups: (groups: IDiceGroup[]) => void;
   onClearAll: () => void;
   settings: { manualNotation: boolean; daggerheartMode: boolean };
+  onImportData: (data: unknown, mode: "merge" | "replace") => { success: boolean; error?: string };
 }
 
 const UngroupedHeader: React.FC<{ isDragging?: boolean }> = ({ isDragging }) => {
@@ -117,11 +124,153 @@ export const DiceBuilder: React.FC<DiceBuilderProps> = ({
   onReorderGroups,
   onClearAll,
   settings,
+  onImportData,
 }) => {
   const [notation, setNotation] = useState("");
   const [error, setError] = useState(false);
   const [showQuickAdd, setShowQuickAdd] = useState(false);
   const [activeId, setActiveId] = useState<string | null>(null);
+
+  // Load & Export Selection Mode states
+  const [isSelectionMode, setIsSelectionMode] = useState(false);
+  const [selectedDiceIds, setSelectedDiceIds] = useState<Set<string>>(new Set());
+  const [selectedGroupIds, setSelectedGroupIds] = useState<Set<string>>(new Set());
+  const [isExportOpen, setIsExportOpen] = useState(false);
+  const [isImportOpen, setIsImportOpen] = useState(false);
+
+  const exportDropdownRef = useRef<HTMLDivElement>(null);
+
+  // Click outside listener for Export Dropdown
+  useEffect(() => {
+    const handleOutsideClick = (e: MouseEvent) => {
+      if (exportDropdownRef.current && !exportDropdownRef.current.contains(e.target as Node)) {
+        setIsExportOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleOutsideClick);
+    return () => document.removeEventListener("mousedown", handleOutsideClick);
+  }, []);
+
+  const handleSelectDice = (diceId: string, checked: boolean) => {
+    setSelectedDiceIds((prev) => {
+      const next = new Set(prev);
+      if (checked) next.add(diceId);
+      else next.delete(diceId);
+      return next;
+    });
+  };
+
+  const handleSelectGroup = (groupId: string, checked: boolean) => {
+    setSelectedGroupIds((prev) => {
+      const next = new Set(prev);
+      if (checked) next.add(groupId);
+      else next.delete(groupId);
+      return next;
+    });
+
+    const group = groups.find((g) => g.id === groupId);
+    if (group) {
+      setSelectedDiceIds((prev) => {
+        const next = new Set(prev);
+        group.diceIds.forEach((id) => {
+          if (checked) next.add(id);
+          else next.delete(id);
+        });
+        return next;
+      });
+    }
+  };
+
+  const toggleSelectionMode = () => {
+    setIsSelectionMode(!isSelectionMode);
+    setSelectedDiceIds(new Set());
+    setSelectedGroupIds(new Set());
+  };
+
+  const handleExport = (selectedOnly: boolean) => {
+    const exportedGroups: unknown[] = [];
+    let exportedUngrouped: unknown[];
+
+    if (selectedOnly) {
+      groups.forEach((g) => {
+        const isGroupSelected = selectedGroupIds.has(g.id);
+        const selectedDiceInGroup = g.diceIds.filter((id) => selectedDiceIds.has(id));
+
+        if (isGroupSelected || selectedDiceInGroup.length > 0) {
+          const diceToExport = isGroupSelected ? g.diceIds : selectedDiceInGroup;
+          exportedGroups.push({
+            id: g.id,
+            name: g.name,
+            collapsed: g.collapsed,
+            dice: diceToExport
+              .map((dId, idx) => {
+                const c = diceConfigs.find((config) => config.id === dId);
+                return c ? { ...c, position: idx } : null;
+              })
+              .filter(Boolean),
+          });
+        }
+      });
+
+      const ungroupedDice = diceConfigs.filter(
+        (c) => !groups.some((g) => g.diceIds.includes(c.id))
+      );
+      const selectedUngrouped = ungroupedDice.filter((d) => selectedDiceIds.has(d.id));
+      exportedUngrouped = selectedUngrouped.map((d, idx) => ({ ...d, position: idx }));
+    } else {
+      groups.forEach((g) => {
+        exportedGroups.push({
+          id: g.id,
+          name: g.name,
+          collapsed: g.collapsed,
+          dice: g.diceIds
+            .map((dId, idx) => {
+              const c = diceConfigs.find((config) => config.id === dId);
+              return c ? { ...c, position: idx } : null;
+            })
+            .filter(Boolean),
+        });
+      });
+
+      const ungroupedDice = diceConfigs.filter(
+        (c) => !groups.some((g) => g.diceIds.includes(c.id))
+      );
+      exportedUngrouped = ungroupedDice.map((d, idx) => ({ ...d, position: idx }));
+    }
+
+    const dataStr = JSON.stringify({ version: "1.0.0", groups: exportedGroups, ungrouped: exportedUngrouped }, null, 2);
+    const dataUri = "data:application/json;charset=utf-8," + encodeURIComponent(dataStr);
+
+    const exportFileDefaultName = selectedOnly ? "selected-dice-presets.json" : "all-dice-presets.json";
+
+    const linkElement = document.createElement("a");
+    linkElement.setAttribute("href", dataUri);
+    linkElement.setAttribute("download", exportFileDefaultName);
+    linkElement.click();
+  };
+
+  const handleExportToClipboard = () => {
+    const exportedGroups = groups.map((g) => ({
+      id: g.id,
+      name: g.name,
+      collapsed: g.collapsed,
+      dice: g.diceIds
+        .map((dId, idx) => {
+          const c = diceConfigs.find((config) => config.id === dId);
+          return c ? { ...c, position: idx } : null;
+        })
+        .filter(Boolean),
+    }));
+
+    const ungroupedDice = diceConfigs.filter(
+      (c) => !groups.some((g) => g.diceIds.includes(c.id))
+    );
+    const exportedUngrouped = ungroupedDice.map((d, idx) => ({ ...d, position: idx }));
+
+    const dataStr = JSON.stringify({ version: "1.0.0", groups: exportedGroups, ungrouped: exportedUngrouped }, null, 2);
+    navigator.clipboard.writeText(dataStr);
+    alert("Configurations copied to clipboard successfully!");
+  };
 
   const activeDice = activeId ? diceConfigs.find(d => d.id === activeId) : null;
   const activeGroup = activeId ? groups.find(g => g.id === activeId) : null;
@@ -257,6 +406,91 @@ export const DiceBuilder: React.FC<DiceBuilderProps> = ({
 
   return (
     <div className="flex flex-col h-full overflow-hidden border border-border/50 rounded-xl bg-card/30">
+      {/* Visual Header Panel for Saved Presets and Actions */}
+      <div className="flex items-center justify-between p-3.5 border-b border-border/50 bg-muted/20 shrink-0">
+        <div className="flex items-center gap-2">
+          <Dices className="h-4.5 w-4.5 text-primary" />
+          <h3 className="text-xs font-bold uppercase tracking-wider text-foreground">Saved Presets</h3>
+        </div>
+        <div className="flex items-center gap-2">
+          {/* Select Mode Toggle */}
+          <Button
+            variant={isSelectionMode ? "default" : "ghost"}
+            size="xs"
+            onClick={toggleSelectionMode}
+            className="h-8 text-[11px] gap-1.5 px-2.5 font-semibold uppercase shrink-0"
+          >
+            <CheckSquare size={13} />
+            {isSelectionMode ? "Cancel" : "Select"}
+          </Button>
+
+          {/* Export Dropdown Trigger */}
+          <div className="relative shrink-0" ref={exportDropdownRef}>
+            <Button
+              variant="outline"
+              size="xs"
+              onClick={() => setIsExportOpen(!isExportOpen)}
+              className="h-8 text-[11px] gap-1.5 px-2.5 font-semibold uppercase"
+            >
+              <Download size={13} />
+              Export
+              <ChevronDown size={12} className={clsx("transition-transform duration-200", isExportOpen && "rotate-180")} />
+            </Button>
+            {isExportOpen && (
+              <div className="absolute right-0 mt-1.5 w-48 bg-card border border-border/80 rounded-md shadow-lg z-50 py-1 animate-in fade-in slide-in-from-top-1 duration-150">
+                <button
+                  onClick={() => {
+                    handleExport(true);
+                    setIsExportOpen(false);
+                  }}
+                  disabled={selectedDiceIds.size === 0 && selectedGroupIds.size === 0}
+                  className="w-full text-left px-3 py-2 text-xs font-semibold text-foreground hover:bg-muted/50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-between"
+                >
+                  Export Selected
+                  <span className="text-[10px] text-muted-foreground bg-muted/70 px-1.5 py-0.5 rounded-sm">
+                    {selectedDiceIds.size + selectedGroupIds.size}
+                  </span>
+                </button>
+                <button
+                  onClick={() => {
+                    handleExport(false);
+                    setIsExportOpen(false);
+                  }}
+                  className="w-full text-left px-3 py-2 text-xs font-semibold text-foreground hover:bg-muted/50 transition-colors flex items-center justify-between"
+                >
+                  Export All
+                  <span className="text-[10px] text-muted-foreground bg-muted/70 px-1.5 py-0.5 rounded-sm">
+                    {diceConfigs.length + groups.length}
+                  </span>
+                </button>
+                <hr className="border-border/40 my-1" />
+                <button
+                  onClick={() => {
+                    handleExportToClipboard();
+                    setIsExportOpen(false);
+                  }}
+                  className="w-full text-left px-3 py-2 text-xs font-semibold text-primary hover:bg-primary/5 transition-colors flex items-center gap-1.5"
+                >
+                  <Copy size={12} />
+                  Copy to Clipboard
+                </button>
+              </div>
+            )}
+          </div>
+
+          {/* Import Button */}
+          <Button
+            variant="outline"
+            size="xs"
+            onClick={() => setIsImportOpen(true)}
+            className="h-8 text-[11px] gap-1.5 px-2.5 font-semibold uppercase hover:border-primary hover:text-primary transition-colors shrink-0"
+          >
+            <Upload size={13} />
+            Import
+          </Button>
+        </div>
+      </div>
+
       {/* Scrollable Presets Area */}
       <div className="flex-1 overflow-y-auto p-4 space-y-6 scrollbar-thin scrollbar-thumb-primary/10 hover:scrollbar-thumb-primary/20">
         <DndContext
@@ -281,6 +515,11 @@ export const DiceBuilder: React.FC<DiceBuilderProps> = ({
                   onUpdateDice={onUpdateDice}
                   onDeleteDice={onDeleteDice}
                   onRollDice={onRollDice}
+                  isSelectionMode={isSelectionMode}
+                  isSelected={selectedGroupIds.has(group.id)}
+                  selectedDiceIds={selectedDiceIds}
+                  onSelectGroup={handleSelectGroup}
+                  onSelectDice={handleSelectDice}
                 />
               ))}
             </SortableContext>
@@ -302,6 +541,9 @@ export const DiceBuilder: React.FC<DiceBuilderProps> = ({
                     onUpdate={(updates) => onUpdateDice(config.id, updates)}
                     onDelete={() => onDeleteDice(config.id)}
                     onRoll={(mode) => onRollDice(config.id, mode)}
+                    isSelectionMode={isSelectionMode}
+                    isSelected={selectedDiceIds.has(config.id)}
+                    onSelect={(checked) => handleSelectDice(config.id, checked)}
                   />
                 ))}
               </div>
@@ -412,6 +654,12 @@ export const DiceBuilder: React.FC<DiceBuilderProps> = ({
           </Button>
         </div>
       </div>
+
+      <ImportModal
+        isOpen={isImportOpen}
+        onClose={() => setIsImportOpen(false)}
+        onImport={onImportData}
+      />
     </div>
   );
 };

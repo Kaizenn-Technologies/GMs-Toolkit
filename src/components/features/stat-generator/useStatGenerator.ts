@@ -545,6 +545,7 @@ export function useStatGenerator() {
       savingThrows,
       proficiencies,
       expertises,
+      level,
     };
 
     return encodeCharacter({
@@ -727,6 +728,10 @@ export function useStatGenerator() {
           sk.expertises.forEach((skill) => {
             nextSkills[skill] = "expertise";
           });
+
+          if (sk.level !== undefined) {
+            setLevel(sk.level);
+          }
         }
 
         setSavingThrowsState(nextSaves);

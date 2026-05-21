@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
 import { clsx } from "clsx";
+import { Checkbox } from "@/components/ui/checkbox";
 import { useSortable, SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 
@@ -28,6 +29,11 @@ interface DiceGroupProps {
   onDeleteDice: (id: string) => void;
   onRollDice: (id: string, mode: "normal" | "advantage" | "disadvantage") => void;
   isOverlay?: boolean;
+  isSelectionMode?: boolean;
+  isSelected?: boolean;
+  selectedDiceIds?: Set<string>;
+  onSelectGroup?: (groupId: string, selected: boolean) => void;
+  onSelectDice?: (diceId: string, selected: boolean) => void;
 }
 
 export const DiceGroup: React.FC<DiceGroupProps> = ({
@@ -41,6 +47,11 @@ export const DiceGroup: React.FC<DiceGroupProps> = ({
   onDeleteDice,
   onRollDice,
   isOverlay,
+  isSelectionMode = false,
+  isSelected = false,
+  selectedDiceIds = new Set(),
+  onSelectGroup,
+  onSelectDice,
 }) => {
   const [isEditing, setIsEditing] = useState(group.isEditing || false);
   const [name, setName] = useState(group.name);
@@ -113,7 +124,7 @@ export const DiceGroup: React.FC<DiceGroupProps> = ({
           group.collapsed ? "bg-muted/30 border-border/50" : "bg-muted/50 border-primary/20 shadow-sm",
           isOverlay && "bg-muted/80 border-primary/50"
         )}
-        onClick={isOverlay ? undefined : onToggleCollapse}
+        onClick={isOverlay ? undefined : (isSelectionMode && onSelectGroup ? () => onSelectGroup(group.id, !isSelected) : onToggleCollapse)}
       >
         <div className="flex items-center h-9 w-full min-w-0">
           {/* Drag Handle Container */}
@@ -124,6 +135,16 @@ export const DiceGroup: React.FC<DiceGroupProps> = ({
           >
             <GripVertical size={16} />
           </div>
+
+          {isSelectionMode && onSelectGroup && (
+            <div className="flex items-center pl-2 shrink-0 animate-in fade-in zoom-in-95 duration-150" onClick={(e) => e.stopPropagation()}>
+              <Checkbox
+                checked={isSelected}
+                onCheckedChange={(checked) => onSelectGroup(group.id, !!checked)}
+                className="h-4 w-4 rounded-sm border-border/70 text-primary data-[state=checked]:bg-primary data-[state=checked]:text-primary-foreground focus-visible:ring-primary/45"
+              />
+            </div>
+          )}
 
           <div className="flex items-center gap-2 px-2 min-w-0 flex-1">
             {group.collapsed ? (
@@ -213,6 +234,9 @@ export const DiceGroup: React.FC<DiceGroupProps> = ({
                 onUpdate={(updates) => onUpdateDice(config.id, updates)}
                 onDelete={() => onDeleteDice(config.id)}
                 onRoll={(mode) => onRollDice(config.id, mode)}
+                isSelectionMode={isSelectionMode}
+                isSelected={selectedDiceIds.has(config.id)}
+                onSelect={onSelectDice ? (checked) => onSelectDice(config.id, checked) : undefined}
               />
             ))}
           </SortableContext>

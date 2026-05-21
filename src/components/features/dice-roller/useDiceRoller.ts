@@ -271,6 +271,125 @@ export function useDiceRoller(addLog: (log: RollLog) => void) {
   };
 
 
+  const importData = (data: unknown, mode: "merge" | "replace"): { success: boolean; error?: string } => {
+    try {
+      if (!data || typeof data !== "object") {
+        return { success: false, error: "Invalid JSON object" };
+      }
+
+      const parsed = data as Record<string, unknown>;
+      const incomingGroups = Array.isArray(parsed.groups) ? parsed.groups : [];
+      let incomingUngrouped = Array.isArray(parsed.ungrouped) ? parsed.ungrouped : [];
+
+      if (!parsed.groups && !parsed.ungrouped) {
+        if (Array.isArray(data)) {
+          incomingUngrouped = data;
+        } else {
+          const potentialDice = data as Record<string, unknown>;
+          if (potentialDice.count && (potentialDice.sides || potentialDice.type)) {
+            incomingUngrouped = [potentialDice];
+          } else {
+            return { success: false, error: "JSON does not match the DM Roller schema (missing 'groups' or 'ungrouped' keys)." };
+          }
+        }
+      }
+
+      // Map to track old IDs to newly generated UUIDs to avoid any collisions
+      const idMap = new Map<string, string>();
+
+      const getRegeneratedId = (oldId: string | undefined): string => {
+        if (!oldId) return crypto.randomUUID();
+        if (!idMap.has(oldId)) {
+          idMap.set(oldId, crypto.randomUUID());
+        }
+        return idMap.get(oldId)!;
+      };
+
+      const importedConfigs: DiceConfig[] = [];
+      const importedGroups: DiceGroup[] = [];
+
+      // Process ungrouped dice
+      incomingUngrouped.forEach((dItem: unknown) => {
+        if (!dItem || typeof dItem !== "object") return;
+        const d = dItem as Record<string, unknown>;
+        const sides = typeof d.sides === "number" ? d.sides : (d.type ? parseInt(String(d.type).replace(/^d/, ""), 10) : undefined);
+        const count = typeof d.count === "number" ? d.count : 1;
+        if (!sides) return;
+
+        importedConfigs.push({
+          id: getRegeneratedId(typeof d.id === "string" ? d.id : undefined),
+          name: typeof d.name === "string" ? d.name : `${count}d${sides}`,
+          count,
+          sides,
+          modifier: typeof d.modifier === "number" ? d.modifier : 0,
+          explode: (d.explode === "single" || d.explode === "compound") ? d.explode : undefined,
+          reroll: d.reroll ? (d.reroll as { type: "once" | "until"; threshold: number }) : undefined,
+          rule: d.rule ? (d.rule as { type: "keep" | "drop"; target: "highest" | "lowest"; value: number }) : undefined,
+          isEditing: false
+        });
+      });
+
+      // Process groups
+      incomingGroups.forEach((gItem: unknown) => {
+        if (!gItem || typeof gItem !== "object") return;
+        const g = gItem as Record<string, unknown>;
+        
+        const gId = crypto.randomUUID(); // Always generate a fresh ID for the group
+        const groupDiceIds: string[] = [];
+
+        const diceList = Array.isArray(g.dice) ? g.dice : [];
+        diceList.forEach((dItem: unknown) => {
+          if (!dItem || typeof dItem !== "object") return;
+          const d = dItem as Record<string, unknown>;
+          const sides = typeof d.sides === "number" ? d.sides : (d.type ? parseInt(String(d.type).replace(/^d/, ""), 10) : undefined);
+          const count = typeof d.count === "number" ? d.count : 1;
+          if (!sides) return;
+
+          const newDiceId = getRegeneratedId(typeof d.id === "string" ? d.id : undefined);
+          groupDiceIds.push(newDiceId);
+
+          importedConfigs.push({
+            id: newDiceId,
+            name: typeof d.name === "string" ? d.name : `${count}d${sides}`,
+            count,
+            sides,
+            modifier: typeof d.modifier === "number" ? d.modifier : 0,
+            explode: (d.explode === "single" || d.explode === "compound") ? d.explode : undefined,
+            reroll: d.reroll ? (d.reroll as { type: "once" | "until"; threshold: number }) : undefined,
+            rule: d.rule ? (d.rule as { type: "keep" | "drop"; target: "highest" | "lowest"; value: number }) : undefined,
+            isEditing: false
+          });
+        });
+
+        importedGroups.push({
+          id: gId,
+          name: typeof g.name === "string" ? g.name : "Imported Group",
+          diceIds: groupDiceIds,
+          collapsed: typeof g.collapsed === "boolean" ? g.collapsed : false,
+          isEditing: false
+        });
+      });
+
+      if (importedConfigs.length === 0 && importedGroups.length === 0) {
+        return { success: false, error: "No valid dice or groups found in the provided JSON." };
+      }
+
+      if (mode === "replace") {
+        setDiceConfigs(importedConfigs);
+        setGroups(importedGroups);
+      } else {
+        // Merge
+        setDiceConfigs((prev) => [...prev, ...importedConfigs]);
+        setGroups((prev) => [...prev, ...importedGroups]);
+      }
+
+      return { success: true };
+    } catch (e: unknown) {
+      const errMsg = e instanceof Error ? e.message : "An error occurred during import.";
+      return { success: false, error: errMsg };
+    }
+  };
+
   const clearAll = () => {
     setDiceConfigs([]);
     setGroups([]);
@@ -293,5 +412,6 @@ export function useDiceRoller(addLog: (log: RollLog) => void) {
     reorderDice: setDiceConfigs,
     reorderGroups: setGroups,
     clearAll,
+    importData,
   };
 }

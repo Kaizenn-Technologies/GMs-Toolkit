@@ -74,11 +74,13 @@ export function HpBreakdown({ items }: { items: BreakdownItem[] }) {
 
   // Running total
   const runningTotals = useMemo(() => {
+    const totals: number[] = [];
     let sum = 0;
-    return levelResults.map((val) => {
-      sum += val;
-      return sum;
-    });
+    for (let i = 0; i < levelResults.length; i++) {
+      sum += levelResults[i];
+      totals.push(sum);
+    }
+    return totals;
   }, [levelResults]);
 
   const grandTotal = runningTotals.length > 0 ? runningTotals[runningTotals.length - 1] : 0;

@@ -630,7 +630,25 @@ export function StatGenerator() {
                               <p className="text-[10px] uppercase tracking-wide text-muted-foreground mb-1">Score</p>
                               <Select value={score === null ? "" : String(score)} onValueChange={(val) => handleRolledAssignChange(ability, val)}>
                                 <SelectTrigger className="rounded-none w-full"><SelectValue placeholder="—" /></SelectTrigger>
-                                <SelectContent>{availablePool.map((opt, idx) => <SelectItem key={`${opt}-${idx}`} value={String(opt)}>{opt}</SelectItem>)}</SelectContent>
+                                <SelectContent>
+                                  <SelectItem
+                                    value=""
+                                    style={{
+                                      position: "absolute",
+                                      opacity: 0,
+                                      pointerEvents: "none",
+                                      height: 0,
+                                      width: 0,
+                                      padding: 0,
+                                      margin: 0,
+                                      overflow: "hidden",
+                                      border: 0,
+                                    }}
+                                  >
+                                    —
+                                  </SelectItem>
+                                  {availablePool.map((opt, idx) => <SelectItem key={`${opt}-${idx}`} value={String(opt)}>{opt}</SelectItem>)}
+                                </SelectContent>
                               </Select>
                             </div>
                             {isBgAbility && (
@@ -739,6 +757,22 @@ export function StatGenerator() {
                                       <SelectValue placeholder="Select" />
                                     </SelectTrigger>
                                     <SelectContent>
+                                      <SelectItem
+                                        value=""
+                                        style={{
+                                          position: "absolute",
+                                          opacity: 0,
+                                          pointerEvents: "none",
+                                          height: 0,
+                                          width: 0,
+                                          padding: 0,
+                                          margin: 0,
+                                          overflow: "hidden",
+                                          border: 0,
+                                        }}
+                                      >
+                                        Select
+                                      </SelectItem>
                                       {availablePool.map((option, idx) => (
                                         <SelectItem key={`${option}-${idx}`} value={String(option)}>
                                           {option}
@@ -848,6 +882,22 @@ export function StatGenerator() {
                               <SelectValue placeholder="—" />
                             </SelectTrigger>
                             <SelectContent>
+                              <SelectItem
+                                value=""
+                                style={{
+                                  position: "absolute",
+                                  opacity: 0,
+                                  pointerEvents: "none",
+                                  height: 0,
+                                  width: 0,
+                                  padding: 0,
+                                  margin: 0,
+                                  overflow: "hidden",
+                                  border: 0,
+                                }}
+                              >
+                                —
+                              </SelectItem>
                               {STANDARD_ARRAY_OPTIONS.map((option) => {
                                 const inUseByOtherAbility = ABILITIES.some(
                                   (ab) =>
@@ -978,6 +1028,22 @@ export function StatGenerator() {
                                   <SelectValue placeholder="Select" />
                                 </SelectTrigger>
                                 <SelectContent>
+                                  <SelectItem
+                                    value=""
+                                    style={{
+                                      position: "absolute",
+                                      opacity: 0,
+                                      pointerEvents: "none",
+                                      height: 0,
+                                      width: 0,
+                                      padding: 0,
+                                      margin: 0,
+                                      overflow: "hidden",
+                                      border: 0,
+                                    }}
+                                  >
+                                    Select
+                                  </SelectItem>
                                   {STANDARD_ARRAY_OPTIONS.map((option) => {
                                     const inUseByOtherAbility = ABILITIES.some(
                                       (ab) =>

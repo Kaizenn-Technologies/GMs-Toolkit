@@ -25,9 +25,21 @@ interface DiceCardProps {
   onDelete: () => void;
   onRoll: (mode: "normal" | "advantage" | "disadvantage") => void;
   isOverlay?: boolean;
+  isSelectionMode?: boolean;
+  isSelected?: boolean;
+  onSelect?: (selected: boolean) => void;
 }
 
-export const DiceCard: React.FC<DiceCardProps> = ({ config, onUpdate, onDelete, onRoll, isOverlay }) => {
+export const DiceCard: React.FC<DiceCardProps> = ({
+  config,
+  onUpdate,
+  onDelete,
+  onRoll,
+  isOverlay,
+  isSelectionMode = false,
+  isSelected = false,
+  onSelect,
+}) => {
   const [isEditing, setIsEditing] = useState(config.isEditing || false);
   const {
     attributes,
@@ -254,7 +266,7 @@ export const DiceCard: React.FC<DiceCardProps> = ({ config, onUpdate, onDelete, 
         isDragging && !isOverlay ? "opacity-30 grayscale-[0.5] border-dashed border-primary/30" : "bg-card/50",
         !isOverlay && "hover:border-primary/50"
       )}
-      onClick={isOverlay ? undefined : handleRoll}
+      onClick={isOverlay ? undefined : (isSelectionMode && onSelect ? () => onSelect(!isSelected) : handleRoll)}
     >
       {isDropTarget && !isOverlay && (
         <div className="absolute inset-0 pointer-events-none z-[100]">
@@ -277,6 +289,16 @@ export const DiceCard: React.FC<DiceCardProps> = ({ config, onUpdate, onDelete, 
         >
           <GripVertical size={18} />
         </div>
+
+        {isSelectionMode && onSelect && (
+          <div className="flex items-center pl-2 shrink-0 animate-in fade-in zoom-in-95 duration-150" onClick={(e) => e.stopPropagation()}>
+            <Checkbox
+              checked={isSelected}
+              onCheckedChange={(checked) => onSelect(!!checked)}
+              className="h-4 w-4 rounded-sm border-border/70 text-primary data-[state=checked]:bg-primary data-[state=checked]:text-primary-foreground focus-visible:ring-primary/45"
+            />
+          </div>
+        )}
 
         {/* Content Area */}
         <div className="flex-1 flex items-center pl-3 pr-1 min-w-0 gap-3">

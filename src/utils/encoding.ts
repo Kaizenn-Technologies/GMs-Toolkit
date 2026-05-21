@@ -288,6 +288,7 @@ export interface SkillsData {
     savingThrows: Ability[];
     proficiencies: string[];
     expertises: string[];
+    level?: number;
 }
 
 export interface EncodedCharacter {
@@ -358,7 +359,7 @@ export function encodeCharacter(character: EncodedCharacter): string {
         const conModVal = sk.conMod;
 
         // Check if ANY of the conditions to include the skills segment are met
-        if (isBardVal === 1 || conModVal !== 0 || hasSaves || hasProfs || hasExps) {
+        if (isBardVal === 1 || conModVal !== 0 || hasSaves || hasProfs || hasExps || sk.level !== undefined) {
             let skillsStr = `${isBardVal}${conModVal}`;
 
             if (hasSaves) {
@@ -386,6 +387,10 @@ export function encodeCharacter(character: EncodedCharacter): string {
                     .sort()
                     .join("");
                 skillsStr += `e${sortedExps}`;
+            }
+
+            if (sk.level !== undefined) {
+                skillsStr += `l${sk.level}`;
             }
 
             coredata += skillsStr;

@@ -298,6 +298,7 @@ export interface DecodedSkillsData {
     savingThrows: Ability[];
     proficiencies: string[];
     expertises: string[];
+    level?: number;
 }
 
 export interface DecodedCharacter {
@@ -319,7 +320,7 @@ export function decodeSkills(skillsStr: string): DecodedSkillsData | undefined {
 
     // Parse conMod
     let conModStr = "";
-    while (idx < skillsStr.length && !["s", "p", "e"].includes(skillsStr[idx])) {
+    while (idx < skillsStr.length && !["s", "p", "e", "l"].includes(skillsStr[idx])) {
         conModStr += skillsStr[idx];
         idx++;
     }
@@ -332,7 +333,7 @@ export function decodeSkills(skillsStr: string): DecodedSkillsData | undefined {
     // Parse s section if present
     if (idx < skillsStr.length && skillsStr[idx] === "s") {
         idx++; // skip 's'
-        while (idx < skillsStr.length && !["p", "e"].includes(skillsStr[idx])) {
+        while (idx < skillsStr.length && !["p", "e", "l"].includes(skillsStr[idx])) {
             const letter = skillsStr[idx];
             const ability = LETTERS_TO_ABILITY[letter.toUpperCase()];
             if (ability) {
@@ -345,7 +346,7 @@ export function decodeSkills(skillsStr: string): DecodedSkillsData | undefined {
     // Parse p section if present
     if (idx < skillsStr.length && skillsStr[idx] === "p") {
         idx++; // skip 'p'
-        while (idx < skillsStr.length && skillsStr[idx] !== "e") {
+        while (idx < skillsStr.length && !["e", "l"].includes(skillsStr[idx])) {
             const code = skillsStr.substring(idx, idx + 2);
             const skillName = CODE_TO_SKILL[code];
             if (skillName) {
@@ -358,7 +359,7 @@ export function decodeSkills(skillsStr: string): DecodedSkillsData | undefined {
     // Parse e section if present
     if (idx < skillsStr.length && skillsStr[idx] === "e") {
         idx++; // skip 'e'
-        while (idx < skillsStr.length) {
+        while (idx < skillsStr.length && skillsStr[idx] !== "l") {
             const code = skillsStr.substring(idx, idx + 2);
             const skillName = CODE_TO_SKILL[code];
             if (skillName) {
@@ -368,12 +369,25 @@ export function decodeSkills(skillsStr: string): DecodedSkillsData | undefined {
         }
     }
 
+    // Parse l section if present
+    let level = 1;
+    if (idx < skillsStr.length && skillsStr[idx] === "l") {
+        idx++; // skip 'l'
+        let lvlStr = "";
+        while (idx < skillsStr.length && isDigit(skillsStr[idx])) {
+            lvlStr += skillsStr[idx];
+            idx++;
+        }
+        level = parseInt(lvlStr, 10) || 1;
+    }
+
     return {
         isBard,
         conMod,
         savingThrows,
         proficiencies,
         expertises,
+        level,
     };
 }
 

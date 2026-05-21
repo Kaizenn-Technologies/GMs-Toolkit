@@ -1,5 +1,15 @@
 # Changelog
 
+## [v0.7.3]
+
+### Added
+- Import & Export functionality for DMs Dice Roller
+
+### Fixed
+- Character level not preserved in the Skills & saving throws section when sharing via link.
+- Reset button in rolled assignments tab not unsetting dropdowns in production builds.
+- Dropdown menu animation on smaller screens.
+
 ## [v0.7.2]
 
 ### Added
