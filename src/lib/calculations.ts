@@ -1,6 +1,7 @@
 import type { ClassSelection, CalculationResult, BreakdownItem, ClassData } from "@/types";
 import { classes } from "./classes";
 import { CUSTOM_CLASS_NAME } from "./constants";
+import { randomInt } from "@/utils/rng";
 
 const classesMap = classes as Record<string, ClassData>;
 
@@ -56,7 +57,7 @@ export const calculateHP = (
                     if (typeof provided === "number" && Number.isFinite(provided)) {
                         rollValue = Math.max(1, Math.min(hitDie, Math.floor(provided)));
                     } else {
-                        rollValue = Math.floor(Math.random() * hitDie) + 1;
+                        rollValue = randomInt(1, hitDie);
                     }
                     usedRolls.push(rollValue);
                     rollIndex++;

@@ -1,4 +1,5 @@
 import type { DiceConfig, RollResult } from "./types";
+import { randomInt } from "@/utils/rng";
 
 /**
  * Parses a dice notation string (e.g. "4d6k3+2!") into a DiceConfig object.
@@ -141,15 +142,15 @@ function rollSingleDie(
   explode?: "single" | "compound",
   reroll?: { type: "once" | "until"; threshold: number }
 ): number {
-  let roll = Math.floor(Math.random() * sides) + 1;
+  let roll = randomInt(1, sides);
 
   // Handle Rerolls
   if (reroll) {
     if (reroll.type === "once" && roll <= reroll.threshold) {
-      roll = Math.floor(Math.random() * sides) + 1;
+      roll = randomInt(1, sides);
     } else if (reroll.type === "until") {
       while (roll <= reroll.threshold) {
-        roll = Math.floor(Math.random() * sides) + 1;
+        roll = randomInt(1, sides);
       }
     }
   }
@@ -158,12 +159,12 @@ function rollSingleDie(
   if (explode) {
     if (roll === sides) {
       if (explode === "single") {
-        roll += Math.floor(Math.random() * sides) + 1;
+        roll += randomInt(1, sides);
       } else if (explode === "compound") {
-        let extra = Math.floor(Math.random() * sides) + 1;
+        let extra = randomInt(1, sides);
         roll += extra;
         while (extra === sides) {
-          extra = Math.floor(Math.random() * sides) + 1;
+          extra = randomInt(1, sides);
           roll += extra;
         }
       }

@@ -1,5 +1,10 @@
 # Changelog
 
+## [v0.7.4]
+
+### Fixed
+- Fixed pseudo-randomness by replacing Math.Random() by Random-js package 
+
 ## [v0.7.3]
 
 ### Added

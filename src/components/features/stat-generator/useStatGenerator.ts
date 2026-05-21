@@ -17,6 +17,7 @@ import {
 import type { Ability, PrimaryStat } from "@/types";
 import { useSettings } from "@/contexts/SettingsContext";
 import { useCopyToClipboard } from "@/hooks/useCopyToClipboard";
+import { randomInt } from "@/utils/rng";
 import {
   encodeCharacter,
 } from "@/utils/encoding";
@@ -876,7 +877,7 @@ export function useStatGenerator() {
     updatePointBuy,
   ]);
 
-  const rollDie = () => Math.floor(Math.random() * 6) + 1;
+  const rollDie = () => randomInt(1, 6);
 
   const computeTotalFromRolls = (rolls: number[]) => {
     if (!rolls.length) return 0;
@@ -944,7 +945,13 @@ export function useStatGenerator() {
 
   const handleShuffleAssign = () => {
     const totals = getRolledTotals();
-    const shuffled = totals.slice().sort(() => 0.5 - Math.random());
+    const shuffled = totals.slice();
+    for (let i = shuffled.length - 1; i > 0; i--) {
+      const j = randomInt(0, i);
+      const temp = shuffled[i];
+      shuffled[i] = shuffled[j];
+      shuffled[j] = temp;
+    }
     const next = ABILITIES.reduce((acc, ability, idx) => {
       acc[ability] = shuffled[idx];
       return acc;

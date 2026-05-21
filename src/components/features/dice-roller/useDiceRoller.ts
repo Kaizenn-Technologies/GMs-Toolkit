@@ -212,7 +212,7 @@ export function useDiceRoller(addLog: (log: RollLog) => void) {
 
     if (!config.count || !config.sides) return;
     
-    if (!config.id) config.id = Date.now().toString() + Math.random().toString(36).substring(2, 9);
+    if (!config.id) config.id = crypto.randomUUID();
 
     let rolls: RollResult[];
     let rejectedRolls: RollResult[] | undefined = undefined;
@@ -241,7 +241,7 @@ export function useDiceRoller(addLog: (log: RollLog) => void) {
     }
     
     const log: RollLog = {
-      id: Date.now().toString() + Math.random().toString(36).substring(2, 9),
+      id: crypto.randomUUID(),
       name: name || notation,
       timestamp: Date.now(),
       rolls,
