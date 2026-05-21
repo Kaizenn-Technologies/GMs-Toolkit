@@ -62,8 +62,8 @@ export function Header({ activeTab, setActiveTab }: HeaderProps) {
             className={`transition-colors hover:text-foreground/80 whitespace-nowrap text-xs sm:text-sm ${activeTab === "point-buy" ? "text-foreground" : "text-foreground/60"
               }`}
           >
-            <span className="hidden sm:inline">Stat Generator</span>
-            <span className="sm:hidden">Stats Gen</span>
+            <span className="hidden sm:inline">Ability Score</span>
+            <span className="sm:hidden">Ability Score</span>
           </button>
 
           <button

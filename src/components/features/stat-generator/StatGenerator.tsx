@@ -206,8 +206,8 @@ export function StatGenerator() {
   return (
     <div className="flex flex-col gap-3 ">
       <PageHeader
-        title="D&D 5.5e Stat Generator"
-        description="Generate ability scores using Point Buy, dice rolls, or the Standard Array."
+        title="D&D 5.5e Ability Score"
+        description="Allocate ability scores using Point Buy, dice rolls, or the Standard Array. Followed by Skills & Saving Throws"
       />
 
       <VerifiedLoadPanel

@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { Navigate, Route, Routes, useLocation, useNavigate } from "react-router-dom";
 import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
@@ -11,6 +12,10 @@ import { LandingPage } from "@/components/layout/LandingPage";
 export default function App() {
   const location = useLocation();
   const navigate = useNavigate();
+
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }, [location.pathname]);
 
   const getActiveTab = (): "hp" | "point-buy" | "dice-roller" | "landing" => {
     if (location.pathname === "/") return "landing";

@@ -1,5 +1,5 @@
 /**
- * Settings overlay for the D&D Stat Generator.
+ * Settings overlay for the D&D Ability Score.
  *
  * Renders as a full-screen backdrop with a slide-in panel.
  */

@@ -19,7 +19,7 @@ export function LandingPage() {
       shadow: "hover:shadow-blue-500/5 dark:hover:shadow-blue-500/20",
     },
     {
-      title: "Stat Generator",
+      title: "Ability Score",
       description: "Character creation redefined. Point Buy, Standard Array, and custom rolling with real-time feedback.",
       icon: <Users className="w-12 h-12 text-emerald-600 dark:text-emerald-400" />,
       path: "/stat-generator/pointbuy",

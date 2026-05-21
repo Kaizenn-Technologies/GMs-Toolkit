@@ -28,16 +28,16 @@ export function Footer() {
       >
         <span>Discord</span>
       </a>
-      {/* <span className="hidden sm:inline">|</span>
+      <span className="hidden sm:inline">|</span>
       <a
-        href="https://github.com/"
+        href="https://github.com/Kaizenn-Technologies/GMs-Toolkit"
         target="_blank"
         rel="noopener noreferrer"
         className="hover:text-foreground transition-colors flex items-center gap-1.5"
         title="Source Code"
       >
         <span>Source Code</span>
-      </a> */}
+      </a>
       <span className="hidden sm:inline">|</span>
       <span>
         Made with 🩵 by{" "}
