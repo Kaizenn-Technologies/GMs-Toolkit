@@ -159,10 +159,11 @@ export const DiceGroup: React.FC<DiceGroupProps> = ({
                   className="h-7 text-xs py-0 px-2"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
+                  aria-label="Group Name"
                   autoFocus
                   onClick={(e) => e.stopPropagation()}
                 />
-                <Button size="icon" variant="ghost" className="h-7 w-7 shrink-0" onClick={handleSave}>
+                <Button size="icon" variant="ghost" className="h-7 w-7 shrink-0" onClick={handleSave} aria-label="Save group name">
                   <Save size={14} className="text-primary" />
                 </Button>
               </div>
@@ -185,6 +186,7 @@ export const DiceGroup: React.FC<DiceGroupProps> = ({
             size="icon"
             className="h-7 w-7 text-muted-foreground/40 hover:text-primary hover:bg-primary/10 transition-colors"
             onClick={handleEdit}
+            aria-label="Edit group name"
           >
             <SquarePen size={14} />
           </Button>
@@ -194,6 +196,7 @@ export const DiceGroup: React.FC<DiceGroupProps> = ({
             size="icon"
             className="h-7 w-7 text-muted-foreground/40 hover:text-red-500 hover:bg-red-500/10 transition-colors"
             onClick={onDelete}
+            aria-label="Delete group"
           >
             <Trash2 size={14} />
           </Button>

@@ -92,7 +92,7 @@ export function HpCalculator() {
                               value && updateClassSelection(selection.id, "className", value)
                             }
                           >
-                            <SelectTrigger>
+                            <SelectTrigger aria-label={`Select Class ${index + 1}`}>
                               <SelectValue />
                             </SelectTrigger>
                             <SelectContent>
@@ -117,7 +117,7 @@ export function HpCalculator() {
                                 updateClassSelection(selection.id, "customHitDie", Number(value.replace("d", "")));
                               }}
                             >
-                              <SelectTrigger>
+                              <SelectTrigger aria-label={`Select Custom Hit Die for Class ${index + 1}`}>
                                 <SelectValue />
                               </SelectTrigger>
                               <SelectContent>
@@ -137,6 +137,7 @@ export function HpCalculator() {
                             min={classSelections.length > 1 ? 0 : 1}
                             max={20}
                             value={selection.level}
+                            aria-label={`Class ${index + 1} Level`}
                             onChange={(val) => {
                               if (val === 0) {
                                 removeClassSelection(selection.id);
@@ -154,6 +155,7 @@ export function HpCalculator() {
                           size="icon"
                           className="shrink-0"
                           onClick={() => removeClassSelection(selection.id)}
+                          aria-label={`Remove Class ${index + 1} selection`}
                         >
                           <Trash2 className="w-4 h-4" />
                         </Button>
@@ -174,11 +176,12 @@ export function HpCalculator() {
               {/* CON Modifier & Feats */}
               <div className="">
                 <div className="flex flex-wrap items-center gap-3 mb-4 mt-4">
-                  <label className="text-sm font-semibold">
+                  <label htmlFor="constitution-modifier-input" className="text-sm font-semibold">
                     Constitution Modifier:
                   </label>
                   <div className="w-32">
                     <StepperInput
+                      id="constitution-modifier-input"
                       className="rounded-none h-8"
                       value={conModifier}
                       onChange={(val) => setConModifier(val)}

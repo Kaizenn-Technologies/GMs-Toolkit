@@ -19,6 +19,11 @@ export default defineConfig({
   define: {
     'import.meta.env.APP_VERSION': JSON.stringify(packageJson.version),
   },
+  build: {
+    minify: 'esbuild',
+    cssMinify: true,
+    sourcemap: false,
+  },
   plugins: [
     react(),
     tailwindcss(),

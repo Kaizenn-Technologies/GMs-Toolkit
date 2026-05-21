@@ -96,6 +96,7 @@ export const DiceCard: React.FC<DiceCardProps> = ({
               value={config.name || ""}
               onChange={(e) => onUpdate({ name: e.target.value })}
               className="h-8 text-sm flex-1 bg-background/50"
+              aria-label="Roll Name"
               autoFocus
             />
             <Button size="sm" variant="default" className="h-8 px-3 gap-1.5" onClick={handleSave}>
@@ -108,8 +109,9 @@ export const DiceCard: React.FC<DiceCardProps> = ({
           <div className="flex flex-wrap items-center gap-x-4 gap-y-2 py-1">
             <div className="flex items-center gap-3">
               <div className="flex flex-col gap-1">
-                <label className="text-[10px] uppercase font-semibold text-muted-foreground/70 leading-none">Count</label>
+                <label htmlFor={`dice-count-${config.id}`} className="text-[10px] uppercase font-semibold text-muted-foreground/70 leading-none">Count</label>
                 <StepperInput
+                  id={`dice-count-${config.id}`}
                   value={config.count}
                   onChange={(val) => onUpdate({ count: val })}
                   min={1}
@@ -118,12 +120,12 @@ export const DiceCard: React.FC<DiceCardProps> = ({
                 />
               </div>
               <div className="flex flex-col gap-1">
-                <label className="text-[10px] uppercase font-semibold text-muted-foreground/70 leading-none">Sides</label>
+                <label htmlFor={`dice-sides-${config.id}`} className="text-[10px] uppercase font-semibold text-muted-foreground/70 leading-none">Sides</label>
                 <Select
                   value={config.sides.toString()}
                   onValueChange={(val) => onUpdate({ sides: parseInt(val as string) })}
                 >
-                  <SelectTrigger className="h-8 w-20 text-xs font-semibold">
+                  <SelectTrigger id={`dice-sides-${config.id}`} className="h-8 w-20 text-xs font-semibold">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -136,8 +138,9 @@ export const DiceCard: React.FC<DiceCardProps> = ({
                 </Select>
               </div>
               <div className="flex flex-col gap-1">
-                <label className="text-[10px] uppercase font-semibold text-muted-foreground/70 leading-none">Mod</label>
+                <label htmlFor={`dice-mod-${config.id}`} className="text-[10px] uppercase font-semibold text-muted-foreground/70 leading-none">Mod</label>
                 <StepperInput
+                  id={`dice-mod-${config.id}`}
                   value={config.modifier || 0}
                   onChange={(val) => onUpdate({ modifier: val })}
                   min={-99}
@@ -211,7 +214,7 @@ export const DiceCard: React.FC<DiceCardProps> = ({
                       }
                     }}
                   >
-                    <SelectTrigger className="h-7 w-20 text-[10px] font-semibold uppercase">
+                    <SelectTrigger aria-label="Keep or drop rule type" className="h-7 w-20 text-[10px] font-semibold uppercase">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -227,7 +230,7 @@ export const DiceCard: React.FC<DiceCardProps> = ({
                       }
                     }}
                   >
-                    <SelectTrigger className="h-8 w-24 text-[10px] font-semibold uppercase">
+                    <SelectTrigger aria-label="Keep or drop rule target" className="h-8 w-24 text-[10px] font-semibold uppercase">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -241,12 +244,13 @@ export const DiceCard: React.FC<DiceCardProps> = ({
                     min={1}
                     max={config.count - 1 || 1}
                     className="h-8 w-24"
+                    aria-label="Rule value"
                   />
                 </div>
               )}
             </div>
 
-            <Button variant="outline" size="sm" onClick={onDelete} className="text-red-500 hover:bg-red-500/10 h-7 text-[11px] font-semibold uppercase">
+            <Button variant="outline" size="sm" onClick={onDelete} className="text-red-500 hover:bg-red-500/10 h-7 text-[11px] font-semibold uppercase" aria-label="Delete roll">
               <Trash2 size={14} className="mr-1.5" />
               Delete
             </Button>
@@ -324,6 +328,7 @@ export const DiceCard: React.FC<DiceCardProps> = ({
                       e.stopPropagation();
                       setIsEditing(true);
                     }}
+                    aria-label="Edit roll preset"
                   >
                     <SquarePen size={16} />
                   </Button>
@@ -343,6 +348,7 @@ export const DiceCard: React.FC<DiceCardProps> = ({
                       e.stopPropagation();
                       onDelete();
                     }}
+                    aria-label="Delete roll preset"
                   >
                     <Trash2 size={16} />
                   </Button>
@@ -363,6 +369,7 @@ export const DiceCard: React.FC<DiceCardProps> = ({
                       const mode = e.ctrlKey || e.metaKey ? "advantage" : e.shiftKey ? "disadvantage" : "normal";
                       onRoll(mode);
                     }}
+                    aria-label="Roll dice"
                   >
                     <Dice6 size={16} />
                   </Button>

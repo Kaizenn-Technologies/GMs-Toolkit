@@ -30,7 +30,7 @@ export const DiceLogs: React.FC<DiceLogsProps> = ({ logs, onClear }) => {
       </CardHeader>
       <CardContent className="flex-1 overflow-y-auto px-2 py-1 space-y-2 scrollbar-thin scrollbar-thumb-primary/10 hover:scrollbar-thumb-primary/20">
         {logs.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-full text-muted-foreground opacity-50 py-8">
+          <div className="flex flex-col items-center justify-center h-full text-muted-foreground/80 py-8">
             <Dices size={32} strokeWidth={1} className="mb-2" />
             <p className="text-[10px] uppercase font-semibold tracking-widest">No rolls yet</p>
           </div>

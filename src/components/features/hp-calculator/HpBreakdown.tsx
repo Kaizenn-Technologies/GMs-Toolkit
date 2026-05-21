@@ -95,7 +95,7 @@ export function HpBreakdown({ items }: { items: BreakdownItem[] }) {
             Breakdown
           </span>
         </div>
-        <span className="text-[11px] font-mono text-muted-foreground/60">
+        <span className="text-[11px] font-mono text-muted-foreground">
           {items.length} level{items.length !== 1 ? "s" : ""}
         </span>
       </div>
@@ -177,11 +177,11 @@ export function HpBreakdown({ items }: { items: BreakdownItem[] }) {
                               "
                             >
                               {/* Die value — visually distinct */}
-                              {isMax && <span className="text-muted-foreground/50">(</span>}
+                              {isMax && <span className="text-muted-foreground">(</span>}
                               <span className="text-foreground font-bold bg-primary/10 px-1 py-px -mx-px">
                                 {die}
                               </span>
-                              {isMax && <span className="text-muted-foreground/50">)</span>}
+                              {isMax && <span className="text-muted-foreground">)</span>}
 
                               {/* Modifiers — subdued */}
                               {modParts.map((mod, mIdx) => (
@@ -199,7 +199,7 @@ export function HpBreakdown({ items }: { items: BreakdownItem[] }) {
 
                         {/* Running total — far right */}
                         <div className="flex-shrink-0 ml-auto pl-2 border-l border-border/30">
-                          <span className="font-mono text-[10px] text-muted-foreground/50 tabular-nums">
+                          <span className="font-mono text-[10px] text-muted-foreground tabular-nums">
                             Σ{runningTotals[index]}
                           </span>
                         </div>

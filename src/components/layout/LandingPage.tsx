@@ -52,6 +52,8 @@ export function LandingPage() {
             src={isDarkMode ? "/gm-toolkit-logo-white.svg" : "/gm-toolkit-logo-black.svg"}
             alt="GM's Toolkit Logo"
             className="relative h-24 w-auto sm:h-32 drop-shadow-2xl transition-transform hover:scale-105 duration-500"
+            width={128}
+            height={128}
           />
         </div>
         <div className="space-y-2">
@@ -93,9 +95,9 @@ export function LandingPage() {
                 </div>
 
                 <div className="space-y-3">
-                  <h3 className="text-2xl font-bold text-foreground dark:text-white group-hover:text-primary transition-colors duration-300">
+                  <h2 className="text-2xl font-bold text-foreground dark:text-white group-hover:text-primary transition-colors duration-300">
                     {feature.title}
-                  </h3>
+                  </h2>
                   <p className="text-muted-foreground dark:text-neutral-400 group-hover:text-foreground dark:group-hover:text-neutral-200 leading-relaxed transition-colors duration-300">
                     {feature.description}
                   </p>

@@ -1,5 +1,14 @@
 # Changelog
 
+## [v0.7.5]
+
+### Updated
+- Renamed 'Stat Generator' to 'Ability Score'
+
+### Fixed
+- Page load times by minifying.
+- Issues outlined by the Lighthouse report.
+
 ## [v0.7.4]
 
 ### Fixed

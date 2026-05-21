@@ -25,6 +25,8 @@ export function Header({ activeTab, setActiveTab }: HeaderProps) {
               src={isDarkMode ? "/gm-toolkit-logo-white.svg" : "/gm-toolkit-logo-black.svg"}
               alt="GM's Toolkit Logo"
               className="h-7 w-auto sm:h-8"
+              width={32}
+              height={32}
             />
             <span className="font-bold text-sm sm:text-base hidden lg:inline tracking-tight">
               GM's Toolkit

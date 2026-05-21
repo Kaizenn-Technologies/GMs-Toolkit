@@ -68,16 +68,16 @@ const UngroupedHeader: React.FC<{ isDragging?: boolean }> = ({ isDragging }) => 
   });
 
   return (
-    <h4
+    <h3
       ref={setNodeRef}
       className={clsx(
         "text-[11px] uppercase font-bold px-1 transition-colors duration-200",
         isOver ? "text-primary" : "text-muted-foreground",
-        !isDragging && "opacity-60"
+        !isDragging && "opacity-80"
       )}
     >
       Ungrouped Rolls
-    </h4>
+    </h3>
   );
 };
 
@@ -410,7 +410,7 @@ export const DiceBuilder: React.FC<DiceBuilderProps> = ({
       <div className="flex items-center justify-between p-3.5 border-b border-border/50 bg-muted/20 shrink-0">
         <div className="flex items-center gap-2">
           <Dices className="h-4.5 w-4.5 text-primary" />
-          <h3 className="text-xs font-bold uppercase tracking-wider text-foreground">Saved Presets</h3>
+          <h2 className="text-xs font-bold uppercase tracking-wider text-foreground">Saved Presets</h2>
         </div>
         <div className="flex items-center gap-2">
           {/* Select Mode Toggle */}
@@ -585,7 +585,7 @@ export const DiceBuilder: React.FC<DiceBuilderProps> = ({
         </DragOverlay>
 
         {diceConfigs.length === 0 && groups.length === 0 && (
-          <div className="flex flex-col items-center justify-center py-12 text-muted-foreground opacity-50">
+          <div className="flex flex-col items-center justify-center py-12 text-muted-foreground/80">
             <Wand2 size={48} strokeWidth={1} className="mb-2" />
             <p className="text-[11px] uppercase font-bold tracking-widest">No presets saved</p>
           </div>
@@ -646,7 +646,7 @@ export const DiceBuilder: React.FC<DiceBuilderProps> = ({
           </Button>
           <Button
             variant="outline"
-            className="gap-2 h-10 px-0 flex-row py-1 text-[11px] text-red-500 hover:text-red-600 hover:bg-red-500/5 border-red-500/20"
+            className="gap-2 h-10 px-0 flex-row py-1 text-[11px] text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 hover:bg-red-500/10 border-red-500/20"
             onClick={handleClearAll}
           >
             <Trash2 size={14} />

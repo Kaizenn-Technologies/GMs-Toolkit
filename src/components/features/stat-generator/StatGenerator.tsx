@@ -629,7 +629,7 @@ export function StatGenerator() {
                             <div>
                               <p className="text-[10px] uppercase tracking-wide text-muted-foreground mb-1">Score</p>
                               <Select value={score === null ? "" : String(score)} onValueChange={(val) => handleRolledAssignChange(ability, val)}>
-                                <SelectTrigger className="rounded-none w-full"><SelectValue placeholder="—" /></SelectTrigger>
+                                <SelectTrigger className="rounded-none w-full" aria-label={`Assign Score to ${ability}`}><SelectValue placeholder="—" /></SelectTrigger>
                                 <SelectContent>
                                   <SelectItem
                                     value=""
@@ -753,7 +753,7 @@ export function StatGenerator() {
                               <td className="">
                                 <CenteredCellContent>
                                   <Select value={score === null ? "" : String(score)} onValueChange={(val) => handleRolledAssignChange(ability, val)}>
-                                    <SelectTrigger className="rounded-none w-28 bg-background/50">
+                                    <SelectTrigger className="rounded-none w-28 bg-background/50" aria-label={`Assign Score to ${ability}`}>
                                       <SelectValue placeholder="Select" />
                                     </SelectTrigger>
                                     <SelectContent>
@@ -878,7 +878,7 @@ export function StatGenerator() {
                             value={score === null ? "" : String(score)}
                             onValueChange={(val) => handleStandardScoreChange(ability, val)}
                           >
-                            <SelectTrigger className="rounded-none w-full">
+                            <SelectTrigger className="rounded-none w-full" aria-label={`Assign Standard Array to ${ability}`}>
                               <SelectValue placeholder="—" />
                             </SelectTrigger>
                             <SelectContent>
@@ -1024,7 +1024,7 @@ export function StatGenerator() {
                                   handleStandardScoreChange(ability, val)
                                 }
                               >
-                                <SelectTrigger className="rounded-none w-28 bg-background/50">
+                                <SelectTrigger className="rounded-none w-28 bg-background/50" aria-label={`Assign Standard Array to ${ability}`}>
                                   <SelectValue placeholder="Select" />
                                 </SelectTrigger>
                                 <SelectContent>
@@ -1145,7 +1145,7 @@ export function StatGenerator() {
           <CardContent className="">
             <div className="flex flex-col md:flex-row md:items-center justify-between pb-2 mb-2 border-b border-border/40 gap-4">
               <div>
-                <h3 className="text-lg font-bold tracking-tight">Skills &amp; Saving Throws</h3>
+                <h2 className="text-lg font-bold tracking-tight">Skills &amp; Saving Throws</h2>
                 <p className="text-xs text-muted-foreground mt-0.5">
                   Select class for automatic saving throws.
                 </p>
@@ -1240,9 +1240,9 @@ export function StatGenerator() {
           <CardContent className="">
             <div className="flex items-center gap-2 mb-4">
               <BookOpen className="w-5 h-5 text-primary/80" />
-              <h4 className="text-sm font-bold uppercase tracking-wider text-foreground">
+              <h2 className="text-sm font-bold uppercase tracking-wider text-foreground">
                 Progression &amp; Gear Reference
-              </h4>
+              </h2>
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
@@ -1521,6 +1521,7 @@ function SkillDropdown({ state, isBard, isSkill, onChange, openUpward }: SkillDr
         onClick={handleToggle}
         className="flex items-center justify-center w-6 h-6 rounded hover:bg-muted/80 focus:outline-none transition-colors"
         title={`Change Proficiency (Current: ${state === "none" ? (isSkill && isBard ? "Jack of All Trades" : "None") : state === "prof" ? "Proficient" : "Expertise"})`}
+        aria-label={`Change Proficiency (Current: ${state === "none" ? (isSkill && isBard ? "Jack of All Trades" : "None") : state === "prof" ? "Proficient" : "Expertise"})`}
       >
         {renderIcon(state)}
       </button>
