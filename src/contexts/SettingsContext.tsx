@@ -38,6 +38,7 @@ export interface SitewideSettings {
   showSkills: boolean;
   showProgression: boolean;
   disableSharePrompt: boolean;
+  enforceClassSkills: boolean;
 }
 
 export interface AppSettings {
@@ -79,6 +80,7 @@ export const DEFAULT_SITEWIDE_SETTINGS: SitewideSettings = {
   showSkills: true,
   showProgression: true,
   disableSharePrompt: false,
+  enforceClassSkills: true,
 };
 
 export const DEFAULT_POINT_BUY_SETTINGS: PointBuySettings = {
