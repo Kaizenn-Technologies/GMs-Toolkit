@@ -52,7 +52,10 @@ export interface ClassData {
     hitDie: number;
     primaryStat: PrimaryStat;
     savingThrows: Ability[];
+    skillPoints: number;    // How many skills they can choose from 
+    skillProficiencies?: Skills[];
     standardArray: number[];
+    color: string;
 }
 
 export interface ClassSelection {

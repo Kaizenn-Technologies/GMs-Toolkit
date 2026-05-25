@@ -13,7 +13,9 @@ import { useSettings } from "@/contexts/SettingsContext";
 import { useCopyToClipboard } from "@/hooks/useCopyToClipboard";
 
 export const hpClassOptions = [CUSTOM_CLASS_NAME, ...classNames];
-const INITIAL_CLASS_SELECTIONS: ClassSelection[] = [{ id: "1", className: "Wizard", level: 1 }];
+const INITIAL_CLASS_SELECTIONS: ClassSelection[] = [
+  { id: "1", className: CUSTOM_CLASS_NAME, level: 1, customHitDie: CUSTOM_HIT_DIE_OPTIONS[0] }
+];
 
 function generateRolledValues(classSelections: ClassSelection[]): number[] {
   return calculateHP(classSelections, 0, false, false, false).rolls ?? [];
@@ -124,7 +126,7 @@ export function useHpCalculator() {
 
   const addClassSelection = () => {
     const newId = (Math.max(...classSelections.map((c) => parseInt(c.id)), 0) + 1).toString();
-    const availableClass = hpClassOptions.find(name => !classSelections.some(c => c.className === name)) || "Wizard";
+    const availableClass = hpClassOptions.find(name => name !== CUSTOM_CLASS_NAME && !classSelections.some(c => c.className === name)) || CUSTOM_CLASS_NAME;
 
     const nextSelections = [
       ...classSelections,

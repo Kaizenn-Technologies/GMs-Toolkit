@@ -8,7 +8,7 @@ interface PageHeaderProps {
 export function PageHeader({ title, description }: PageHeaderProps) {
   const { settings } = useSettings();
 
-  if (!settings.sitewide.showHeader) return null;
+  if (!settings.sitewide.showHeader || settings.sitewide.maximizeSpace) return null;
 
   return (
     <div className="flex justify-between items-start mb-2 sm:mb-2 gap-2">

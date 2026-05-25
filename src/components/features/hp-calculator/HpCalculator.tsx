@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Plus, Trash2, Dices } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -60,6 +61,16 @@ export function HpCalculator() {
 
   const { settings } = useSettings();
   const showBreakdown = settings.hp.showBreakdown;
+  const [deletingIds, setDeletingIds] = useState<string[]>([]);
+
+  const handleInitiateRemove = (id: string) => {
+    if (deletingIds.includes(id)) return;
+    setDeletingIds((prev) => [...prev, id]);
+    setTimeout(() => {
+      removeClassSelection(id);
+      setDeletingIds((prev) => prev.filter((x) => x !== id));
+    }, 250);
+  };
 
   return (
     <>
@@ -76,10 +87,53 @@ export function HpCalculator() {
               <div className="mb-4">
                 <p className="text-xl font-semibold text-center border-b pb-2">Class Picker</p>
               </div>
+              <style dangerouslySetInnerHTML={{
+                __html: `
+                @keyframes rowFadeInSlide {
+                  from {
+                    opacity: 0;
+                    transform: translateY(-8px);
+                  }
+                  to {
+                    opacity: 1;
+                    transform: translateY(0);
+                  }
+                }
+                @keyframes rowFadeOutSlide {
+                  from {
+                    opacity: 1;
+                    transform: translateY(0);
+                    max-height: 100px;
+                    margin-bottom: 16px;
+                  }
+                  to {
+                    opacity: 0;
+                    transform: translateY(-8px);
+                    max-height: 0;
+                    margin-bottom: 0;
+                    padding-top: 0;
+                    padding-bottom: 0;
+                    overflow: hidden;
+                  }
+                }
+                .animate-row-add {
+                  animation: rowFadeInSlide 0.28s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+                }
+                .animate-row-delete {
+                  animation: rowFadeOutSlide 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+                }
+              `}} />
+
               {/* Class Selections */}
               <div className="space-y-4">
                 {classSelections.map((selection, index) => (
-                  <div key={selection.id} className="space-y-2">
+                  <div
+                    key={selection.id}
+                    className={`space-y-2 ${deletingIds.includes(selection.id)
+                        ? "animate-row-delete"
+                        : "animate-row-add"
+                      }`}
+                  >
                     <label className="text-xs font-medium text-muted-foreground block">
                       Class {index + 1}
                     </label>
@@ -99,7 +153,7 @@ export function HpCalculator() {
                               {hpClassOptions.map((className) => {
                                 const isSelected = classSelections.some(c => c.className === className && c.id !== selection.id);
                                 return (
-                                  <SelectItem key={className} value={className} disabled={isSelected}>
+                                  <SelectItem key={className} value={className} disabled={isSelected && className !== CUSTOM_CLASS_NAME}>
                                     {className}
                                   </SelectItem>
                                 );
@@ -140,7 +194,7 @@ export function HpCalculator() {
                             aria-label={`Class ${index + 1} Level`}
                             onChange={(val) => {
                               if (val === 0) {
-                                removeClassSelection(selection.id);
+                                handleInitiateRemove(selection.id);
                               } else {
                                 updateClassSelection(selection.id, "level", val);
                               }
@@ -154,7 +208,7 @@ export function HpCalculator() {
                           variant="destructive"
                           size="icon"
                           className="shrink-0"
-                          onClick={() => removeClassSelection(selection.id)}
+                          onClick={() => handleInitiateRemove(selection.id)}
                           aria-label={`Remove Class ${index + 1} selection`}
                         >
                           <Trash2 className="w-4 h-4" />
@@ -257,9 +311,9 @@ export function HpCalculator() {
                     />
                   )}
 
-                    {showBreakdown && <HpBreakdown items={rolledResult.breakdown} />}
+                  {showBreakdown && <HpBreakdown items={rolledResult.breakdown} />}
 
-                  <div className="flex flex-col gap-2 mt-4">
+                  <div className="flex flex-col gap-2">
                     <Button onClick={handleRollAgain} className="w-full m-0" disabled={isRolling}>
                       <Dices className="w-4 h-4 mr-2" />
                       {isRolling ? "Rolling..." : "Roll Again"}

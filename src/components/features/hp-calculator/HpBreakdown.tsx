@@ -1,6 +1,8 @@
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import type { BreakdownItem } from "@/types";
 import { useMemo } from "react";
+import { classes } from "@/lib/classes";
+import { getTransparentColor } from "@/lib/utils";
 
 interface ClassGroup {
   className: string;
@@ -51,14 +53,7 @@ function splitModifiers(mods: string): { sign: string; value: string }[] {
   return parts;
 }
 
-// Deterministic color for each class group
-const CLASS_ACCENTS = [
-  { dot: "bg-violet-500", tag: "text-violet-400", badge: "bg-violet-500/15 text-violet-400 border-violet-500/25" },
-  { dot: "bg-amber-500",  tag: "text-amber-400",  badge: "bg-amber-500/15 text-amber-400 border-amber-500/25"   },
-  { dot: "bg-emerald-500", tag: "text-emerald-400", badge: "bg-emerald-500/15 text-emerald-400 border-emerald-500/25" },
-  { dot: "bg-rose-500",   tag: "text-rose-400",   badge: "bg-rose-500/15 text-rose-400 border-rose-500/25"     },
-  { dot: "bg-sky-500",    tag: "text-sky-400",    badge: "bg-sky-500/15 text-sky-400 border-sky-500/25"       },
-];
+
 
 export function HpBreakdown({ items }: { items: BreakdownItem[] }) {
   const groups = useMemo(() => groupByClass(items), [items]);
@@ -104,7 +99,11 @@ export function HpBreakdown({ items }: { items: BreakdownItem[] }) {
       <TooltipProvider delay={100}>
         <div className="border border-border/60 divide-y divide-border/40 bg-muted/30">
           {groups.map((group, gIdx) => {
-            const accent = CLASS_ACCENTS[gIdx % CLASS_ACCENTS.length];
+            const classObj = Object.values(classes).find(
+              (c) => c.name.toLowerCase() === group.className.toLowerCase()
+            );
+            const isCustomClass = group.className.toLowerCase() === "custom";
+            const classColor = isCustomClass ? "#9ca3af" : classObj?.color;
 
             return (
               <div key={gIdx} className="divide-y divide-border/20">
@@ -150,8 +149,17 @@ export function HpBreakdown({ items }: { items: BreakdownItem[] }) {
                           className={`
                             flex-shrink-0 w-6 h-6 flex items-center justify-center
                             text-[10px] font-bold border
-                            ${isMulticlass ? accent.badge : "bg-primary/10 text-primary border-primary/20"}
+                            ${!classColor ? "bg-primary/10 text-primary border-primary/20" : ""}
                           `}
+                          style={
+                            classColor
+                              ? {
+                                backgroundColor: getTransparentColor(classColor, 0.15),
+                                borderColor: getTransparentColor(classColor, 0.25),
+                                color: classColor,
+                              }
+                              : undefined
+                          }
                         >
                           {levelNum}
                         </div>
@@ -159,8 +167,14 @@ export function HpBreakdown({ items }: { items: BreakdownItem[] }) {
                         {/* Class name — inline, shown on every row */}
                         {isMulticlass && (
                           <div className="flex items-center gap-1.5 flex-shrink-0">
-                            <div className={`w-1.5 h-1.5 rounded-full ${accent.dot}`} />
-                            <span className={`text-[11px] font-semibold uppercase tracking-wider ${accent.tag}`}>
+                            <div
+                              className={`w-1.5 h-1.5 rounded-full ${!classColor ? "bg-primary" : ""}`}
+                              style={classColor ? { backgroundColor: classColor } : undefined}
+                            />
+                            <span
+                              className={`text-[11px] font-semibold uppercase tracking-wider ${!classColor ? "text-primary" : ""}`}
+                              style={classColor ? { color: classColor } : undefined}
+                            >
                               {group.className}
                             </span>
                           </div>

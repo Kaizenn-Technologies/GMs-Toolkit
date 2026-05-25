@@ -407,21 +407,21 @@ export const DiceBuilder: React.FC<DiceBuilderProps> = ({
   return (
     <div className="flex flex-col h-full overflow-hidden border border-border/50 rounded-xl bg-card/30">
       {/* Visual Header Panel for Saved Presets and Actions */}
-      <div className="flex items-center justify-between p-3.5 border-b border-border/50 bg-muted/20 shrink-0">
+      <div className="flex items-center justify-between px-3.5 py-3 border-b border-border/50 bg-muted/20 shrink-0">
         <div className="flex items-center gap-2">
-          <Dices className="h-4.5 w-4.5 text-primary" />
-          <h2 className="text-xs font-bold uppercase tracking-wider text-foreground">Saved Presets</h2>
+          {/* <Dices className="h-4 w-4 text-primary shrink-0" /> */}
+          <p className="text-lg font-bold uppercase tracking-wider text-foreground leading-none m-0">Dice Presets</p>
         </div>
         <div className="flex items-center gap-2">
           {/* Select Mode Toggle */}
           <Button
-            variant={isSelectionMode ? "default" : "ghost"}
+            variant={isSelectionMode ? "default" : "outline"}
             size="xs"
             onClick={toggleSelectionMode}
             className="h-8 text-[11px] gap-1.5 px-2.5 font-semibold uppercase shrink-0"
           >
             <CheckSquare size={13} />
-            {isSelectionMode ? "Cancel" : "Select"}
+            <span className="hidden sm:inline">{isSelectionMode ? "Cancel" : "Select"}</span>
           </Button>
 
           {/* Export Dropdown Trigger */}
@@ -433,8 +433,8 @@ export const DiceBuilder: React.FC<DiceBuilderProps> = ({
               className="h-8 text-[11px] gap-1.5 px-2.5 font-semibold uppercase"
             >
               <Download size={13} />
-              Export
-              <ChevronDown size={12} className={clsx("transition-transform duration-200", isExportOpen && "rotate-180")} />
+              <span className="hidden sm:inline">Export</span>
+              <ChevronDown size={12} className={clsx("transition-transform duration-200 hidden sm:inline", isExportOpen && "rotate-180")} />
             </Button>
             {isExportOpen && (
               <div className="absolute right-0 mt-1.5 w-48 bg-card border border-border/80 rounded-md shadow-lg z-50 py-1 animate-in fade-in slide-in-from-top-1 duration-150">
@@ -486,7 +486,7 @@ export const DiceBuilder: React.FC<DiceBuilderProps> = ({
             className="h-8 text-[11px] gap-1.5 px-2.5 font-semibold uppercase hover:border-primary hover:text-primary transition-colors shrink-0"
           >
             <Upload size={13} />
-            Import
+            <span className="hidden sm:inline">Import</span>
           </Button>
         </div>
       </div>

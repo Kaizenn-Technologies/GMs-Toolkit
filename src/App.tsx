@@ -3,6 +3,7 @@ import { Navigate, Route, Routes, useLocation, useNavigate } from "react-router-
 import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
 import { SettingsOverlay } from "@/components/features/SettingsOverlay";
+import { useSettings } from "@/contexts/SettingsContext";
 
 const HpCalculator = lazy(() =>
   import("@/components/features/hp-calculator/HpCalculator").then((m) => ({ default: m.HpCalculator }))
@@ -20,6 +21,8 @@ const LandingPage = lazy(() =>
 export default function App() {
   const location = useLocation();
   const navigate = useNavigate();
+  const { settings } = useSettings();
+  const maximizeSpace = settings.sitewide.maximizeSpace;
 
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: "smooth" });
@@ -49,7 +52,11 @@ export default function App() {
         setActiveTab={setActiveTab}
       />
 
-      <main className="max-w-6xl mx-auto w-full flex-1 flex flex-col pt-4 px-4 pb-2 md:pt-8 md:px-8 md:pb-2">
+      <main className={
+        maximizeSpace 
+          ? "max-w-none w-full flex-1 flex flex-col p-1 sm:p-2" 
+          : "max-w-6xl mx-auto w-full flex-1 flex flex-col pt-4 px-4 pb-2 md:pt-8 md:px-8 md:pb-2"
+      }>
         <Suspense
           fallback={
             <div className="flex-1 flex flex-col items-center justify-center min-h-[400px] text-muted-foreground animate-pulse">

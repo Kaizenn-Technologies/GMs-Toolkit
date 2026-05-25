@@ -1,4 +1,4 @@
-import { Dices, Shuffle, BookOpen, Sparkles, Shield, AlertCircle, RotateCcw } from "lucide-react";
+import { Dices, Shuffle, BookOpen, Sparkles, Shield, AlertCircle, RotateCcw, GraduationCap, Briefcase, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Select,
@@ -18,9 +18,9 @@ import {
 import { useState, useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
 import { StepperInput } from "@/components/ui/stepper-input";
-import { classNames } from "@/lib/classes";
-import { backgroundNames } from "@/lib/backgrounds";
-import type { Ability } from "@/types";
+import { classes, classNames } from "@/lib/classes";
+import { backgrounds, backgroundNames } from "@/lib/backgrounds";
+import type { Ability, ClassData, BackgroundData, Skills } from "@/types";
 import {
   ABILITIES,
   ABILITY_ABBR,
@@ -31,6 +31,7 @@ import {
 } from "@/lib/stat-generator";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { ResetButton, ShareButton } from "@/components/ui/action-buttons";
+import { getTransparentColor } from "@/lib/utils";
 
 import { ShareModal } from "@/components/features/ShareModal";
 import { VerifiedLoadPanel } from "@/components/features/VerifiedLoadPanel";
@@ -48,8 +49,10 @@ import {
   MANUAL_BONUS_MAX,
   STANDARD_ARRAY_OPTIONS,
   CHOOSE_STANDARD_CLASS,
+  CHOOSE_BACKGROUND,
   STAT_TAB_ROUTES,
 } from "./useStatGenerator";
+
 
 export function StatGenerator() {
   const {
@@ -122,6 +125,29 @@ export function StatGenerator() {
   const bgPoolColor = getPoolStatusClass(bgBonusRemaining);
 
   const activeClass = activeTab === "pointbuy" ? selectedClass : selectedStandardClass;
+  const activeClassData = Object.values(classes).find((c) => c.name === activeClass) as ClassData | undefined;
+  const activeBackgroundData = Object.values(backgrounds).find((b) => b.name === selectedBackground) as BackgroundData | undefined;
+
+  const bgSkills = activeBackgroundData?.skillProficiencies ?? [];
+  const enforceClassSkills = settings.sitewide.enforceClassSkills;
+  const hasSkillProficiencies = !!(activeClassData?.skillProficiencies && activeClassData.skillProficiencies.length > 0);
+  const shouldShowClassPills = enforceClassSkills && hasSkillProficiencies;
+
+  const spentClassSkills = activeClassData
+    ? (shouldShowClassPills
+      ? (activeClassData.skillProficiencies ?? []).filter(
+        (skill) => (skillsState[skill] === "prof" || skillsState[skill] === "expertise") && !bgSkills.includes(skill as Skills)
+      ).length
+      : Object.keys(skillsState).filter(
+        (skill) => (skillsState[skill] === "prof" || skillsState[skill] === "expertise") && !bgSkills.includes(skill as Skills)
+      ).length)
+    : 0;
+
+  const classSkillsRemaining = activeClassData
+    ? Math.max(0, activeClassData.skillPoints - spentClassSkills)
+    : 0;
+
+  const classSkillsPoolColor = getPoolStatusClass(classSkillsRemaining);
 
   const profBonus = Math.floor((level - 1) / 4) + 2;
 
@@ -252,7 +278,7 @@ export function StatGenerator() {
                 classPlaceholder={CHOOSE_STANDARD_CLASS}
                 backgroundValue={selectedBackground}
                 onBackgroundChange={handleBackgroundChange}
-                backgroundOptions={backgroundNames}
+                backgroundOptions={[CHOOSE_BACKGROUND, ...backgroundNames]}
                 featBonusEnabled={featBonusEnabled}
                 onFeatBonusChange={setFeatBonusEnabled}
                 primaryDisplay={primaryStats.length > 0 ? primaryDisplay : undefined}
@@ -269,7 +295,7 @@ export function StatGenerator() {
                   const isPrimary = primaryStats.includes(ability);
                   const isBgAbility = bgAbilities.includes(ability);
                   const isAboveMax = score > clampedMax;
-                  const showBgStepper = enforceAsiFromBackground ? isBgAbility : true;
+                  const showBgStepper = selectedBackground === CHOOSE_BACKGROUND ? true : (enforceAsiFromBackground ? isBgAbility : true);
                   return (
                     <div key={ability} className={`rounded-none border p-3 transition-colors flex flex-col h-full ${isPrimary ? "border-primary/40 bg-primary/8 dark:bg-primary/10" : "border-border bg-card"}`}>
                       <div className="flex items-center justify-between mb-2">
@@ -363,7 +389,7 @@ export function StatGenerator() {
                       const isBgAbility = bgAbilities.includes(ability);
                       const isAboveMax = score > clampedMax;
 
-                      const showBgStepper = enforceAsiFromBackground ? isBgAbility : true;
+                      const showBgStepper = selectedBackground === CHOOSE_BACKGROUND ? true : (enforceAsiFromBackground ? isBgAbility : true);
 
                       return (
                         <tr
@@ -447,9 +473,9 @@ export function StatGenerator() {
                 </table>
               </div>
 
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between mt-2 gap-4">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between mt-2 gap-4 ">
 
-                <div className="flex flex-wrap items-center gap-3 sm:gap-4">
+                <div className="flex flex-wrap items-center gap-2 sm:gap-2 ">
                   <PoolStatus
                     label="Background"
                     value={bgBonusRemaining}
@@ -464,7 +490,7 @@ export function StatGenerator() {
                     valueClassName={pointsColor}
                   />
                 </div>
-                <div className="flex flex-row justify-between gap-2">
+                <div className="flex flex-row justify-between gap-2 ">
                   <ResetButton onClick={handleReset} className="shadow-sm hover:shadow-md transition-all" />
                   <ShareButton onClick={handleShareLink} copied={copied} className="shadow-sm hover:shadow-md transition-all" />
                 </div>
@@ -590,7 +616,7 @@ export function StatGenerator() {
                     classPlaceholder={CHOOSE_STANDARD_CLASS}
                     backgroundValue={selectedBackground}
                     onBackgroundChange={handleBackgroundChange}
-                    backgroundOptions={backgroundNames}
+                    backgroundOptions={[CHOOSE_BACKGROUND, ...backgroundNames]}
                     featBonusEnabled={featBonusEnabled}
                     onFeatBonusChange={setFeatBonusEnabled}
                     primaryDisplay={primaryDisplay}
@@ -606,7 +632,7 @@ export function StatGenerator() {
                       const modifier = total === null ? null : getModifier(total);
                       const isBgAbility = bgAbilities.includes(ability);
                       const isPrimary = primaryStats.includes(ability);
-                      const showBgStepper = enforceAsiFromBackground ? isBgAbility : true;
+                      const showBgStepper = selectedBackground === CHOOSE_BACKGROUND ? true : (enforceAsiFromBackground ? isBgAbility : true);
                       const pool = getRolledTotals();
                       const availablePool = pool.slice().sort((a, b) => b - a);
                       ABILITIES.forEach((ab) => {
@@ -742,7 +768,7 @@ export function StatGenerator() {
 
                           const isBgAbility = bgAbilities.includes(ability);
                           const isPrimary = primaryStats.includes(ability);
-                          const showBgStepper = enforceAsiFromBackground ? isBgAbility : true;
+                          const showBgStepper = selectedBackground === CHOOSE_BACKGROUND ? true : (enforceAsiFromBackground ? isBgAbility : true);
 
                           return (
                             <tr key={ability} className={`transition-colors ${isPrimary ? "bg-primary/5 dark:bg-primary/10" : "hover:bg-muted/30"}`}>
@@ -820,8 +846,8 @@ export function StatGenerator() {
                     </table>
                   </div>
 
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between mt-2">
-                    <div className="flex items-center gap-3">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between mt-2 gap-4 ">
+                    <div className="flex flex-wrap items-center gap-2 sm:gap-2 ">
                       <PoolStatus
                         label="Background"
                         value={bgBonusRemaining}
@@ -829,7 +855,7 @@ export function StatGenerator() {
                         valueClassName={bgPoolColor}
                       />
                     </div>
-                    <div className="flex flex-row justify-between gap-2">
+                    <div className="flex flex-row justify-between gap-2 ">
                       <ShareButton onClick={handleShareAssigned} copied={copied} className="shadow-sm hover:shadow-md transition-all" />
                       <ResetButton onClick={handleAssignmentReset} className="shadow-sm hover:shadow-md transition-all" />
                     </div>
@@ -846,7 +872,7 @@ export function StatGenerator() {
                 classPlaceholder={CHOOSE_STANDARD_CLASS}
                 backgroundValue={selectedBackground}
                 onBackgroundChange={handleBackgroundChange}
-                backgroundOptions={backgroundNames}
+                backgroundOptions={[CHOOSE_BACKGROUND, ...backgroundNames]}
                 featBonusEnabled={featBonusEnabled}
                 onFeatBonusChange={setFeatBonusEnabled}
                 primaryDisplay={primaryStats.length > 0 ? primaryDisplay : undefined}
@@ -862,7 +888,7 @@ export function StatGenerator() {
                   const modifier = total === null ? null : getModifier(total);
                   const isPrimary = primaryStats.includes(ability);
                   const isBgAbility = bgAbilities.includes(ability);
-                  const showBgStepper = enforceAsiFromBackground ? isBgAbility : true;
+                  const showBgStepper = selectedBackground === CHOOSE_BACKGROUND ? true : (enforceAsiFromBackground ? isBgAbility : true);
 
                   return (
                     <div key={ability} className={`rounded-none border p-3 transition-colors flex flex-col h-full ${isPrimary ? "border-primary/40 bg-primary/8 dark:bg-primary/10" : "border-border bg-card"}`}>
@@ -999,7 +1025,7 @@ export function StatGenerator() {
                       const modifier = total === null ? null : getModifier(total);
                       const isPrimary = primaryStats.includes(ability);
                       const isBgAbility = bgAbilities.includes(ability);
-                      const showBgStepper = enforceAsiFromBackground ? isBgAbility : true;
+                      const showBgStepper = selectedBackground === CHOOSE_BACKGROUND ? true : (enforceAsiFromBackground ? isBgAbility : true);
 
                       return (
                         <tr
@@ -1121,9 +1147,8 @@ export function StatGenerator() {
                 </table>
               </div>
 
-              <div className="flex flex-col sm:flex-row sm:items-end justify-between mt-2">
-
-                <div className="flex flex-wrap items-center gap-3 sm:gap-4">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between mt-2 gap-4 ">
+                <div className="flex flex-wrap items-center gap-2 sm:gap-2 ">
                   <PoolStatus
                     label="Background"
                     value={bgBonusRemaining}
@@ -1178,6 +1203,191 @@ export function StatGenerator() {
               </div>
             </div>
 
+            {/* Class & Background Skill reference & pool panel */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+              {/* Class Skills Card */}
+              <div
+                className="bg-card/40 backdrop-blur-sm border border-border/40 rounded-xl p-4 shadow-sm hover:shadow-md transition-all duration-300 flex flex-col gap-3 min-h-[160px]"
+                style={activeClassData?.color ? { borderTop: `3px solid ${activeClassData.color}` } : undefined}
+              >
+                <div className="flex items-center justify-between gap-2 flex-wrap shrink-0">
+                  <div className="flex items-center gap-2">
+                    <GraduationCap className="w-4 h-4 text-primary" style={activeClassData?.color ? { color: activeClassData.color } : undefined} />
+                    <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Class Skills</span>
+                  </div>
+                  {activeClass ? (
+                    <span
+                      className="text-xs font-bold px-2 py-0.5 rounded border shadow-sm transition-all duration-300"
+                      style={activeClassData?.color ? {
+                        backgroundColor: getTransparentColor(activeClassData.color, 0.15),
+                        borderColor: getTransparentColor(activeClassData.color, 0.4),
+                        color: activeClassData.color
+                      } : undefined}
+                    >
+                      {activeClass}
+                    </span>
+                  ) : null}
+                </div>
+
+                {activeClassData ? (
+                  <div className="flex-1 flex flex-col justify-between space-y-3">
+                    <div className="flex items-center justify-between bg-muted/30 border border-border/30 rounded-lg p-2.5 shadow-sm">
+                      <div className="flex flex-col">
+                        <span className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider">Proficiency Points</span>
+                        <span className="text-xs text-muted-foreground/80 mt-0.5">Select class-specific proficiencies</span>
+                      </div>
+
+                      <TooltipProvider delay={100}>
+                        <Tooltip>
+                          <TooltipTrigger
+                            render={
+                              <div className="cursor-help flex items-center gap-2 bg-background/60 px-3 py-1 rounded-md border border-border/50 shadow-sm transition-all hover:bg-background/80">
+                                <span className="text-[10px] font-extrabold uppercase tracking-wider text-muted-foreground">Available</span>
+                                <div className="flex items-center font-bold tabular-nums">
+                                  <span className={classSkillsPoolColor}>{classSkillsRemaining}</span>
+                                  <span className="text-muted-foreground/60 mx-0.5">/</span>
+                                  <span className="text-muted-foreground">{activeClassData.skillPoints}</span>
+                                </div>
+                              </div>
+                            }
+                          />
+                          <TooltipContent>
+                            <p>Skill proficiency point pool given by Class</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                    </div>
+
+                    <div className="flex flex-wrap gap-1.5 pt-1">
+                      {shouldShowClassPills ? (
+                        (activeClassData.skillProficiencies ?? []).map((skill) => {
+                          const isChosen = skillsState[skill] === "prof" || skillsState[skill] === "expertise";
+                          return (
+                            <button
+                              key={skill}
+                              type="button"
+                              onClick={() => handleSkillChange(skill, isChosen ? "none" : "prof")}
+                              className={`text-[11px] px-2.5 py-1 rounded-lg border transition-all duration-200 hover:scale-105 active:scale-95 flex items-center gap-1 ${isChosen
+                                ? "font-bold shadow-sm"
+                                : "bg-background/40 border-border/60 text-muted-foreground hover:border-muted-foreground/45 hover:text-foreground hover:bg-background/65"
+                                } disabled:opacity-40 disabled:cursor-not-allowed disabled:pointer-events-none disabled:hover:scale-100`}
+                              style={
+                                isChosen && activeClassData?.color
+                                  ? {
+                                    backgroundColor: getTransparentColor(activeClassData.color, 0.15),
+                                    borderColor: getTransparentColor(activeClassData.color, 0.6),
+                                    color: activeClassData.color,
+                                  }
+                                  : undefined
+                              }
+                              disabled={classSkillsRemaining <= 0 && !isChosen}
+                              title={isChosen ? `Remove ${skill} proficiency` : classSkillsRemaining <= 0 ? `No class skill points remaining` : `Add ${skill} proficiency`}
+                            >
+                              {isChosen && <Check className="w-3 h-3 shrink-0" />}
+                              {skill}
+                            </button>
+                          );
+                        })
+                      ) : (
+                        <div className="flex items-center gap-2 bg-primary/5 border border-primary/10 rounded-lg p-2.5 w-full">
+                          <Sparkles className="w-4 h-4 text-primary shrink-0 animate-pulse" />
+                          <span className="text-[11px] font-semibold text-primary">
+                            Select any {activeClassData.skillPoints} skills directly in the saving throw cards below.
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ) : (
+                  <div className="flex-1 flex flex-col items-center justify-center py-5 px-4 text-center border border-dashed border-border/60 bg-muted/5 rounded-xl">
+                    <span className="text-xs text-muted-foreground/80 italic">
+                      Select a class above to allocate skill points.
+                    </span>
+                  </div>
+                )}
+              </div>
+
+              {/* Background Skills Card */}
+              <div
+                className="bg-card/40 backdrop-blur-sm border border-border/40 rounded-xl p-4 shadow-sm hover:shadow-md transition-all duration-300 flex flex-col gap-3 min-h-[160px]"
+                style={selectedBackground !== CHOOSE_BACKGROUND ? { borderTop: `3px solid #f59e0b` } : undefined}
+              >
+                <div className="flex items-center justify-between gap-2 flex-wrap shrink-0">
+                  <div className="flex items-center gap-2">
+                    <Briefcase className="w-4 h-4 text-amber-500" />
+                    <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Background Skills</span>
+                  </div>
+                  {selectedBackground !== CHOOSE_BACKGROUND ? (
+                    <span className="text-xs font-bold px-2 py-0.5 rounded border bg-amber-500/10 border-amber-500/20 text-amber-500 shadow-sm">
+                      {selectedBackground}
+                    </span>
+                  ) : null}
+                </div>
+
+                {selectedBackground !== CHOOSE_BACKGROUND ? (
+                  <div className="flex-1 flex flex-col justify-between space-y-3">
+                    <div className="flex items-center justify-between bg-muted/30 border border-border/30 rounded-lg p-2.5 shadow-sm">
+                      <div className="flex flex-col">
+                        <span className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider">Granted Proficiencies</span>
+                        <span className="text-xs text-muted-foreground/80 mt-0.5">Skills automatically provided by background</span>
+                      </div>
+
+                      <TooltipProvider delay={100}>
+                        <Tooltip>
+                          <TooltipTrigger
+                            render={
+                              <div className="cursor-help flex items-center gap-1.5 bg-background/60 px-2.5 py-1 rounded-md border border-border/50 shadow-sm text-amber-500">
+                                <span className="text-[10px] font-extrabold uppercase tracking-wider">Active</span>
+                                <Check className="w-3 h-3 shrink-0" />
+                              </div>
+                            }
+                          />
+                          <TooltipContent>
+                            <p>Background proficiencies are enabled</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                    </div>
+
+                    <div className="flex flex-wrap gap-1.5 pt-1">
+                      {activeBackgroundData && activeBackgroundData.skillProficiencies && activeBackgroundData.skillProficiencies.length > 0 ? (
+                        activeBackgroundData.skillProficiencies.map((skill) => {
+                          const isChosen = skillsState[skill] === "prof" || skillsState[skill] === "expertise";
+                          return (
+                            <button
+                              key={skill}
+                              type="button"
+                              onClick={() => handleSkillChange(skill, isChosen ? "none" : "prof")}
+                              className={`text-[11px] px-2.5 py-1 rounded-lg border transition-all duration-200 hover:scale-105 active:scale-95 flex items-center gap-1 ${isChosen
+                                ? "bg-amber-500/10 border-amber-500/40 text-amber-500 font-semibold shadow-sm"
+                                : "bg-background/40 border-border/60 text-muted-foreground hover:border-muted-foreground/45 hover:text-foreground hover:bg-background/65"
+                                }`}
+                              title={`Toggle ${skill} proficiency`}
+                            >
+                              {isChosen && <Check className="w-3 h-3 shrink-0" />}
+                              {skill}
+                            </button>
+                          );
+                        })
+                      ) : (
+                        <div className="flex items-center gap-2 bg-muted/10 rounded-lg border border-border/40 p-2.5 w-full">
+                          <span className="text-[11px] text-muted-foreground italic">
+                            No skill proficiencies given by this background.
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ) : (
+                  <div className="flex-1 flex flex-col items-center justify-center py-5 px-4 text-center border border-dashed border-border/60 bg-muted/5 rounded-xl">
+                    <span className="text-xs text-muted-foreground/80 italic">
+                      Select a background above to view its automatic proficiencies.
+                    </span>
+                  </div>
+                )}
+              </div>
+            </div>
+
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {ABILITIES.map((ability) => {
                 const skills = SKILL_MAPPING[ability];
@@ -1215,6 +1425,13 @@ export function StatGenerator() {
                                 isSkill={true}
                                 onChange={(state) => handleSkillChange(skill, state)}
                                 openUpward={index >= 2}
+                                classColor={
+                                  bgSkills.includes(skill as Skills)
+                                    ? "#f59e0b"
+                                    : shouldShowClassPills && activeClassData?.skillProficiencies?.includes(skill as Skills)
+                                      ? activeClassData.color
+                                      : undefined
+                                }
                               />
                               <span className="truncate" title={skill}>
                                 {skill}
@@ -1437,9 +1654,10 @@ interface SkillDropdownProps {
   isSkill: boolean;
   onChange: (state: "none" | "prof" | "expertise") => void;
   openUpward?: boolean;
+  classColor?: string;
 }
 
-function SkillDropdown({ state, isBard, isSkill, onChange, openUpward }: SkillDropdownProps) {
+function SkillDropdown({ state, isBard, isSkill, onChange, openUpward, classColor }: SkillDropdownProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [coords, setCoords] = useState<{ top: number; left: number; width: number; height: number } | null>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -1500,7 +1718,10 @@ function SkillDropdown({ state, isBard, isSkill, onChange, openUpward }: SkillDr
     }
     if (s === "prof") {
       return (
-        <div className={`${baseClass} rounded-full bg-primary border-2 border-primary shadow-sm flex items-center justify-center`} />
+        <div
+          className={`${baseClass} rounded-full bg-white border-2 border-muted-foreground/30 shadow-sm flex items-center justify-center`}
+          style={classColor ? { backgroundColor: classColor, borderColor: classColor } : undefined}
+        />
       );
     }
     if (isSkill && isBard) {

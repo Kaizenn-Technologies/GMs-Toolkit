@@ -39,6 +39,7 @@ export interface SitewideSettings {
   showProgression: boolean;
   disableSharePrompt: boolean;
   enforceClassSkills: boolean;
+  maximizeSpace: boolean;
 }
 
 export interface AppSettings {
@@ -81,6 +82,7 @@ export const DEFAULT_SITEWIDE_SETTINGS: SitewideSettings = {
   showProgression: true,
   disableSharePrompt: false,
   enforceClassSkills: true,
+  maximizeSpace: false,
 };
 
 export const DEFAULT_POINT_BUY_SETTINGS: PointBuySettings = {

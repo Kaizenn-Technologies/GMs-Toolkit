@@ -35,6 +35,7 @@ export const BG_BONUS_MAX = 2;
 export const MANUAL_BONUS_MAX = 20;
 export const STANDARD_ARRAY_OPTIONS = [8, 10, 12, 13, 14, 15] as const;
 export const CHOOSE_STANDARD_CLASS = "Choose a class";
+export const CHOOSE_BACKGROUND = "Choose a background";
 export const ROLLED_POOL_PARAM = "rpool";
 export const STAT_TAB_ROUTES = {
   pointbuy: "/stat-generator/pointbuy",
@@ -192,7 +193,7 @@ export function useStatGenerator() {
         : settings.standard.enforceAsiFromBackground;
 
   const [selectedClass, setSelectedClass] = useState<string>(CHOOSE_STANDARD_CLASS);
-  const [selectedBackground, setSelectedBackground] = useState<string>("Sage");
+  const [selectedBackground, setSelectedBackground] = useState<string>(CHOOSE_BACKGROUND);
   const [scores, setScores] = useState<Record<Ability, number>>(
     makeDefaultScores(minPurchasable),
   );

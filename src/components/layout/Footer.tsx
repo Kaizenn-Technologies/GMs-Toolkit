@@ -3,7 +3,7 @@ import { useSettings } from "@/contexts/SettingsContext";
 export function Footer() {
   const { settings } = useSettings();
 
-  if (!settings.sitewide.showFooter) return null;
+  if (!settings.sitewide.showFooter || settings.sitewide.maximizeSpace) return null;
 
   return (
     <footer className="mt-auto pt-14 pb-0 flex flex-col sm:flex-row items-center justify-center gap-4 text-sm text-muted-foreground">

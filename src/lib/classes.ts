@@ -7,6 +7,9 @@ export const classes = {
         primaryStat: { type: "single", value: "Strength" },
         savingThrows: ["Strength", "Constitution"],
         standardArray: [15, 13, 14, 10, 12, 8],
+        skillPoints: 2,
+        skillProficiencies: ["Animal Handling", "Athletics", "Intimidation", "Nature", "Perception", "Survival"],
+        color: "#ff893bff",
     },
     bard: {
         name: "Bard",
@@ -14,6 +17,9 @@ export const classes = {
         primaryStat: { type: "single", value: "Charisma" },
         savingThrows: ["Dexterity", "Charisma"],
         standardArray: [8, 14, 12, 13, 10, 15],
+        skillPoints: 3,
+        // skillProficiencies: ["Acrobatics", "Animal Handling", "Arcana", "Athletics", "Deception", "History", "Insight", "Intimidation", "Investigation", "Medicine", "Nature", "Perception", "Performance", "Persuasion", "Religion", "Sleight of Hand", "Stealth", "Survival"],
+        color: "#ff2b2bff",
     },
     cleric: {
         name: "Cleric",
@@ -21,6 +27,9 @@ export const classes = {
         primaryStat: { type: "single", value: "Wisdom" },
         savingThrows: ["Wisdom", "Charisma"],
         standardArray: [14, 8, 13, 10, 15, 12],
+        skillPoints: 2,
+        skillProficiencies: ["History", "Insight", "Medicine", "Persuasion", "Religion"],
+        color: "#E7C65A",
     },
     druid: {
         name: "Druid",
@@ -28,6 +37,10 @@ export const classes = {
         primaryStat: { type: "single", value: "Wisdom" },
         savingThrows: ["Intelligence", "Wisdom"],
         standardArray: [8, 12, 14, 13, 15, 10],
+        skillPoints: 2,
+        skillProficiencies: ["Arcana", "Animal Handling", "Insight", "Medicine", "Nature", "Perception", "Religion", "Survival"],
+        color: "#629c49ff",
+
     },
     fighter: {
         name: "Fighter",
@@ -35,6 +48,9 @@ export const classes = {
         primaryStat: { type: "choice", options: ["Strength", "Dexterity"] },
         savingThrows: ["Strength", "Constitution"],
         standardArray: [15, 14, 13, 8, 10, 12],
+        skillPoints: 2,
+        skillProficiencies: ["Acrobatics", "Animal Handling", "Athletics", "History", "Insight", "Intimidation", "Persuasion", "Perception", "Survival"],
+        color: "#27b1aaff",
     },
     monk: {
         name: "Monk",
@@ -42,6 +58,9 @@ export const classes = {
         primaryStat: { type: "multiple", values: ["Dexterity", "Wisdom"] },
         savingThrows: ["Dexterity", "Wisdom"],
         standardArray: [12, 15, 13, 10, 14, 8],
+        skillPoints: 2,
+        skillProficiencies: ["Acrobatics", "Athletics", "History", "Insight", "Religion", "Stealth"],
+        color: "#d9792bff",
     },
     paladin: {
         name: "Paladin",
@@ -49,6 +68,9 @@ export const classes = {
         primaryStat: { type: "multiple", values: ["Strength", "Charisma"] },
         savingThrows: ["Wisdom", "Charisma"],
         standardArray: [15, 10, 13, 8, 12, 14],
+        skillPoints: 2,
+        skillProficiencies: ["Athletics", "Insight", "Intimidation", "Medicine", "Persuasion", "Religion"],
+        color: "#F2C14E",
     },
     ranger: {
         name: "Ranger",
@@ -56,6 +78,9 @@ export const classes = {
         primaryStat: { type: "multiple", values: ["Dexterity", "Wisdom"] },
         savingThrows: ["Dexterity", "Strength"],
         standardArray: [12, 15, 13, 8, 14, 10],
+        skillPoints: 3,
+        skillProficiencies: ["Animal Handling", "Athletics", "Insight", "Investigation", "Nature", "Perception", "Stealth", "Survival"],
+        color: "#3d912cff",
     },
     rogue: {
         name: "Rogue",
@@ -63,6 +88,9 @@ export const classes = {
         primaryStat: { type: "single", value: "Dexterity" },
         savingThrows: ["Dexterity", "Intelligence"],
         standardArray: [12, 15, 13, 14, 10, 8],
+        skillPoints: 4,
+        skillProficiencies: ["Acrobatics", "Athletics", "Deception", "Insight", "Intimidation", "Investigation", "Perception", "Persuasion", "Sleight of Hand", "Stealth"],
+        color: "#e47ac4ff",
     },
     sorcerer: {
         name: "Sorcerer",
@@ -70,6 +98,9 @@ export const classes = {
         primaryStat: { type: "single", value: "Charisma" },
         savingThrows: ["Constitution", "Charisma"],
         standardArray: [10, 13, 14, 8, 12, 15],
+        skillPoints: 2,
+        skillProficiencies: ["Arcana", "Deception", "Insight", "Intimidation", "Persuasion", "Religion"],
+        color: "#33C7FF",
     },
     warlock: {
         name: "Warlock",
@@ -77,6 +108,9 @@ export const classes = {
         primaryStat: { type: "single", value: "Charisma" },
         savingThrows: ["Wisdom", "Charisma"],
         standardArray: [8, 14, 13, 12, 10, 15],
+        skillPoints: 2,
+        skillProficiencies: ["Arcana", "Deception", "History", "Insight", "Intimidation", "Investigation", "Nature", "Religion"],
+        color: "#bb1cfaff",
     },
     wizard: {
         name: "Wizard",
@@ -84,6 +118,9 @@ export const classes = {
         primaryStat: { type: "single", value: "Intelligence" },
         savingThrows: ["Intelligence", "Wisdom"],
         standardArray: [8, 12, 13, 15, 14, 10],
+        skillPoints: 2,
+        skillProficiencies: ["Arcana", "History", "Insight", "Investigation", "Medicine", "Religion"],
+        color: "#8957e6ff",
     },
 } satisfies Record<string, ClassData>;
 

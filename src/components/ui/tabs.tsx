@@ -1,3 +1,4 @@
+import { useState, useEffect, useRef } from "react"
 import { Tabs as TabsPrimitive } from "@base-ui/react/tabs"
 import { cva, type VariantProps } from "class-variance-authority"
 
@@ -39,15 +40,82 @@ const tabsListVariants = cva(
 function TabsList({
   className,
   variant = "default",
+  children,
   ...props
 }: TabsPrimitive.List.Props & VariantProps<typeof tabsListVariants>) {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [sliderStyle, setSliderStyle] = useState({ left: 0, width: 0, opacity: 0 });
+
+  useEffect(() => {
+    const updateSlider = () => {
+      if (!containerRef.current) return;
+      
+      const activeTrigger = containerRef.current.querySelector(
+        '[data-active]'
+      ) as HTMLButtonElement | null;
+
+      if (activeTrigger) {
+        const container = containerRef.current;
+        const rect = activeTrigger.getBoundingClientRect();
+        const containerRect = container.getBoundingClientRect();
+        
+        setSliderStyle({
+          left: rect.left - containerRect.left,
+          width: rect.width,
+          opacity: 1,
+        });
+      } else {
+        setSliderStyle((prev) => ({ ...prev, opacity: 0 }));
+      }
+    };
+
+    updateSlider();
+
+    const observer = new MutationObserver(updateSlider);
+
+    if (containerRef.current) {
+      observer.observe(containerRef.current, {
+        attributes: true,
+        childList: true,
+        subtree: true,
+        attributeFilter: ['data-active', 'aria-selected', 'class'],
+      });
+    }
+
+    window.addEventListener("resize", updateSlider);
+    const timer1 = setTimeout(updateSlider, 50);
+    const timer2 = setTimeout(updateSlider, 150);
+
+    return () => {
+      observer.disconnect();
+      window.removeEventListener("resize", updateSlider);
+      clearTimeout(timer1);
+      clearTimeout(timer2);
+    };
+  }, [children]);
+
   return (
     <TabsPrimitive.List
+      ref={containerRef}
       data-slot="tabs-list"
       data-variant={variant}
-      className={cn(tabsListVariants({ variant }), className)}
+      className={cn("relative z-0 select-none", tabsListVariants({ variant }), className)}
       {...props}
-    />
+    >
+      {/* Animated Slider Highlight Box */}
+      {variant !== "line" && (
+        <div
+          className="absolute top-[3px] bottom-[3px] bg-background shadow-xs transition-all duration-300 ease-out rounded-none -z-10"
+          style={{
+            left: `${sliderStyle.left}px`,
+            width: `${sliderStyle.width}px`,
+            opacity: sliderStyle.opacity,
+            transitionProperty: "left, width, opacity",
+          }}
+        />
+      )}
+      {children}
+    </TabsPrimitive.List>
   )
 }
 
@@ -58,7 +126,7 @@ function TabsTrigger({ className, ...props }: TabsPrimitive.Tab.Props) {
       className={cn(
         "relative inline-flex h-[calc(100%-1px)] flex-1 items-center justify-center gap-1.5 rounded-none border border-transparent px-1.5 py-0.5 text-xs font-medium whitespace-nowrap text-foreground/60 transition-all group-data-vertical/tabs:w-full group-data-vertical/tabs:justify-start group-data-vertical/tabs:py-[calc(--spacing(1.25))] hover:text-foreground focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:outline-1 focus-visible:outline-ring disabled:pointer-events-none disabled:opacity-50 has-data-[icon=inline-end]:pr-1 has-data-[icon=inline-start]:pl-1 aria-disabled:pointer-events-none aria-disabled:opacity-50 dark:text-muted-foreground dark:hover:text-foreground [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
         "group-data-[variant=line]/tabs-list:bg-transparent group-data-[variant=line]/tabs-list:data-active:bg-transparent dark:group-data-[variant=line]/tabs-list:data-active:border-transparent dark:group-data-[variant=line]/tabs-list:data-active:bg-transparent",
-        "data-active:bg-background data-active:text-foreground dark:data-active:border-input dark:data-active:bg-input/30 dark:data-active:text-foreground",
+        "data-active:text-foreground dark:data-active:text-foreground data-active:bg-transparent dark:data-active:bg-transparent z-10",
         "after:absolute after:bg-foreground after:opacity-0 after:transition-opacity group-data-horizontal/tabs:after:inset-x-0 group-data-horizontal/tabs:after:bottom-[-5px] group-data-horizontal/tabs:after:h-0.5 group-data-vertical/tabs:after:inset-y-0 group-data-vertical/tabs:after:-right-1 group-data-vertical/tabs:after:w-0.5 group-data-[variant=line]/tabs-list:data-active:after:opacity-100",
         className
       )}

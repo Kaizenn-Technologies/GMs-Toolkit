@@ -15,7 +15,7 @@ export const DiceRoller: React.FC = () => {
     if (settings.diceRoller.autoClearLogs) {
       clearLogs();
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); // Only on mount
 
   const {
@@ -38,14 +38,16 @@ export const DiceRoller: React.FC = () => {
     importData,
   } = useDiceRoller(addLog);
 
+  const maximizeSpace = settings.sitewide.maximizeSpace;
+
   return (
-    <div className="flex flex-col h-[calc(100vh-8rem)] min-h-[600px]">
+    <div className={`flex flex-col ${maximizeSpace ? "h-[calc(100vh-4.5rem)] min-h-[500px]" : "h-[calc(100vh-8rem)] min-h-[600px]"}`}>
       <PageHeader
         title="DM Dice Roller"
         description="Build custom dice sets, organize them into groups, and track your roll history."
       />
 
-      <div className="flex-1 grid grid-cols-1 md:grid-cols-12 gap-6 overflow-hidden mt-4">
+      <div className={`flex-1 grid grid-cols-1 md:grid-cols-12 ${maximizeSpace ? "gap-1 " : "gap-6 mt-2"} overflow-hidden`}>
         {/* Left: Builder / Presets (60%) */}
         <div className="md:col-span-7 lg:col-span-7 flex flex-col h-full overflow-hidden">
           <DiceBuilder

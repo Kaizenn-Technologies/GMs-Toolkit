@@ -155,7 +155,6 @@ export function SettingsOverlay({
 
   const isAbilityScorePage = shouldShowPointBuy || shouldShowRoll || shouldShowStandard;
   const isHpPage = shouldShowHp;
-  const isDicePage = shouldShowDice;
 
   const activeBgBonusPool =
     initialTab === "pointbuy"
@@ -289,6 +288,16 @@ export function SettingsOverlay({
                         onCheckedChange={(v) => updateSitewide({ showFooter: v })}
                       />
                     </SettingRow>
+
+                    <SettingRow
+                      label="Maximize Space"
+                      description="Removes page titles, footers, and margins to maximize visible area."
+                    >
+                      <Switch
+                        checked={settings.sitewide.maximizeSpace}
+                        onCheckedChange={(v) => updateSitewide({ maximizeSpace: v })}
+                      />
+                    </SettingRow>
                   </div>
                 )}
               </div>
@@ -392,7 +401,7 @@ export function SettingsOverlay({
           )}
 
           {/* 3. Tab Specific Settings Section */}
-          <Tabs key={`${isOpen}-${initialTab}`} defaultValue={initialTab} className="h-full flex flex-col pt-2">
+          <Tabs key={`${isOpen}-${initialTab}`} defaultValue={initialTab} className="flex flex-col pt-2">
             {/* Hidden if there is only one tab, e.g. enabledTabs.length <= 1 */}
             {enabledTabs.length > 1 && (
               <div className="px-4 pt-2 shrink-0">
