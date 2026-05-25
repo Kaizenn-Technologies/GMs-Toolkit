@@ -606,6 +606,7 @@ export function StatGenerator() {
                       const modifier = total === null ? null : getModifier(total);
                       const isBgAbility = bgAbilities.includes(ability);
                       const isPrimary = primaryStats.includes(ability);
+                      const showBgStepper = enforceAsiFromBackground ? isBgAbility : true;
                       const pool = getRolledTotals();
                       const availablePool = pool.slice().sort((a, b) => b - a);
                       ABILITIES.forEach((ab) => {
@@ -651,7 +652,7 @@ export function StatGenerator() {
                                 </SelectContent>
                               </Select>
                             </div>
-                            {isBgAbility && (
+                            {showBgStepper && (
                               <div>
                                 <p className="text-[10px] uppercase tracking-wide text-muted-foreground mb-1">BG Bonus</p>
                                 <StepperInput className="rounded-none w-full" value={bgBonus} min={0} max={BG_BONUS_MAX} onChange={(val) => handleBgBonusChange(ability, val)} />
@@ -741,6 +742,7 @@ export function StatGenerator() {
 
                           const isBgAbility = bgAbilities.includes(ability);
                           const isPrimary = primaryStats.includes(ability);
+                          const showBgStepper = enforceAsiFromBackground ? isBgAbility : true;
 
                           return (
                             <tr key={ability} className={`transition-colors ${isPrimary ? "bg-primary/5 dark:bg-primary/10" : "hover:bg-muted/30"}`}>
@@ -785,7 +787,7 @@ export function StatGenerator() {
 
                               <td className="">
                                 <CenteredCellContent>
-                                  {isBgAbility ? (
+                                  {showBgStepper ? (
                                     <StepperInput className="rounded-none w-28 bg-background/50" value={bgBonus} min={0} max={BG_BONUS_MAX} onChange={(val) => handleBgBonusChange(ability, val)} />
                                   ) : (
                                     <span className="inline-block w-28 text-center text-muted-foreground/30 select-none font-medium">—</span>

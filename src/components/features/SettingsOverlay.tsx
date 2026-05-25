@@ -151,11 +151,13 @@ export function SettingsOverlay({
     resetSitewide,
     resetPointBuy,
     resetRoll,
+    resetStandard,
     resetHp,
     resetDiceRoller,
     settings,
     updateSitewide,
     updateRoll,
+    updateStandard,
     updateHp,
     updateDiceRoller,
   } = useSettings();
@@ -352,66 +354,127 @@ export function SettingsOverlay({
             {/* Roll settings */}
             {shouldShowRoll && (
               <TabsContent value="roll" className="flex-1 px-6 pb-6 mt-0 pt-2">
-                <div className="space-y-2">
-                  <SettingRow
-                    label="Reroll 1s"
-                    description="If enabled, any die that comes up 1 will be rerolled once."
-                  >
-                    <Switch
-                      checked={settings.roll.rerollOnes}
-                      onCheckedChange={(v) => updateRoll({ rerollOnes: v })}
-                    />
-                  </SettingRow>
+                <div className="space-y-1 divide-y divide-border/60">
+                  <div className="space-y-2 pb-3">
+                    <SettingRow
+                      label="Reroll 1s"
+                      description="If enabled, any die that comes up 1 will be rerolled once."
+                    >
+                      <Switch
+                        checked={settings.roll.rerollOnes}
+                        onCheckedChange={(v) => updateRoll({ rerollOnes: v })}
+                      />
+                    </SettingRow>
 
-                  <SettingRow
-                    label="Sort dice roll"
-                    description="Display dice in descending order when enabled."
-                  >
-                    <Switch
-                      checked={settings.roll.sortDescending}
-                      onCheckedChange={(v) => updateRoll({ sortDescending: v })}
-                    />
-                  </SettingRow>
+                    <SettingRow
+                      label="Sort dice roll"
+                      description="Display dice in descending order when enabled."
+                    >
+                      <Switch
+                        checked={settings.roll.sortDescending}
+                        onCheckedChange={(v) => updateRoll({ sortDescending: v })}
+                      />
+                    </SettingRow>
 
-                  <SettingRow
-                    label="Color dice roll"
-                    description="Highlight 1s in red and 6s in green in the dice display."
-                  >
-                    <Switch
-                      checked={settings.roll.colorDice}
-                      onCheckedChange={(v) => updateRoll({ colorDice: v })}
-                    />
-                  </SettingRow>
+                    <SettingRow
+                      label="Color dice roll"
+                      description="Highlight 1s in red and 6s in green in the dice display."
+                    >
+                      <Switch
+                        checked={settings.roll.colorDice}
+                        onCheckedChange={(v) => updateRoll({ colorDice: v })}
+                      />
+                    </SettingRow>
 
-                  <SettingRow
-                    label="Rolling animation"
-                    description="Enable a dynamic roll animation on the randomized text."
-                  >
-                    <Switch
-                      checked={settings.roll.rollingAnimation}
-                      onCheckedChange={(v) => updateRoll({ rollingAnimation: v })}
-                    />
-                  </SettingRow>
+                    <SettingRow
+                      label="Rolling animation"
+                      description="Enable a dynamic roll animation on the randomized text."
+                    >
+                      <Switch
+                        checked={settings.roll.rollingAnimation}
+                        onCheckedChange={(v) => updateRoll({ rollingAnimation: v })}
+                      />
+                    </SettingRow>
 
-                  <SettingRow
-                    label="Dice shake animation"
-                    description="Enable the physical shake animation on individual cards when rolling."
-                  >
-                    <Switch
-                      checked={settings.roll.diceShake}
-                      onCheckedChange={(v) => updateRoll({ diceShake: v })}
-                    />
-                  </SettingRow>
+                    <SettingRow
+                      label="Dice shake animation"
+                      description="Enable the physical shake animation on individual cards when rolling."
+                    >
+                      <Switch
+                        checked={settings.roll.diceShake}
+                        onCheckedChange={(v) => updateRoll({ diceShake: v })}
+                      />
+                    </SettingRow>
+                  </div>
+
+                  <div className="">
+                    <SectionDivider label="Background Bonus" />
+
+                    <SettingRow
+                      label="Background Point Pool"
+                      description="Points to distribute as background ability bonuses."
+                    >
+                      <StepperInput
+                        className="w-32"
+                        value={settings.roll.bgBonusPool}
+                        min={0}
+                        max={20}
+                        onChange={(v) => updateRoll({ bgBonusPool: v })}
+                      />
+                    </SettingRow>
+
+                    <SettingRow
+                      label="Enforce ASI from Background"
+                      description={
+                        settings.roll.enforceAsiFromBackground
+                          ? "Bonus steppers only appear on the background's designated abilities."
+                          : "Bonus steppers appear on every ability regardless of background."
+                      }
+                    >
+                      <Switch
+                        checked={settings.roll.enforceAsiFromBackground}
+                        onCheckedChange={(v) => updateRoll({ enforceAsiFromBackground: v })}
+                      />
+                    </SettingRow>
+                  </div>
                 </div>
               </TabsContent>
             )}
 
-            {/* Standard — placeholder */}
+            {/* Standard */}
             {shouldShowStandard && (
               <TabsContent value="standard" className="flex-1 px-6 pb-6 mt-0 pt-2">
-                <div className="flex flex-col items-center justify-center h-48 gap-3 text-muted-foreground">
-                  <span className="text-4xl opacity-30">📋</span>
-                  <p className="text-sm">Standard Array settings — coming soon!</p>
+                <div className="space-y-1 divide-y divide-border/60">
+                  <div className="">
+                    <SectionDivider label="Background Bonus" />
+
+                    <SettingRow
+                      label="Background Point Pool"
+                      description="Points to distribute as background ability bonuses."
+                    >
+                      <StepperInput
+                        className="w-32"
+                        value={settings.standard.bgBonusPool}
+                        min={0}
+                        max={20}
+                        onChange={(v) => updateStandard({ bgBonusPool: v })}
+                      />
+                    </SettingRow>
+
+                    <SettingRow
+                      label="Enforce ASI from Background"
+                      description={
+                        settings.standard.enforceAsiFromBackground
+                          ? "Bonus steppers only appear on the background's designated abilities."
+                          : "Bonus steppers appear on every ability regardless of background."
+                      }
+                    >
+                      <Switch
+                        checked={settings.standard.enforceAsiFromBackground}
+                        onCheckedChange={(v) => updateStandard({ enforceAsiFromBackground: v })}
+                      />
+                    </SettingRow>
+                  </div>
                 </div>
               </TabsContent>
             )}
@@ -500,6 +563,7 @@ export function SettingsOverlay({
               resetSitewide();
               if (shouldShowPointBuy) resetPointBuy();
               if (shouldShowRoll) resetRoll();
+              if (shouldShowStandard) resetStandard();
               if (shouldShowHp) resetHp();
               if (shouldShowDice) resetDiceRoller();
             }}

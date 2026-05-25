@@ -44,8 +44,14 @@ export interface AppSettings {
   sitewide: SitewideSettings;
   pointBuy: PointBuySettings;
   roll: RollSettings;
+  standard: StandardSettings;
   hp: HpSettings;
   diceRoller: DiceRollerSettings;
+}
+
+export interface StandardSettings {
+  bgBonusPool: number;
+  enforceAsiFromBackground: boolean;
 }
 
 export interface RollSettings {
@@ -54,6 +60,8 @@ export interface RollSettings {
   colorDice: boolean;
   rollingAnimation: boolean;
   diceShake: boolean;
+  bgBonusPool: number;
+  enforceAsiFromBackground: boolean;
 }
 
 export interface HpSettings {
@@ -87,6 +95,13 @@ export const DEFAULT_ROLL_SETTINGS: RollSettings = {
   colorDice: true,
   rollingAnimation: true,
   diceShake: true,
+  bgBonusPool: 3,
+  enforceAsiFromBackground: true,
+};
+
+export const DEFAULT_STANDARD_SETTINGS: StandardSettings = {
+  bgBonusPool: 3,
+  enforceAsiFromBackground: true,
 };
 
 export const DEFAULT_HP_SETTINGS: HpSettings = {
@@ -108,11 +123,13 @@ interface SettingsContextValue {
   updateSitewide: (patch: Partial<SitewideSettings>) => void;
   updatePointBuy: (patch: Partial<PointBuySettings>) => void;
   updateRoll: (patch: Partial<RollSettings>) => void;
+  updateStandard: (patch: Partial<StandardSettings>) => void;
   updateHp: (patch: Partial<HpSettings>) => void;
   updateDiceRoller: (patch: Partial<DiceRollerSettings>) => void;
   resetSitewide: () => void;
   resetPointBuy: () => void;
   resetRoll: () => void;
+  resetStandard: () => void;
   resetHp: () => void;
   resetDiceRoller: () => void;
   isOpen: boolean;
@@ -133,6 +150,7 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
           sitewide: { ...DEFAULT_SITEWIDE_SETTINGS, ...parsed.sitewide },
           pointBuy: { ...DEFAULT_POINT_BUY_SETTINGS, ...parsed.pointBuy },
           roll: { ...DEFAULT_ROLL_SETTINGS, ...parsed.roll },
+          standard: { ...DEFAULT_STANDARD_SETTINGS, ...parsed.standard },
           hp: { ...DEFAULT_HP_SETTINGS, ...parsed.hp },
           diceRoller: { ...DEFAULT_DICE_ROLLER_SETTINGS, ...parsed.diceRoller },
         };
@@ -144,6 +162,7 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
       sitewide: { ...DEFAULT_SITEWIDE_SETTINGS },
       pointBuy: { ...DEFAULT_POINT_BUY_SETTINGS },
       roll: { ...DEFAULT_ROLL_SETTINGS },
+      standard: { ...DEFAULT_STANDARD_SETTINGS },
       hp: { ...DEFAULT_HP_SETTINGS },
       diceRoller: { ...DEFAULT_DICE_ROLLER_SETTINGS },
     };
@@ -183,6 +202,12 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
       roll: { ...prev.roll, ...patch },
     }));
 
+  const updateStandard = (patch: Partial<StandardSettings>) =>
+    setSettings((prev) => ({
+      ...prev,
+      standard: { ...prev.standard, ...patch },
+    }));
+
   const updateHp = (patch: Partial<HpSettings>) =>
     setSettings((prev) => ({
       ...prev,
@@ -213,6 +238,12 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
       roll: { ...DEFAULT_ROLL_SETTINGS },
     }));
 
+  const resetStandard = () =>
+    setSettings((prev) => ({
+      ...prev,
+      standard: { ...DEFAULT_STANDARD_SETTINGS },
+    }));
+
   const resetHp = () =>
     setSettings((prev) => ({
       ...prev,
@@ -232,11 +263,13 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
         updateSitewide,
         updatePointBuy,
         updateRoll,
+        updateStandard,
         updateHp,
         updateDiceRoller,
         resetSitewide,
         resetPointBuy,
         resetRoll,
+        resetStandard,
         resetHp,
         resetDiceRoller,
         isOpen,

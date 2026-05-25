@@ -157,7 +157,7 @@ function decodeRolledPool(
 }
 
 export function useStatGenerator() {
-  const { settings, openSettings, updatePointBuy } = useSettings();
+  const { settings, openSettings, updatePointBuy, updateRoll, updateStandard } = useSettings();
   const location = useLocation();
   const navigate = useNavigate();
   const hasHydratedFromUrl = useRef(false);
@@ -168,9 +168,28 @@ export function useStatGenerator() {
     pointPool,
     maxPurchasable,
     minPurchasable,
-    bgBonusPool,
-    enforceAsiFromBackground,
   } = pb;
+
+  const activeTab: "pointbuy" | "roll" | "standard" =
+    location.pathname === STAT_TAB_ROUTES.standard
+      ? "standard"
+      : location.pathname === STAT_TAB_ROUTES.roll
+        ? "roll"
+        : "pointbuy";
+
+  const bgBonusPool =
+    activeTab === "pointbuy"
+      ? settings.pointBuy.bgBonusPool
+      : activeTab === "roll"
+        ? settings.roll.bgBonusPool
+        : settings.standard.bgBonusPool;
+
+  const enforceAsiFromBackground =
+    activeTab === "pointbuy"
+      ? settings.pointBuy.enforceAsiFromBackground
+      : activeTab === "roll"
+        ? settings.roll.enforceAsiFromBackground
+        : settings.standard.enforceAsiFromBackground;
 
   const [selectedClass, setSelectedClass] = useState<string>(CHOOSE_STANDARD_CLASS);
   const [selectedBackground, setSelectedBackground] = useState<string>("Sage");
@@ -357,12 +376,7 @@ export function useStatGenerator() {
     setLevel(1);
   };
 
-  const activeTab: "pointbuy" | "roll" | "standard" =
-    location.pathname === STAT_TAB_ROUTES.standard
-      ? "standard"
-      : location.pathname === STAT_TAB_ROUTES.roll
-        ? "roll"
-        : "pointbuy";
+  // activeTab is resolved dynamically at the top of the hook
 
   const spent = pointsUsed(scores, minPurchasable);
   const remaining = pointPool - spent;
@@ -643,7 +657,13 @@ export function useStatGenerator() {
 
           // System setting enforcement (Section 2.4)
           if (pbData.asiEnabled && !enforceAsiFromBackground) {
-            updatePointBuy({ enforceAsiFromBackground: true });
+            if (activeTab === "pointbuy") {
+              updatePointBuy({ enforceAsiFromBackground: true });
+            } else if (activeTab === "roll") {
+              updateRoll({ enforceAsiFromBackground: true });
+            } else if (activeTab === "standard") {
+              updateStandard({ enforceAsiFromBackground: true });
+            }
           }
 
         } else if (decoded.stats.method === "rolled") {
@@ -875,6 +895,8 @@ export function useStatGenerator() {
     minPurchasable,
     enforceAsiFromBackground,
     updatePointBuy,
+    updateRoll,
+    updateStandard,
   ]);
 
   const rollDie = () => randomInt(1, 6);
