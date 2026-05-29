@@ -1,5 +1,11 @@
 # Changelog
 
+## [v0.7.7]
+
+### Fixed
+- Fixed dropdown selector behaviour for rolled and standard arrays in the ability score generator.
+- Removed tagline from mobile hamburger menu.
+
 ## [v0.7.6]
 
 ### Added

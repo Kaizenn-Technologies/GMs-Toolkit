@@ -459,7 +459,10 @@ export function useStatGenerator() {
     ability: Ability,
     selectedValue: string | null,
   ) => {
-    if (!selectedValue) return;
+    if (selectedValue === null || selectedValue === "") {
+      setStandardScores((prev) => ({ ...prev, [ability]: null }));
+      return;
+    }
     const nextScore = Number.parseInt(selectedValue, 10);
     if (!STANDARD_ARRAY_OPTIONS.includes(nextScore as (typeof STANDARD_ARRAY_OPTIONS)[number])) {
       return;
@@ -989,7 +992,10 @@ export function useStatGenerator() {
   };
 
   const handleRolledAssignChange = (ability: Ability, selectedValue: string | null) => {
-    if (!selectedValue) return;
+    if (selectedValue === null || selectedValue === "") {
+      setStandardScores((prev) => ({ ...prev, [ability]: null }));
+      return;
+    }
     const nextScore = Number.parseInt(selectedValue, 10);
     const pool = getRolledTotals();
     const poolCount = pool.filter((p) => p === nextScore).length;

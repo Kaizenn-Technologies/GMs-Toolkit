@@ -635,14 +635,28 @@ export function StatGenerator() {
                       const showBgStepper = selectedBackground === CHOOSE_BACKGROUND ? true : (enforceAsiFromBackground ? isBgAbility : true);
                       const pool = getRolledTotals();
                       const availablePool = pool.slice().sort((a, b) => b - a);
+
+                      // Build unique index mapping for duplicate rolled scores (using availablePool which is sorted!)
+                      const poolUsed = new Array(availablePool.length).fill(false);
+                      const abilityToIndex = {} as Record<Ability, number | null>;
                       ABILITIES.forEach((ab) => {
-                        if (ab === ability) return;
-                        const assigned = standardScores[ab];
-                        if (assigned === null) return;
-                        const idx = availablePool.indexOf(assigned);
-                        if (idx !== -1) availablePool.splice(idx, 1);
+                        const val = standardScores[ab];
+                        if (val === null) {
+                          abilityToIndex[ab] = null;
+                          return;
+                        }
+                        const idx = availablePool.findIndex((p, i) => p === val && !poolUsed[i]);
+                        if (idx !== -1) {
+                          poolUsed[idx] = true;
+                          abilityToIndex[ab] = idx;
+                        } else {
+                          abilityToIndex[ab] = null;
+                        }
                       });
-                      if (score !== null && availablePool.indexOf(score) === -1) availablePool.push(score);
+
+                      const scoreIndex = abilityToIndex[ability];
+                      const selectValue = (score !== null && scoreIndex !== null) ? `${score}-${scoreIndex}` : "";
+
                       return (
                         <div key={ability} className={`rounded-none border p-3 transition-colors flex flex-col h-full ${isPrimary ? "border-primary/40 bg-primary/8 dark:bg-primary/10" : "border-border bg-card"}`}>
                           <div className="flex items-center justify-between mb-2">
@@ -655,26 +669,54 @@ export function StatGenerator() {
                           <div className="flex-1 space-y-2">
                             <div>
                               <p className="text-[10px] uppercase tracking-wide text-muted-foreground mb-1">Score</p>
-                              <Select value={score === null ? "" : String(score)} onValueChange={(val) => handleRolledAssignChange(ability, val)}>
-                                <SelectTrigger className="rounded-none w-full" aria-label={`Assign Score to ${ability}`}><SelectValue placeholder="—" /></SelectTrigger>
-                                <SelectContent>
-                                  <SelectItem
-                                    value=""
-                                    style={{
-                                      position: "absolute",
-                                      opacity: 0,
-                                      pointerEvents: "none",
-                                      height: 0,
-                                      width: 0,
-                                      padding: 0,
-                                      margin: 0,
-                                      overflow: "hidden",
-                                      border: 0,
+                              <Select
+                                value={selectValue}
+                                onValueChange={(val) => {
+                                  if (!val) {
+                                    handleRolledAssignChange(ability, "");
+                                  } else {
+                                    const scoreVal = val.split("-")[0];
+                                    handleRolledAssignChange(ability, scoreVal);
+                                  }
+                                }}
+                              >
+                                <SelectTrigger className="rounded-none w-full" aria-label={`Assign Score to ${ability}`}>
+                                  <SelectValue placeholder="—">
+                                    {(value) => {
+                                      if (!value) return null;
+                                      return value.split("-")[0];
                                     }}
-                                  >
+                                  </SelectValue>
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="">
                                     —
                                   </SelectItem>
-                                  {availablePool.map((opt, idx) => <SelectItem key={`${opt}-${idx}`} value={String(opt)}>{opt}</SelectItem>)}
+                                  {(() => {
+                                    const assignedScores: number[] = [];
+                                    ABILITIES.forEach((ab) => {
+                                      if (ab === ability) return;
+                                      const val = standardScores[ab];
+                                      if (val !== null) {
+                                        assignedScores.push(val);
+                                      }
+                                    });
+                                    return availablePool.map((opt, idx) => {
+                                      const assignedIdx = assignedScores.indexOf(opt);
+                                      const isAssigned = assignedIdx !== -1;
+                                      if (isAssigned) {
+                                        assignedScores.splice(assignedIdx, 1);
+                                      }
+                                      return (
+                                        <SelectItem key={`${opt}-${idx}`} value={`${opt}-${idx}`} hideIndicator={true}>
+                                          <div className="flex items-center justify-between w-full">
+                                            <span>{opt}</span>
+                                            {isAssigned && <Check className="size-3.5 text-muted-foreground/70 shrink-0 ml-4" />}
+                                          </div>
+                                        </SelectItem>
+                                      );
+                                    });
+                                  })()}
                                 </SelectContent>
                               </Select>
                             </div>
@@ -755,16 +797,27 @@ export function StatGenerator() {
 
                           const pool = getRolledTotals();
                           const availablePool = pool.slice().sort((a, b) => b - a);
+
+                          // Build unique index mapping for duplicate rolled scores (using availablePool which is sorted!)
+                          const poolUsed = new Array(availablePool.length).fill(false);
+                          const abilityToIndex = {} as Record<Ability, number | null>;
                           ABILITIES.forEach((ab) => {
-                            if (ab === ability) return;
-                            const assigned = standardScores[ab];
-                            if (assigned === null) return;
-                            const idx = availablePool.indexOf(assigned);
-                            if (idx !== -1) availablePool.splice(idx, 1);
+                            const val = standardScores[ab];
+                            if (val === null) {
+                              abilityToIndex[ab] = null;
+                              return;
+                            }
+                            const idx = availablePool.findIndex((p, i) => p === val && !poolUsed[i]);
+                            if (idx !== -1) {
+                              poolUsed[idx] = true;
+                              abilityToIndex[ab] = idx;
+                            } else {
+                              abilityToIndex[ab] = null;
+                            }
                           });
-                          if (score !== null && availablePool.indexOf(score) === -1) {
-                            availablePool.push(score);
-                          }
+
+                          const scoreIndex = abilityToIndex[ability];
+                          const selectValue = (score !== null && scoreIndex !== null) ? `${score}-${scoreIndex}` : "";
 
                           const isBgAbility = bgAbilities.includes(ability);
                           const isPrimary = primaryStats.includes(ability);
@@ -780,32 +833,54 @@ export function StatGenerator() {
                               />
                               <td className="">
                                 <CenteredCellContent>
-                                  <Select value={score === null ? "" : String(score)} onValueChange={(val) => handleRolledAssignChange(ability, val)}>
+                                  <Select
+                                    value={selectValue}
+                                    onValueChange={(val) => {
+                                      if (!val) {
+                                        handleRolledAssignChange(ability, "");
+                                      } else {
+                                        const scoreVal = val.split("-")[0];
+                                        handleRolledAssignChange(ability, scoreVal);
+                                      }
+                                    }}
+                                  >
                                     <SelectTrigger className="rounded-none w-28 bg-background/50" aria-label={`Assign Score to ${ability}`}>
-                                      <SelectValue placeholder="Select" />
+                                      <SelectValue placeholder="Select">
+                                        {(value) => {
+                                          if (!value) return null;
+                                          return value.split("-")[0];
+                                        }}
+                                      </SelectValue>
                                     </SelectTrigger>
                                     <SelectContent>
-                                      <SelectItem
-                                        value=""
-                                        style={{
-                                          position: "absolute",
-                                          opacity: 0,
-                                          pointerEvents: "none",
-                                          height: 0,
-                                          width: 0,
-                                          padding: 0,
-                                          margin: 0,
-                                          overflow: "hidden",
-                                          border: 0,
-                                        }}
-                                      >
+                                      <SelectItem value="">
                                         Select
                                       </SelectItem>
-                                      {availablePool.map((option, idx) => (
-                                        <SelectItem key={`${option}-${idx}`} value={String(option)}>
-                                          {option}
-                                        </SelectItem>
-                                      ))}
+                                      {(() => {
+                                        const assignedScores: number[] = [];
+                                        ABILITIES.forEach((ab) => {
+                                          if (ab === ability) return;
+                                          const val = standardScores[ab];
+                                          if (val !== null) {
+                                            assignedScores.push(val);
+                                          }
+                                        });
+                                        return availablePool.map((option, idx) => {
+                                          const assignedIdx = assignedScores.indexOf(option);
+                                          const isAssigned = assignedIdx !== -1;
+                                          if (isAssigned) {
+                                            assignedScores.splice(assignedIdx, 1);
+                                          }
+                                          return (
+                                            <SelectItem key={`${option}-${idx}`} value={`${option}-${idx}`} hideIndicator={true}>
+                                              <div className="flex items-center justify-between w-full">
+                                                <span>{option}</span>
+                                                {isAssigned && <Check className="size-3.5 text-muted-foreground/70 shrink-0 ml-4" />}
+                                              </div>
+                                            </SelectItem>
+                                          );
+                                        });
+                                      })()}
                                     </SelectContent>
                                   </Select>
                                 </CenteredCellContent>
@@ -907,42 +982,42 @@ export function StatGenerator() {
                             onValueChange={(val) => handleStandardScoreChange(ability, val)}
                           >
                             <SelectTrigger className="rounded-none w-full" aria-label={`Assign Standard Array to ${ability}`}>
-                              <SelectValue placeholder="—" />
+                              <SelectValue placeholder="—">
+                                {(value) => {
+                                  if (!value) return null;
+                                  return value.split("-")[0];
+                                }}
+                              </SelectValue>
                             </SelectTrigger>
                             <SelectContent>
-                              <SelectItem
-                                value=""
-                                style={{
-                                  position: "absolute",
-                                  opacity: 0,
-                                  pointerEvents: "none",
-                                  height: 0,
-                                  width: 0,
-                                  padding: 0,
-                                  margin: 0,
-                                  overflow: "hidden",
-                                  border: 0,
-                                }}
-                              >
+                              <SelectItem value="">
                                 —
                               </SelectItem>
-                              {STANDARD_ARRAY_OPTIONS.map((option) => {
-                                const inUseByOtherAbility = ABILITIES.some(
-                                  (ab) =>
-                                    ab !== ability &&
-                                    standardScores[ab] !== null &&
-                                    standardScores[ab] === option,
-                                );
-                                return (
-                                  <SelectItem
-                                    key={option}
-                                    value={String(option)}
-                                    disabled={inUseByOtherAbility}
-                                  >
-                                    {option}
-                                  </SelectItem>
-                                );
-                              })}
+                              {(() => {
+                                const assignedScores: number[] = [];
+                                ABILITIES.forEach((ab) => {
+                                  if (ab === ability) return;
+                                  const val = standardScores[ab];
+                                  if (val !== null) {
+                                    assignedScores.push(val);
+                                  }
+                                });
+                                return STANDARD_ARRAY_OPTIONS.map((option) => {
+                                  const assignedIdx = assignedScores.indexOf(option);
+                                  const isAssigned = assignedIdx !== -1;
+                                  if (isAssigned) {
+                                    assignedScores.splice(assignedIdx, 1);
+                                  }
+                                  return (
+                                    <SelectItem key={option} value={String(option)} hideIndicator={true}>
+                                      <div className="flex items-center justify-between w-full">
+                                        <span>{option}</span>
+                                        {isAssigned && <Check className="size-3.5 text-muted-foreground/70 shrink-0 ml-4" />}
+                                      </div>
+                                    </SelectItem>
+                                  );
+                                });
+                              })()}
                             </SelectContent>
                           </Select>
                         </div>
@@ -1053,42 +1128,42 @@ export function StatGenerator() {
                                 }
                               >
                                 <SelectTrigger className="rounded-none w-28 bg-background/50" aria-label={`Assign Standard Array to ${ability}`}>
-                                  <SelectValue placeholder="Select" />
+                                  <SelectValue placeholder="Select">
+                                    {(value) => {
+                                      if (!value) return null;
+                                      return value.split("-")[0];
+                                    }}
+                                  </SelectValue>
                                 </SelectTrigger>
                                 <SelectContent>
-                                  <SelectItem
-                                    value=""
-                                    style={{
-                                      position: "absolute",
-                                      opacity: 0,
-                                      pointerEvents: "none",
-                                      height: 0,
-                                      width: 0,
-                                      padding: 0,
-                                      margin: 0,
-                                      overflow: "hidden",
-                                      border: 0,
-                                    }}
-                                  >
+                                  <SelectItem value="">
                                     Select
                                   </SelectItem>
-                                  {STANDARD_ARRAY_OPTIONS.map((option) => {
-                                    const inUseByOtherAbility = ABILITIES.some(
-                                      (ab) =>
-                                        ab !== ability &&
-                                        standardScores[ab] !== null &&
-                                        standardScores[ab] === option,
-                                    );
-                                    return (
-                                      <SelectItem
-                                        key={option}
-                                        value={String(option)}
-                                        disabled={inUseByOtherAbility}
-                                      >
-                                        {option}
-                                      </SelectItem>
-                                    );
-                                  })}
+                                  {(() => {
+                                    const assignedScores: number[] = [];
+                                    ABILITIES.forEach((ab) => {
+                                      if (ab === ability) return;
+                                      const val = standardScores[ab];
+                                      if (val !== null) {
+                                        assignedScores.push(val);
+                                      }
+                                    });
+                                    return STANDARD_ARRAY_OPTIONS.map((option) => {
+                                      const assignedIdx = assignedScores.indexOf(option);
+                                      const isAssigned = assignedIdx !== -1;
+                                      if (isAssigned) {
+                                        assignedScores.splice(assignedIdx, 1);
+                                      }
+                                      return (
+                                        <SelectItem key={option} value={String(option)} hideIndicator={true}>
+                                          <div className="flex items-center justify-between w-full">
+                                            <span>{option}</span>
+                                            {isAssigned && <Check className="size-3.5 text-muted-foreground/70 shrink-0 ml-4" />}
+                                          </div>
+                                        </SelectItem>
+                                      );
+                                    });
+                                  })()}
                                 </SelectContent>
                               </Select>
                             </CenteredCellContent>

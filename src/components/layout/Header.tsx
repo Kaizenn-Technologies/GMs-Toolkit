@@ -355,7 +355,7 @@ export function Header({ activeTab, setActiveTab }: HeaderProps) {
               </a>
             </div>
 
-            <span className="italic hidden min-[400px]:inline">Crafted for Dungeon Masters</span>
+            {/* <span className="italic hidden min-[400px]:inline">Crafted for Dungeon Masters</span> */}
           </div>
         </div>
       </div>
