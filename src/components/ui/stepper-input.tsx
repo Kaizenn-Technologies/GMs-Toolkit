@@ -31,8 +31,7 @@ export function StepperInput({
 
   return (
     <div className={`flex items-center border rounded-none overflow-hidden ${className || ""}`}>
-      <style dangerouslySetInnerHTML={{
-        __html: `
+      <style>{`
         @keyframes stepperSlideInRight {
           from { transform: translateX(100%); opacity: 0; }
           to { transform: translateX(0); opacity: 1; }
@@ -47,7 +46,7 @@ export function StepperInput({
         .animate-stepper-left {
           animation: stepperSlideInLeft 0.22s cubic-bezier(0.16, 1, 0.3, 1) forwards;
         }
-      `}} />
+      `}</style>
 
       <Button
         variant="ghost"
@@ -56,7 +55,7 @@ export function StepperInput({
         onClick={() => onChange(Math.max(min, value - 1))}
         aria-label="Decrease value"
       >
-        <Minus className="h-3 w-3" />
+        <Minus className="size-3" />
       </Button>
 
       <div className="relative h-full w-full min-w-[32px] overflow-hidden flex items-center justify-center">
@@ -95,7 +94,7 @@ export function StepperInput({
         onClick={() => onChange(Math.min(max, value + 1))}
         aria-label="Increase value"
       >
-        <Plus className="h-3 w-3" />
+        <Plus className="size-3" />
       </Button>
     </div>
   )

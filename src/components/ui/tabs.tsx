@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react"
+import { useState, useEffect, useRef, useCallback } from "react"
 import { Tabs as TabsPrimitive } from "@base-ui/react/tabs"
 import { cva, type VariantProps } from "class-variance-authority"
 
@@ -46,29 +46,29 @@ function TabsList({
   const containerRef = useRef<HTMLDivElement>(null);
   const [sliderStyle, setSliderStyle] = useState({ left: 0, width: 0, opacity: 0 });
 
-  useEffect(() => {
-    const updateSlider = () => {
-      if (!containerRef.current) return;
+  const updateSlider = useCallback(() => {
+    if (!containerRef.current) return;
+    
+    const activeTrigger = containerRef.current.querySelector(
+      '[data-active]'
+    ) as HTMLButtonElement | null;
+
+    if (activeTrigger) {
+      const container = containerRef.current;
+      const rect = activeTrigger.getBoundingClientRect();
+      const containerRect = container.getBoundingClientRect();
       
-      const activeTrigger = containerRef.current.querySelector(
-        '[data-active]'
-      ) as HTMLButtonElement | null;
+      setSliderStyle({
+        left: rect.left - containerRect.left,
+        width: rect.width,
+        opacity: 1,
+      });
+    } else {
+      setSliderStyle((prev) => ({ ...prev, opacity: 0 }));
+    }
+  }, []);
 
-      if (activeTrigger) {
-        const container = containerRef.current;
-        const rect = activeTrigger.getBoundingClientRect();
-        const containerRect = container.getBoundingClientRect();
-        
-        setSliderStyle({
-          left: rect.left - containerRect.left,
-          width: rect.width,
-          opacity: 1,
-        });
-      } else {
-        setSliderStyle((prev) => ({ ...prev, opacity: 0 }));
-      }
-    };
-
+  useEffect(() => {
     updateSlider();
 
     const observer = new MutationObserver(updateSlider);
@@ -92,7 +92,7 @@ function TabsList({
       clearTimeout(timer1);
       clearTimeout(timer2);
     };
-  }, [children]);
+  }, [updateSlider]);
 
   return (
     <TabsPrimitive.List
@@ -107,10 +107,12 @@ function TabsList({
         <div
           className="absolute top-[3px] bottom-[3px] bg-background shadow-xs transition-all duration-300 ease-out rounded-none -z-10"
           style={{
-            left: `${sliderStyle.left}px`,
-            width: `${sliderStyle.width}px`,
+            left: 0,
+            width: "100px",
+            transform: `translateX(${sliderStyle.left}px) scaleX(${sliderStyle.width / 100})`,
+            transformOrigin: "left",
             opacity: sliderStyle.opacity,
-            transitionProperty: "left, width, opacity",
+            transitionProperty: "transform, opacity",
           }}
         />
       )}
@@ -145,4 +147,4 @@ function TabsContent({ className, ...props }: TabsPrimitive.Panel.Props) {
   )
 }
 
-export { Tabs, TabsList, TabsTrigger, TabsContent, tabsListVariants }
+export { Tabs, TabsList, TabsTrigger, TabsContent }

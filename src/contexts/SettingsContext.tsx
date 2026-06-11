@@ -1,6 +1,6 @@
 import {
   createContext,
-  useContext,
+  use,
   useState,
   useEffect,
   type ReactNode,
@@ -287,7 +287,7 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
 }
 
 export function useSettings() {
-  const ctx = useContext(SettingsContext);
+  const ctx = use(SettingsContext);
   if (!ctx) throw new Error("useSettings must be used inside <SettingsProvider>");
   return ctx;
 }

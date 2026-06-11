@@ -28,7 +28,7 @@ export function VerifiedLoadPanel({
       {...props}
     >
       <div className="flex flex-row gap-2">
-        <User className="w-10 h-10 text-primary shrink-0 my-auto" />
+        <User className="size-10 text-primary shrink-0 my-auto" />
         <div className="flex flex-col py-1">
           <p className="text-[14px] font-bold text-primary uppercase tracking-wider">
             Loaded Character Information

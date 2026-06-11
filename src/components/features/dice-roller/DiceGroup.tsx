@@ -120,11 +120,10 @@ export const DiceGroup: React.FC<DiceGroupProps> = ({
 
       <div
         className={clsx(
-          "flex items-center justify-between p-0 border transition-all cursor-pointer overflow-hidden",
+          "flex items-center justify-between p-0 border transition-all overflow-hidden",
           group.collapsed ? "bg-muted/30 border-border/50" : "bg-muted/50 border-primary/20 shadow-sm",
           isOverlay && "bg-muted/80 border-primary/50"
         )}
-        onClick={isOverlay ? undefined : (isSelectionMode && onSelectGroup ? () => onSelectGroup(group.id, !isSelected) : onToggleCollapse)}
       >
         <div className="flex items-center h-9 w-full min-w-0">
           {/* Drag Handle Container */}
@@ -141,33 +140,36 @@ export const DiceGroup: React.FC<DiceGroupProps> = ({
               <Checkbox
                 checked={isSelected}
                 onCheckedChange={(checked) => onSelectGroup(group.id, !!checked)}
-                className="h-4 w-4 rounded-sm border-border/70 text-primary data-[state=checked]:bg-primary data-[state=checked]:text-primary-foreground focus-visible:ring-primary/45"
+                className="size-4 rounded-sm border-border/70 text-primary data-[state=checked]:bg-primary data-[state=checked]:text-primary-foreground focus-visible:ring-primary/45"
               />
             </div>
           )}
 
-          <div className="flex items-center gap-2 px-2 min-w-0 flex-1">
-            {group.collapsed ? (
-              <Folder size={16} className="text-muted-foreground/50 shrink-0" />
-            ) : (
-              <FolderOpen size={16} className="text-primary shrink-0" />
-            )}
-
-            {isEditing ? (
-              <div className="flex items-center gap-1 flex-1">
-                <Input
-                  className="h-7 text-xs py-0 px-2"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  aria-label="Group Name"
-                  autoFocus
-                  onClick={(e) => e.stopPropagation()}
-                />
-                <Button size="icon" variant="ghost" className="h-7 w-7 shrink-0" onClick={handleSave} aria-label="Save group name">
-                  <Save size={14} className="text-primary" />
-                </Button>
-              </div>
-            ) : (
+          {isEditing ? (
+            <div className="flex items-center gap-1 flex-1 min-w-0 pl-2 pr-2" onClick={(e) => e.stopPropagation()}>
+              <Input
+                className="h-7 text-xs py-0 px-2"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                aria-label="Group Name"
+                autoFocus
+              />
+              <Button size="icon" variant="ghost" className="size-7 shrink-0" onClick={handleSave} aria-label="Save group name">
+                <Save size={14} className="text-primary" />
+              </Button>
+            </div>
+          ) : (
+            <button
+              type="button"
+              className="flex-1 flex items-center gap-2 px-2 min-w-0 h-full text-left bg-transparent border-none p-0 text-foreground cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/50"
+              onClick={isOverlay ? undefined : (isSelectionMode && onSelectGroup ? () => onSelectGroup(group.id, !isSelected) : onToggleCollapse)}
+              aria-label={`${group.collapsed ? "Expand" : "Collapse"} group ${group.name}`}
+            >
+              {group.collapsed ? (
+                <Folder size={16} className="text-muted-foreground/50 shrink-0" />
+              ) : (
+                <FolderOpen size={16} className="text-primary shrink-0" />
+              )}
               <div className="flex items-center gap-2 min-w-0 flex-1">
                 <span className="text-xs font-bold truncate">
                   {group.name}
@@ -176,15 +178,15 @@ export const DiceGroup: React.FC<DiceGroupProps> = ({
                   {group.diceIds.length} rolls
                 </span>
               </div>
-            )}
-          </div>
+            </button>
+          )}
         </div>
 
         <div className="flex items-center gap-1 pr-1 shrink-0" onClick={(e) => e.stopPropagation()}>
           <Button
             variant="ghost"
             size="icon"
-            className="h-7 w-7 text-muted-foreground/40 hover:text-primary hover:bg-primary/10 transition-colors"
+            className="size-7 text-muted-foreground/40 hover:text-primary hover:bg-primary/10 transition-colors"
             onClick={handleEdit}
             aria-label="Edit group name"
           >
@@ -194,7 +196,7 @@ export const DiceGroup: React.FC<DiceGroupProps> = ({
           <Button
             variant="ghost"
             size="icon"
-            className="h-7 w-7 text-muted-foreground/40 hover:text-red-500 hover:bg-red-500/10 transition-colors"
+            className="size-7 text-muted-foreground/40 hover:text-red-500 hover:bg-red-500/10 transition-colors"
             onClick={onDelete}
             aria-label="Delete group"
           >

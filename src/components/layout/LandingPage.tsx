@@ -3,46 +3,46 @@ import { useNavigate } from "react-router-dom";
 
 import { useSettings } from "@/contexts/SettingsContext";
 
+const FEATURES = [
+  {
+    title: "HP Calculator",
+    description: "Sleek party management. Track HP, temp HP, and status for your entire table in one view.",
+    icon: <Calculator className="size-12 text-blue-600 dark:text-blue-400" />,
+    path: "/hp-calculator",
+    gradient: "from-blue-500/5 via-blue-500/0 to-transparent dark:from-blue-600/20 dark:via-blue-900/10 dark:to-transparent",
+    accent: "bg-blue-500",
+    shadow: "hover:shadow-blue-500/5 dark:hover:shadow-blue-500/20",
+  },
+  {
+    title: "Ability Score",
+    description: "Character creation redefined. Point Buy, Standard Array, and custom rolling with real-time feedback.",
+    icon: <Users className="size-12 text-emerald-600 dark:text-emerald-400" />,
+    path: "/stat-generator/pointbuy",
+    gradient: "from-emerald-500/5 via-emerald-500/0 to-transparent dark:from-emerald-600/20 dark:via-emerald-900/10 dark:to-transparent",
+    accent: "bg-emerald-500",
+    shadow: "hover:shadow-emerald-500/5 dark:hover:shadow-emerald-500/20",
+  },
+  {
+    title: "DM Dice Roller",
+    description: "High-density rolling. Advantage, custom groups, and native Daggerheart support for fast-paced play.",
+    icon: <Dices className="size-12 text-purple-600 dark:text-purple-400" />,
+    path: "/dm-dice-roller",
+    gradient: "from-purple-500/5 via-purple-500/0 to-transparent dark:from-purple-600/20 dark:via-purple-900/10 dark:to-transparent",
+    accent: "bg-purple-500",
+    shadow: "hover:shadow-purple-500/5 dark:hover:shadow-purple-500/20",
+  },
+];
+
 export function LandingPage() {
   const navigate = useNavigate();
   const { settings } = useSettings();
   const isDarkMode = settings.sitewide.darkMode;
 
-  const features = [
-    {
-      title: "HP Calculator",
-      description: "Sleek party management. Track HP, temp HP, and status for your entire table in one view.",
-      icon: <Calculator className="w-12 h-12 text-blue-600 dark:text-blue-400" />,
-      path: "/hp-calculator",
-      gradient: "from-blue-500/5 via-blue-500/0 to-transparent dark:from-blue-600/20 dark:via-blue-900/10 dark:to-transparent",
-      accent: "bg-blue-500",
-      shadow: "hover:shadow-blue-500/5 dark:hover:shadow-blue-500/20",
-    },
-    {
-      title: "Ability Score",
-      description: "Character creation redefined. Point Buy, Standard Array, and custom rolling with real-time feedback.",
-      icon: <Users className="w-12 h-12 text-emerald-600 dark:text-emerald-400" />,
-      path: "/stat-generator/pointbuy",
-      gradient: "from-emerald-500/5 via-emerald-500/0 to-transparent dark:from-emerald-600/20 dark:via-emerald-900/10 dark:to-transparent",
-      accent: "bg-emerald-500",
-      shadow: "hover:shadow-emerald-500/5 dark:hover:shadow-emerald-500/20",
-    },
-    {
-      title: "DM Dice Roller",
-      description: "High-density rolling. Advantage, custom groups, and native Daggerheart support for fast-paced play.",
-      icon: <Dices className="w-12 h-12 text-purple-600 dark:text-purple-400" />,
-      path: "/dm-dice-roller",
-      gradient: "from-purple-500/5 via-purple-500/0 to-transparent dark:from-purple-600/20 dark:via-purple-900/10 dark:to-transparent",
-      accent: "bg-purple-500",
-      shadow: "hover:shadow-purple-500/5 dark:hover:shadow-purple-500/20",
-    },
-  ];
-
   return (
     <div className="flex-1 flex flex-col items-center justify-center py-12 px-6 lg:px-8 relative overflow-hidden">
       {/* Background Glows */}
-      <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-primary/10 rounded-full blur-[128px] -z-10 animate-pulse" />
-      <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-primary/10 rounded-full blur-[128px] -z-10 animate-pulse delay-700" />
+      <div className="absolute top-1/4 left-1/4 size-96 bg-primary/10 rounded-full blur-[128px] -z-10 animate-pulse" />
+      <div className="absolute bottom-1/4 right-1/4 size-96 bg-primary/10 rounded-full blur-[128px] -z-10 animate-pulse delay-700" />
 
       {/* Hero Header */}
       <div className="text-center mb-20 space-y-6 animate-in fade-in slide-in-from-top-12 duration-1000">
@@ -57,7 +57,7 @@ export function LandingPage() {
           />
         </div>
         <div className="space-y-2">
-          <h1 className="text-5xl sm:text-7xl font-black tracking-tight bg-clip-text text-transparent bg-gradient-to-b from-foreground to-foreground/50">
+          <h1 className="text-5xl sm:text-7xl font-black tracking-tight text-foreground">
             GM's Toolkit
           </h1>
           <p className="max-w-2xl mx-auto text-xl text-muted-foreground font-medium leading-relaxed">
@@ -69,10 +69,11 @@ export function LandingPage() {
 
       {/* Feature Grid */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-6xl w-full perspective-1000">
-        {features.map((feature, index) => (
-          <div
+        {FEATURES.map((feature, index) => (
+          <button
+            type="button"
             key={feature.path}
-            className={`group animate-in fade-in slide-in-from-bottom-16 duration-700 delay-${(index + 1) * 150}`}
+            className={`w-full text-left bg-transparent border-none p-0 block cursor-pointer focus:outline-none group animate-in fade-in slide-in-from-bottom-16 duration-700 delay-${(index + 1) * 150}`}
             onClick={() => navigate(feature.path)}
           >
             <div className={`
@@ -105,11 +106,11 @@ export function LandingPage() {
               </div>
 
               {/* Decorative Corner Element */}
-              <div className="absolute -bottom-10 -right-10 w-32 h-32 bg-foreground/5 dark:bg-white/5 rounded-full blur-2xl group-hover:bg-foreground/10 dark:group-hover:bg-white/10 transition-colors duration-500" />
+              <div className="absolute -bottom-10 -right-10 size-32 bg-foreground/5 dark:bg-white/5 rounded-full blur-2xl group-hover:bg-foreground/10 dark:group-hover:bg-white/10 transition-colors duration-500" />
             </div>
-          </div>
+          </button>
         ))}
       </div>
-    </div >
+    </div>
   );
 }

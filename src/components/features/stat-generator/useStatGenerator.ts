@@ -1,5 +1,5 @@
 /* eslint-disable react-hooks/set-state-in-effect */
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useCallback } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { classes, classNames } from "@/lib/classes";
 import { backgrounds, backgroundNames } from "@/lib/backgrounds";
@@ -612,10 +612,7 @@ export function useStatGenerator() {
     }
   };
 
-  useEffect(() => {
-    if (hasHydratedFromUrl.current) return;
-    hasHydratedFromUrl.current = true;
-
+  const hydrateFromUrl = useCallback(() => {
     const params = new URLSearchParams(location.search);
     const codeFromUrl = params.get("code");
 
@@ -902,6 +899,12 @@ export function useStatGenerator() {
     updateRoll,
     updateStandard,
   ]);
+
+  useEffect(() => {
+    if (hasHydratedFromUrl.current) return;
+    hasHydratedFromUrl.current = true;
+    hydrateFromUrl();
+  }, [hydrateFromUrl]);
 
   const rollDie = () => randomInt(1, 6);
 

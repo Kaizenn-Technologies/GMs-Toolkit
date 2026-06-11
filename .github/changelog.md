@@ -1,5 +1,18 @@
 # Changelog
 
+## [v0.8.0]
+
+### Added
+- **Multi-Select & Bulk Actions**: Select and export multiple dice configurations or group presets simultaneously.
+- **Enhanced Import & Export**: Export selected presets directly to the clipboard or download them as files, and import presets with a clean verification preview and conflict resolution (merge/replace).
+- **Progression & Gear Reference**: A dedicated reference section checking character feats and stat-boosting magic items, complete with attunement indicators and color-coded rarity badges.
+
+### Changed
+- **Modular Codebase**: Extensively refactored large files (including the Ability Score Generator, HP Calculator, Settings Overlay, and Dice Roller) into clean, focused sub-panels.
+- **Native Dialogs**: Standardized overlay modals by migrating to native HTML5 `<dialog>` elements.
+- **System Upgrades**: Upgraded core project dependencies (React, Vite, and tooling packages) and optimized responsive styles.
+
+
 ## [v0.7.7]
 
 ### Fixed

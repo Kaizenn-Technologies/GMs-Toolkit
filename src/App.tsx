@@ -60,7 +60,7 @@ export default function App() {
         <Suspense
           fallback={
             <div className="flex-1 flex flex-col items-center justify-center min-h-[400px] text-muted-foreground animate-pulse">
-              <div className="h-8 w-8 rounded-full border-4 border-primary border-t-transparent animate-spin mb-4" />
+              <div className="size-8 rounded-full border-4 border-primary border-t-transparent animate-spin mb-4" />
               <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground/60">Loading session...</p>
             </div>
           }

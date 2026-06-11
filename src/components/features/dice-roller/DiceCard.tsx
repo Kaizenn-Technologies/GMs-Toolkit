@@ -71,12 +71,24 @@ export const DiceCard: React.FC<DiceCardProps> = ({
     }
   }, [config.isEditing]);
 
-  const handleRoll = (e: React.MouseEvent) => {
+  const handleRoll = (e: React.MouseEvent | React.KeyboardEvent) => {
     if (isEditing) return;
     let mode: "normal" | "advantage" | "disadvantage" = "normal";
     if (e.ctrlKey) mode = "advantage";
     if (e.shiftKey) mode = "disadvantage";
     onRoll(mode);
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (isOverlay) return;
+    if (e.key === "Enter" || e.key === " ") {
+      e.preventDefault();
+      if (isSelectionMode && onSelect) {
+        onSelect(!isSelected);
+      } else {
+        handleRoll(e);
+      }
+    }
   };
 
   const handleSave = (e: React.MouseEvent) => {
@@ -87,176 +99,14 @@ export const DiceCard: React.FC<DiceCardProps> = ({
 
   if (isEditing) {
     return (
-      <Card className="border-primary/40 shadow-lg bg-card/80" ref={setNodeRef} style={style}>
-        <CardContent className="">
-          {/* Row 1: Name & Save */}
-          <div className="flex items-center gap-2">
-            <Input
-              placeholder="Roll Name (e.g. Fireball)"
-              value={config.name || ""}
-              onChange={(e) => onUpdate({ name: e.target.value })}
-              className="h-8 text-sm flex-1 bg-background/50"
-              aria-label="Roll Name"
-              autoFocus
-            />
-            <Button size="sm" variant="default" className="h-8 px-3 gap-1.5" onClick={handleSave}>
-              <Save size={14} />
-              Save
-            </Button>
-          </div>
-
-          {/* Row 2: Stats & Toggles */}
-          <div className="flex flex-wrap items-center gap-x-4 gap-y-2 py-1">
-            <div className="flex items-center gap-3">
-              <div className="flex flex-col gap-1">
-                <label htmlFor={`dice-count-${config.id}`} className="text-[10px] uppercase font-semibold text-muted-foreground/70 leading-none">Count</label>
-                <StepperInput
-                  id={`dice-count-${config.id}`}
-                  value={config.count}
-                  onChange={(val) => onUpdate({ count: val })}
-                  min={1}
-                  max={99}
-                  className="h-8 w-24"
-                />
-              </div>
-              <div className="flex flex-col gap-1">
-                <label htmlFor={`dice-sides-${config.id}`} className="text-[10px] uppercase font-semibold text-muted-foreground/70 leading-none">Sides</label>
-                <Select
-                  value={config.sides.toString()}
-                  onValueChange={(val) => onUpdate({ sides: parseInt(val as string) })}
-                >
-                  <SelectTrigger id={`dice-sides-${config.id}`} className="h-8 w-20 text-xs font-semibold">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {[4, 6, 8, 10, 12, 20, 100].map((s) => (
-                      <SelectItem key={s} value={s.toString()}>
-                        d{s}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="flex flex-col gap-1">
-                <label htmlFor={`dice-mod-${config.id}`} className="text-[10px] uppercase font-semibold text-muted-foreground/70 leading-none">Mod</label>
-                <StepperInput
-                  id={`dice-mod-${config.id}`}
-                  value={config.modifier || 0}
-                  onChange={(val) => onUpdate({ modifier: val })}
-                  min={-99}
-                  max={99}
-                  className="h-8 w-24"
-                />
-              </div>
-            </div>
-
-            <div className="h-8 w-px bg-border/30 mx-1" />
-
-            <div className="flex items-center gap-4">
-              <Tooltip>
-                <TooltipTrigger render={
-                  <div className="flex items-center space-x-2 cursor-help">
-                    <Checkbox
-                      id={`keep-drop-${config.id}`}
-                      checked={!!config.rule}
-                      onCheckedChange={(checked) => {
-                        if (checked) {
-                          onUpdate({ rule: { type: "keep", target: "highest", value: 1 } });
-                        } else {
-                          onUpdate({ rule: undefined });
-                        }
-                      }}
-                    />
-                    <label htmlFor={`keep-drop-${config.id}`} className="text-[11px] font-semibold uppercase tracking-tight cursor-pointer text-muted-foreground/80">
-                      Keep/Drop
-                    </label>
-                    <Info size={12} className="text-muted-foreground/40" />
-                  </div>
-                } />
-                <TooltipContent side="bottom" className="max-w-[200px] text-[11px] leading-relaxed">
-                  Keep or drop a specific number of highest or lowest dice results.
-                </TooltipContent>
-              </Tooltip>
-
-              <Tooltip>
-                <TooltipTrigger render={
-                  <div className="flex items-center space-x-2 cursor-help">
-                    <Checkbox
-                      id={`explode-${config.id}`}
-                      checked={!!config.explode}
-                      onCheckedChange={(checked) => {
-                        onUpdate({ explode: checked ? "single" : undefined });
-                      }}
-                    />
-                    <label htmlFor={`explode-${config.id}`} className="text-[11px] font-semibold uppercase tracking-tight cursor-pointer text-muted-foreground/80">
-                      Explode
-                    </label>
-                    <Info size={12} className="text-muted-foreground/40" />
-                  </div>
-                } />
-                <TooltipContent side="bottom" className="max-w-[200px] text-[11px] leading-relaxed">
-                  If you roll the maximum value on a die, you roll an additional die and add it to the total.
-                </TooltipContent>
-              </Tooltip>
-            </div>
-          </div>
-
-          {/* Row 3: Rule details & Delete */}
-          <div className="flex items-center justify-between pt-1 border-t border-border/20">
-            <div className="flex items-center gap-2">
-              {config.rule && (
-                <div className="flex items-center gap-2 animate-in fade-in slide-in-from-left-1 duration-200">
-                  <Select
-                    value={config.rule.type}
-                    onValueChange={(val) => {
-                      if (val === "keep" || val === "drop") {
-                        onUpdate({ rule: { ...config.rule!, type: val } });
-                      }
-                    }}
-                  >
-                    <SelectTrigger aria-label="Keep or drop rule type" className="h-7 w-20 text-[10px] font-semibold uppercase">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="keep">Keep</SelectItem>
-                      <SelectItem value="drop">Drop</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <Select
-                    value={config.rule.target}
-                    onValueChange={(val) => {
-                      if (val === "highest" || val === "lowest") {
-                        onUpdate({ rule: { ...config.rule!, target: val } });
-                      }
-                    }}
-                  >
-                    <SelectTrigger aria-label="Keep or drop rule target" className="h-8 w-24 text-[10px] font-semibold uppercase">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="highest">Highest</SelectItem>
-                      <SelectItem value="lowest">Lowest</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <StepperInput
-                    value={config.rule.value}
-                    onChange={(val) => onUpdate({ rule: { ...config.rule!, value: val } })}
-                    min={1}
-                    max={config.count - 1 || 1}
-                    className="h-8 w-24"
-                    aria-label="Rule value"
-                  />
-                </div>
-              )}
-            </div>
-
-            <Button variant="outline" size="sm" onClick={onDelete} className="text-red-500 hover:bg-red-500/10 h-7 text-[11px] font-semibold uppercase" aria-label="Delete roll">
-              <Trash2 size={14} className="mr-1.5" />
-              Delete
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
+      <DiceCardEditMode
+        config={config}
+        onUpdate={onUpdate}
+        onDelete={onDelete}
+        handleSave={handleSave}
+        setNodeRef={setNodeRef}
+        style={style}
+      />
     );
   }
 
@@ -266,11 +116,10 @@ export const DiceCard: React.FC<DiceCardProps> = ({
       style={style}
       className={clsx(
         "group relative transition-all overflow-hidden rounded-md border border-border/50 shadow-sm",
-        isOverlay ? "cursor-grabbing shadow-2xl ring-2 ring-primary/50" : "cursor-pointer",
+        isOverlay ? "cursor-grabbing shadow-2xl ring-2 ring-primary/50" : "",
         isDragging && !isOverlay ? "opacity-30 grayscale-[0.5] border-dashed border-primary/30" : "bg-card/50",
         !isOverlay && "hover:border-primary/50"
       )}
-      onClick={isOverlay ? undefined : (isSelectionMode && onSelect ? () => onSelect(!isSelected) : handleRoll)}
     >
       {isDropTarget && !isOverlay && (
         <div className="absolute inset-0 pointer-events-none z-[100]">
@@ -306,14 +155,21 @@ export const DiceCard: React.FC<DiceCardProps> = ({
 
         {/* Content Area */}
         <div className="flex-1 flex items-center pl-3 pr-1 min-w-0 gap-3">
-          <div className="flex-1 flex items-baseline gap-2.5 min-w-0">
+          <button
+            type="button"
+            onClick={isOverlay ? undefined : (isSelectionMode && onSelect ? () => onSelect(!isSelected) : handleRoll)}
+            onKeyDown={handleKeyDown}
+            tabIndex={isOverlay ? -1 : 0}
+            className="flex-1 flex items-baseline gap-2.5 min-w-0 text-left bg-transparent border-none p-0 cursor-pointer focus:outline-none focus-visible:ring-1 focus-visible:ring-primary/50 text-foreground"
+            aria-label={`Roll ${config.name || `${config.count}d${config.sides}`}`}
+          >
             <span className="text-sm font-bold truncate text-foreground/90">
               {config.name || `${config.count}d${config.sides}`}
             </span>
             <span className="text-xs text-muted-foreground/60 uppercase font-semibold tracking-widest shrink-0">
               {config.count}d{config.sides}{config.modifier ? (config.modifier > 0 ? `+${config.modifier}` : `-${Math.abs(config.modifier)}`) : ""}
             </span>
-          </div>
+          </button>
 
           {/* Quick Actions */}
           <div className="flex items-center gap-1">
@@ -387,5 +243,196 @@ export const DiceCard: React.FC<DiceCardProps> = ({
         </div>
       </CardContent>
     </div>
+  );
+};
+
+interface DiceCardEditModeProps {
+  config: DiceConfig;
+  onUpdate: (updates: Partial<DiceConfig>) => void;
+  onDelete: () => void;
+  handleSave: (e: React.MouseEvent) => void;
+  setNodeRef: (node: HTMLElement | null) => void;
+  style: React.CSSProperties;
+}
+
+const DiceCardEditMode: React.FC<DiceCardEditModeProps> = ({
+  config,
+  onUpdate,
+  onDelete,
+  handleSave,
+  setNodeRef,
+  style,
+}) => {
+  return (
+    <Card className="border-primary/40 shadow-lg bg-card/80" ref={setNodeRef} style={style}>
+      <CardContent className="">
+        {/* Row 1: Name & Save */}
+        <div className="flex items-center gap-2">
+          <Input
+            placeholder="Roll Name (e.g. Fireball)"
+            value={config.name || ""}
+            onChange={(e) => onUpdate({ name: e.target.value })}
+            className="h-8 text-sm flex-1 bg-background/50"
+            aria-label="Roll Name"
+            autoFocus
+          />
+          <Button size="sm" variant="default" className="h-8 px-3 gap-1.5" onClick={handleSave}>
+            <Save size={14} />
+            Save
+          </Button>
+        </div>
+
+        {/* Row 2: Stats & Toggles */}
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-2 py-1">
+          <div className="flex items-center gap-3">
+            <div className="flex flex-col gap-1">
+              <label htmlFor={`dice-count-${config.id}`} className="text-[10px] uppercase font-semibold text-muted-foreground/70 leading-none">Count</label>
+              <StepperInput
+                id={`dice-count-${config.id}`}
+                value={config.count}
+                onChange={(val) => onUpdate({ count: val })}
+                min={1}
+                max={99}
+                className="h-8 w-24"
+              />
+            </div>
+            <div className="flex flex-col gap-1">
+              <label htmlFor={`dice-sides-${config.id}`} className="text-[10px] uppercase font-semibold text-muted-foreground/70 leading-none">Sides</label>
+              <Select
+                value={config.sides.toString()}
+                onValueChange={(val) => onUpdate({ sides: parseInt(val as string) })}
+              >
+                <SelectTrigger id={`dice-sides-${config.id}`} className="h-8 w-20 text-xs font-semibold">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {[4, 6, 8, 10, 12, 20, 100].map((s) => (
+                    <SelectItem key={s} value={s.toString()}>
+                      d{s}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="flex flex-col gap-1">
+              <label htmlFor={`dice-mod-${config.id}`} className="text-[10px] uppercase font-semibold text-muted-foreground/70 leading-none">Mod</label>
+              <StepperInput
+                id={`dice-mod-${config.id}`}
+                value={config.modifier || 0}
+                onChange={(val) => onUpdate({ modifier: val })}
+                min={-99}
+                max={99}
+                className="h-8 w-24"
+              />
+            </div>
+          </div>
+
+          <div className="h-8 w-px bg-border/30 mx-1" />
+
+          <div className="flex items-center gap-4">
+            <Tooltip>
+              <TooltipTrigger render={
+                <div className="flex items-center gap-2 cursor-help">
+                  <Checkbox
+                    id={`keep-drop-${config.id}`}
+                    checked={!!config.rule}
+                    onCheckedChange={(checked) => {
+                      if (checked) {
+                        onUpdate({ rule: { type: "keep", target: "highest", value: 1 } });
+                      } else {
+                        onUpdate({ rule: undefined });
+                      }
+                    }}
+                  />
+                  <label htmlFor={`keep-drop-${config.id}`} className="text-[11px] font-semibold uppercase tracking-tight cursor-pointer text-muted-foreground/80">
+                    Keep/Drop
+                  </label>
+                  <Info size={12} className="text-muted-foreground/40" />
+                </div>
+              } />
+              <TooltipContent side="bottom" className="max-w-[200px] text-[11px] leading-relaxed">
+                Keep or drop a specific number of highest or lowest dice results.
+              </TooltipContent>
+            </Tooltip>
+
+            <Tooltip>
+              <TooltipTrigger render={
+                <div className="flex items-center gap-2 cursor-help">
+                  <Checkbox
+                    id={`explode-${config.id}`}
+                    checked={!!config.explode}
+                    onCheckedChange={(checked) => {
+                      onUpdate({ explode: checked ? "single" : undefined });
+                    }}
+                  />
+                  <label htmlFor={`explode-${config.id}`} className="text-[11px] font-semibold uppercase tracking-tight cursor-pointer text-muted-foreground/80">
+                    Explode
+                  </label>
+                  <Info size={12} className="text-muted-foreground/40" />
+                </div>
+              } />
+              <TooltipContent side="bottom" className="max-w-[200px] text-[11px] leading-relaxed">
+                If you roll the maximum value on a die, you roll an additional die and add it to the total.
+              </TooltipContent>
+            </Tooltip>
+          </div>
+        </div>
+
+        {/* Row 3: Rule details & Delete */}
+        <div className="flex items-center justify-between pt-1 border-t border-border/20">
+          <div className="flex items-center gap-2">
+            {config.rule && (
+              <div className="flex items-center gap-2 animate-in fade-in slide-in-from-left-1 duration-200">
+                <Select
+                  value={config.rule.type}
+                  onValueChange={(val) => {
+                    if (val === "keep" || val === "drop") {
+                      onUpdate({ rule: { ...config.rule!, type: val } });
+                    }
+                  }}
+                >
+                  <SelectTrigger aria-label="Keep or drop rule type" className="h-7 w-20 text-[10px] font-semibold uppercase">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="keep">Keep</SelectItem>
+                    <SelectItem value="drop">Drop</SelectItem>
+                  </SelectContent>
+                </Select>
+                <Select
+                  value={config.rule.target}
+                  onValueChange={(val) => {
+                    if (val === "highest" || val === "lowest") {
+                      onUpdate({ rule: { ...config.rule!, target: val } });
+                    }
+                  }}
+                >
+                  <SelectTrigger aria-label="Keep or drop rule target" className="h-8 w-24 text-[10px] font-semibold uppercase">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="highest">Highest</SelectItem>
+                    <SelectItem value="lowest">Lowest</SelectItem>
+                  </SelectContent>
+                </Select>
+                <StepperInput
+                  value={config.rule.value}
+                  onChange={(val) => onUpdate({ rule: { ...config.rule!, value: val } })}
+                  min={1}
+                  max={config.count - 1 || 1}
+                  className="h-8 w-24"
+                  aria-label="Rule value"
+                />
+              </div>
+            )}
+          </div>
+
+          <Button variant="outline" size="sm" onClick={onDelete} className="text-red-500 hover:bg-red-500/10 h-7 text-[11px] font-semibold uppercase" aria-label="Delete roll">
+            <Trash2 size={14} className="mr-1.5" />
+            Delete
+          </Button>
+        </div>
+      </CardContent>
+    </Card>
   );
 };

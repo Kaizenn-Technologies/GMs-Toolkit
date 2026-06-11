@@ -189,6 +189,7 @@ export const ImportModal: React.FC<ImportModalProps> = ({ isOpen, onClose, onImp
       <div
         className="absolute inset-0 bg-black/60 backdrop-blur-xs transition-opacity duration-300 animate-in fade-in"
         onClick={handleClose}
+        aria-hidden="true"
       />
 
       {/* Modal Content Panel */}
@@ -197,7 +198,7 @@ export const ImportModal: React.FC<ImportModalProps> = ({ isOpen, onClose, onImp
         {/* Header */}
         <div className="flex items-center justify-between border-b border-border/40 pb-3 shrink-0">
           <h2 className="text-sm font-bold tracking-wider uppercase text-foreground m-0 flex items-center gap-2">
-            <Upload className="w-4.5 h-4.5 text-primary" />
+            <Upload className="size-4.5 text-primary" />
             Import Dice Presets
           </h2>
           <Button
@@ -205,9 +206,9 @@ export const ImportModal: React.FC<ImportModalProps> = ({ isOpen, onClose, onImp
             size="icon"
             onClick={handleClose}
             aria-label="Close dialog"
-            className="hover:bg-muted/50 transition-colors h-7 w-7"
+            className="hover:bg-muted/50 transition-colors size-7"
           >
-            <X className="w-4 h-4 text-muted-foreground hover:text-foreground" />
+            <X className="size-4 text-muted-foreground hover:text-foreground" />
           </Button>
         </div>
 
@@ -215,13 +216,14 @@ export const ImportModal: React.FC<ImportModalProps> = ({ isOpen, onClose, onImp
         <div className="flex-1 overflow-y-auto space-y-4 pr-1 min-h-0">
           
           {/* File Drag-and-Drop Area */}
-          <div
+          <button
+            type="button"
             onDragEnter={handleDrag}
             onDragOver={handleDrag}
             onDragLeave={handleDrag}
             onDrop={handleDrop}
             onClick={() => fileInputRef.current?.click()}
-            className={`border-2 border-dashed rounded-lg p-5 flex flex-col items-center justify-center cursor-pointer transition-all duration-200 ${
+            className={`w-full border-2 border-dashed rounded-lg p-5 flex flex-col items-center justify-center cursor-pointer transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-primary/50 ${
               dragActive 
                 ? "border-primary bg-primary/10 text-primary" 
                 : "border-border/60 hover:border-primary/50 hover:bg-muted/5 text-muted-foreground"
@@ -241,7 +243,7 @@ export const ImportModal: React.FC<ImportModalProps> = ({ isOpen, onClose, onImp
             <p className="text-[10px] text-muted-foreground/80 mt-1 uppercase font-bold tracking-tight">
               Accepts .json configuration backups
             </p>
-          </div>
+          </button>
 
           {/* Paste JSON Editor */}
           <div className="space-y-1.5">
@@ -259,84 +261,18 @@ export const ImportModal: React.FC<ImportModalProps> = ({ isOpen, onClose, onImp
           {/* Validation Feedback */}
           {validationError && (
             <div className="flex items-start gap-2.5 p-3 border border-destructive/20 bg-destructive/5 rounded-lg text-destructive text-xs animate-in fade-in duration-200">
-              <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
+              <AlertCircle className="size-4 shrink-0 mt-0.5" />
               <div className="font-semibold">{validationError}</div>
             </div>
           )}
 
           {parsedData && (
-            <div className="space-y-3 animate-in fade-in slide-in-from-bottom-2 duration-300">
-              {/* Validation Success Card */}
-              <div className="flex items-center gap-2 p-2 px-3 border border-emerald-500/20 bg-emerald-500/5 rounded-lg text-emerald-500 text-xs font-semibold">
-                <Check className="w-4 h-4" />
-                <span>JSON Validated Successfully!</span>
-              </div>
-
-              {/* Data Preview Pane */}
-              <div className="border border-border/50 rounded-lg bg-muted/10 p-3.5 space-y-3">
-                <h4 className="text-[10px] uppercase font-bold tracking-widest text-muted-foreground">
-                  Configuration Preview
-                </h4>
-                
-                <div className="grid grid-cols-2 gap-4">
-                  {/* Groups Stats */}
-                  <div className="flex items-start gap-2.5">
-                    <Folder className="w-4.5 h-4.5 text-primary shrink-0 mt-0.5" />
-                    <div>
-                      <div className="text-xs font-bold">{previewGroups.length} Groups</div>
-                      <div className="text-[10px] text-muted-foreground uppercase font-semibold mt-0.5">
-                        {previewGroups.map((g: ImportedGroup) => g.name || "Unnamed").join(", ") || "None"}
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Dice Stats */}
-                  <div className="flex items-start gap-2.5">
-                    <Dice6 className="w-4.5 h-4.5 text-primary shrink-0 mt-0.5" />
-                    <div>
-                      <div className="text-xs font-bold">{previewUngroupedCount} Standalone Rolls</div>
-                      <div className="text-[10px] text-muted-foreground uppercase font-semibold mt-0.5">
-                        {previewUngroupedCount > 0 ? "Ready to import" : "None"}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Conflict Options Segmented Controller */}
-              <div className="space-y-2 border-t border-border/30 pt-3">
-                <label className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider block">
-                  Import Action / Conflict Handling
-                </label>
-                <div className="grid grid-cols-2 gap-2 p-1 bg-muted/40 border border-border/50 rounded-lg">
-                  <button
-                    onClick={() => setImportMode("merge")}
-                    className={`py-2 px-3 text-xs font-bold uppercase tracking-wider rounded-md transition-all ${
-                      importMode === "merge"
-                        ? "bg-card text-foreground shadow-sm"
-                        : "text-muted-foreground hover:text-foreground"
-                    }`}
-                  >
-                    Merge with Existing
-                  </button>
-                  <button
-                    onClick={() => setImportMode("replace")}
-                    className={`py-2 px-3 text-xs font-bold uppercase tracking-wider rounded-md transition-all ${
-                      importMode === "replace"
-                        ? "bg-destructive/10 border border-destructive/20 text-destructive"
-                        : "text-muted-foreground hover:text-foreground"
-                    }`}
-                  >
-                    Replace All Existing
-                  </button>
-                </div>
-                <p className="text-[10px] text-muted-foreground/80 uppercase font-semibold pl-1">
-                  {importMode === "merge" 
-                    ? "✓ Safe. Merges presets together and generates new IDs to avoid conflicts."
-                    : "⚠ Warning: Clears all current presets and groups and writes the imported set."}
-                </p>
-              </div>
-            </div>
+            <ImportPreviewSection
+              previewGroups={previewGroups}
+              previewUngroupedCount={previewUngroupedCount}
+              importMode={importMode}
+              setImportMode={setImportMode}
+            />
           )}
         </div>
 
@@ -356,6 +292,95 @@ export const ImportModal: React.FC<ImportModalProps> = ({ isOpen, onClose, onImp
           </Button>
         </div>
 
+      </div>
+    </div>
+  );
+};
+
+interface ImportPreviewSectionProps {
+  previewGroups: ImportedGroup[];
+  previewUngroupedCount: number;
+  importMode: "merge" | "replace";
+  setImportMode: (mode: "merge" | "replace") => void;
+}
+
+const ImportPreviewSection: React.FC<ImportPreviewSectionProps> = ({
+  previewGroups,
+  previewUngroupedCount,
+  importMode,
+  setImportMode,
+}) => {
+  return (
+    <div className="space-y-3 animate-in fade-in slide-in-from-bottom-2 duration-300">
+      {/* Validation Success Card */}
+      <div className="flex items-center gap-2 p-2 px-3 border border-emerald-500/20 bg-emerald-500/5 rounded-lg text-emerald-500 text-xs font-semibold">
+        <Check className="size-4" />
+        <span>JSON Validated Successfully!</span>
+      </div>
+
+      {/* Data Preview Pane */}
+      <div className="border border-border/50 rounded-lg bg-muted/10 p-3.5 space-y-3">
+        <h4 className="text-[10px] uppercase font-bold tracking-widest text-muted-foreground">
+          Configuration Preview
+        </h4>
+        
+        <div className="grid grid-cols-2 gap-4">
+          {/* Groups Stats */}
+          <div className="flex items-start gap-2.5">
+            <Folder className="size-4.5 text-primary shrink-0 mt-0.5" />
+            <div>
+              <div className="text-xs font-bold">{previewGroups.length} Groups</div>
+              <div className="text-[10px] text-muted-foreground uppercase font-semibold mt-0.5">
+                {previewGroups.map((g: ImportedGroup) => g.name || "Unnamed").join(", ") || "None"}
+              </div>
+            </div>
+          </div>
+
+          {/* Dice Stats */}
+          <div className="flex items-start gap-2.5">
+            <Dice6 className="size-4.5 text-primary shrink-0 mt-0.5" />
+            <div>
+              <div className="text-xs font-bold">{previewUngroupedCount} Standalone Rolls</div>
+              <div className="text-[10px] text-muted-foreground uppercase font-semibold mt-0.5">
+                {previewUngroupedCount > 0 ? "Ready to import" : "None"}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Conflict Options Segmented Controller */}
+      <div className="space-y-2 border-t border-border/30 pt-3">
+        <label className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider block">
+          Import Action / Conflict Handling
+        </label>
+        <div className="grid grid-cols-2 gap-2 p-1 bg-muted/40 border border-border/50 rounded-lg">
+          <button
+            onClick={() => setImportMode("merge")}
+            className={`py-2 px-3 text-xs font-bold uppercase tracking-wider rounded-md transition-all ${
+              importMode === "merge"
+                ? "bg-card text-foreground shadow-sm"
+                : "text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            Merge with Existing
+          </button>
+          <button
+            onClick={() => setImportMode("replace")}
+            className={`py-2 px-3 text-xs font-bold uppercase tracking-wider rounded-md transition-all ${
+              importMode === "replace"
+                ? "bg-destructive/10 border border-destructive/20 text-destructive"
+                : "text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            Replace All Existing
+          </button>
+        </div>
+        <p className="text-[10px] text-muted-foreground/80 uppercase font-semibold pl-1">
+          {importMode === "merge" 
+            ? "✓ Safe. Merges presets together and generates new IDs to avoid conflicts."
+            : "⚠ Warning: Clears all current presets and groups and writes the imported set."}
+        </p>
       </div>
     </div>
   );

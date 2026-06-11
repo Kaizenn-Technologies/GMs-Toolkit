@@ -106,6 +106,16 @@ const BottomDropZone: React.FC<{ activeId: string | null }> = ({ activeId }) => 
   );
 };
 
+const DROP_ANIMATION: DropAnimation = {
+  sideEffects: defaultDropAnimationSideEffects({
+    styles: {
+      active: {
+        opacity: "0.4",
+      },
+    },
+  }),
+};
+
 export const DiceBuilder: React.FC<DiceBuilderProps> = ({
   diceConfigs,
   groups,
@@ -275,15 +285,6 @@ export const DiceBuilder: React.FC<DiceBuilderProps> = ({
   const activeDice = activeId ? diceConfigs.find(d => d.id === activeId) : null;
   const activeGroup = activeId ? groups.find(g => g.id === activeId) : null;
 
-  const dropAnimation: DropAnimation = {
-    sideEffects: defaultDropAnimationSideEffects({
-      styles: {
-        active: {
-          opacity: "0.4",
-        },
-      },
-    }),
-  };
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -406,90 +407,20 @@ export const DiceBuilder: React.FC<DiceBuilderProps> = ({
 
   return (
     <div className="flex flex-col h-full overflow-hidden border border-border/50 rounded-xl bg-card/30">
-      {/* Visual Header Panel for Saved Presets and Actions */}
-      <div className="flex items-center justify-between px-3.5 py-3 border-b border-border/50 bg-muted/20 shrink-0">
-        <div className="flex items-center gap-2">
-          {/* <Dices className="h-4 w-4 text-primary shrink-0" /> */}
-          <p className="text-lg font-bold uppercase tracking-wider text-foreground leading-none m-0">Dice Presets</p>
-        </div>
-        <div className="flex items-center gap-2">
-          {/* Select Mode Toggle */}
-          <Button
-            variant={isSelectionMode ? "default" : "outline"}
-            size="xs"
-            onClick={toggleSelectionMode}
-            className="h-8 text-[11px] gap-1.5 px-2.5 font-semibold uppercase shrink-0"
-          >
-            <CheckSquare size={13} />
-            <span className="hidden sm:inline">{isSelectionMode ? "Cancel" : "Select"}</span>
-          </Button>
-
-          {/* Export Dropdown Trigger */}
-          <div className="relative shrink-0" ref={exportDropdownRef}>
-            <Button
-              variant="outline"
-              size="xs"
-              onClick={() => setIsExportOpen(!isExportOpen)}
-              className="h-8 text-[11px] gap-1.5 px-2.5 font-semibold uppercase"
-            >
-              <Download size={13} />
-              <span className="hidden sm:inline">Export</span>
-              <ChevronDown size={12} className={clsx("transition-transform duration-200 hidden sm:inline", isExportOpen && "rotate-180")} />
-            </Button>
-            {isExportOpen && (
-              <div className="absolute right-0 mt-1.5 w-48 bg-card border border-border/80 rounded-md shadow-lg z-50 py-1 animate-in fade-in slide-in-from-top-1 duration-150">
-                <button
-                  onClick={() => {
-                    handleExport(true);
-                    setIsExportOpen(false);
-                  }}
-                  disabled={selectedDiceIds.size === 0 && selectedGroupIds.size === 0}
-                  className="w-full text-left px-3 py-2 text-xs font-semibold text-foreground hover:bg-muted/50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-between"
-                >
-                  Export Selected
-                  <span className="text-[10px] text-muted-foreground bg-muted/70 px-1.5 py-0.5 rounded-sm">
-                    {selectedDiceIds.size + selectedGroupIds.size}
-                  </span>
-                </button>
-                <button
-                  onClick={() => {
-                    handleExport(false);
-                    setIsExportOpen(false);
-                  }}
-                  className="w-full text-left px-3 py-2 text-xs font-semibold text-foreground hover:bg-muted/50 transition-colors flex items-center justify-between"
-                >
-                  Export All
-                  <span className="text-[10px] text-muted-foreground bg-muted/70 px-1.5 py-0.5 rounded-sm">
-                    {diceConfigs.length + groups.length}
-                  </span>
-                </button>
-                <hr className="border-border/40 my-1" />
-                <button
-                  onClick={() => {
-                    handleExportToClipboard();
-                    setIsExportOpen(false);
-                  }}
-                  className="w-full text-left px-3 py-2 text-xs font-semibold text-primary hover:bg-primary/5 transition-colors flex items-center gap-1.5"
-                >
-                  <Copy size={12} />
-                  Copy to Clipboard
-                </button>
-              </div>
-            )}
-          </div>
-
-          {/* Import Button */}
-          <Button
-            variant="outline"
-            size="xs"
-            onClick={() => setIsImportOpen(true)}
-            className="h-8 text-[11px] gap-1.5 px-2.5 font-semibold uppercase hover:border-primary hover:text-primary transition-colors shrink-0"
-          >
-            <Upload size={13} />
-            <span className="hidden sm:inline">Import</span>
-          </Button>
-        </div>
-      </div>
+      <DiceBuilderHeader
+        isSelectionMode={isSelectionMode}
+        toggleSelectionMode={toggleSelectionMode}
+        isExportOpen={isExportOpen}
+        setIsExportOpen={setIsExportOpen}
+        exportDropdownRef={exportDropdownRef}
+        selectedDiceIds={selectedDiceIds}
+        selectedGroupIds={selectedGroupIds}
+        groups={groups}
+        diceConfigs={diceConfigs}
+        handleExport={handleExport}
+        handleExportToClipboard={handleExportToClipboard}
+        setIsImportOpen={setIsImportOpen}
+      />
 
       {/* Scrollable Presets Area */}
       <div className="flex-1 overflow-y-auto p-4 space-y-6 scrollbar-thin scrollbar-thumb-primary/10 hover:scrollbar-thumb-primary/20">
@@ -553,7 +484,7 @@ export const DiceBuilder: React.FC<DiceBuilderProps> = ({
           <BottomDropZone activeId={activeId} />
         </DndContext>
 
-        <DragOverlay dropAnimation={dropAnimation}>
+        <DragOverlay dropAnimation={DROP_ANIMATION}>
           {activeId ? (
             activeDice ? (
               <div className="w-full opacity-40 rotate-1 scale-105 cursor-grabbing transition-transform duration-200">
@@ -592,74 +523,235 @@ export const DiceBuilder: React.FC<DiceBuilderProps> = ({
         )}
       </div>
 
-      <div className="p-3 border-t border-border/50 bg-background/50 shrink-0 space-y-3">
-        {showQuickAdd && (
-          <div className="flex gap-2 animate-in fade-in slide-in-from-bottom-2 duration-200">
-            <Input
-              autoFocus
-              placeholder="Enter notation (e.g. 2d10+5)"
-              className={clsx(
-                "h-9 text-xs",
-                error && "border-destructive ring-destructive/20"
-              )}
-              value={notation}
-              onChange={(e) => setNotation(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') handleAddManual();
-                if (e.key === 'Escape') setShowQuickAdd(false);
-              }}
-            />
-            <Button size="sm" onClick={() => handleAddManual()} className="h-9 px-4">Add</Button>
-          </div>
-        )}
-        <div className="grid grid-cols-5 gap-2">
-          <Button
-            variant={showQuickAdd ? "default" : "secondary"}
-            className="gap-2 h-10 px-0 flex-row py-1 text-[11px]"
-            onClick={() => setShowQuickAdd(!showQuickAdd)}
-          >
-            <Zap size={14} />
-            Quick
-          </Button>
-          <Button variant="secondary" className="gap-2 h-10 px-0 flex-row py-1 text-[11px]" onClick={handleAddNewQuick}>
-            <Plus size={14} />
-            Dice
-          </Button>
-          <Button
-            variant="default"
-            className="gap-2 h-10 px-0 flex-row py-1 text-[11px]"
-            onClick={(e) => {
-              const mode = e.ctrlKey || e.metaKey ? "advantage" : e.shiftKey ? "disadvantage" : "normal";
-              if (settings.daggerheartMode) {
-                onRollNotation("2d12", "Hope & Fear Roll", true, mode);
-              } else {
-                onRollNotation("1d20", "Quick D20 Roll", false, mode);
-              }
-            }}
-          >
-            <Dices size={14} />
-            {settings.daggerheartMode ? "DH Roll" : "D20"}
-          </Button>
-          <Button variant="secondary" className="gap-2 h-10 px-0 flex-row py-1 text-[11px]" onClick={handleAddGroupQuick}>
-            <FolderPlus size={14} />
-            Group
-          </Button>
-          <Button
-            variant="outline"
-            className="gap-2 h-10 px-0 flex-row py-1 text-[11px] text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 hover:bg-red-500/10 border-red-500/20"
-            onClick={handleClearAll}
-          >
-            <Trash2 size={14} />
-            Clear
-          </Button>
-        </div>
-      </div>
+      <DiceBuilderFooter
+        showQuickAdd={showQuickAdd}
+        setShowQuickAdd={setShowQuickAdd}
+        notation={notation}
+        setNotation={setNotation}
+        error={error}
+        handleAddManual={handleAddManual}
+        handleAddNewQuick={handleAddNewQuick}
+        settings={settings}
+        onRollNotation={onRollNotation}
+        handleAddGroupQuick={handleAddGroupQuick}
+        handleClearAll={handleClearAll}
+      />
 
       <ImportModal
         isOpen={isImportOpen}
         onClose={() => setIsImportOpen(false)}
         onImport={onImportData}
       />
+    </div>
+  );
+};
+
+// ─── DiceBuilder Subcomponents ──────────────────────────────────────────────
+
+interface DiceBuilderHeaderProps {
+  isSelectionMode: boolean;
+  toggleSelectionMode: () => void;
+  isExportOpen: boolean;
+  setIsExportOpen: (open: boolean) => void;
+  exportDropdownRef: React.RefObject<HTMLDivElement | null>;
+  selectedDiceIds: Set<string>;
+  selectedGroupIds: Set<string>;
+  groups: IDiceGroup[];
+  diceConfigs: DiceConfig[];
+  handleExport: (selectedOnly: boolean) => void;
+  handleExportToClipboard: () => void;
+  setIsImportOpen: (open: boolean) => void;
+}
+
+const DiceBuilderHeader: React.FC<DiceBuilderHeaderProps> = ({
+  isSelectionMode,
+  toggleSelectionMode,
+  isExportOpen,
+  setIsExportOpen,
+  exportDropdownRef,
+  selectedDiceIds,
+  selectedGroupIds,
+  groups,
+  diceConfigs,
+  handleExport,
+  handleExportToClipboard,
+  setIsImportOpen,
+}) => {
+  return (
+    <div className="flex items-center justify-between px-3.5 py-3 border-b border-border/50 bg-muted/20 shrink-0">
+      <div className="flex items-center gap-2">
+        <p className="text-lg font-bold uppercase tracking-wider text-foreground leading-none m-0">Dice Presets</p>
+      </div>
+      <div className="flex items-center gap-2">
+        {/* Select Mode Toggle */}
+        <Button
+          variant={isSelectionMode ? "default" : "outline"}
+          size="xs"
+          onClick={toggleSelectionMode}
+          className="h-8 text-[11px] gap-1.5 px-2.5 font-semibold uppercase shrink-0"
+        >
+          <CheckSquare size={13} />
+          <span className="hidden sm:inline">{isSelectionMode ? "Cancel" : "Select"}</span>
+        </Button>
+
+        {/* Export Dropdown Trigger */}
+        <div className="relative shrink-0" ref={exportDropdownRef}>
+          <Button
+            variant="outline"
+            size="xs"
+            onClick={() => setIsExportOpen(!isExportOpen)}
+            className="h-8 text-[11px] gap-1.5 px-2.5 font-semibold uppercase"
+          >
+            <Download size={13} />
+            <span className="hidden sm:inline">Export</span>
+            <ChevronDown size={12} className={clsx("transition-transform duration-200 hidden sm:inline", isExportOpen && "rotate-180")} />
+          </Button>
+          {isExportOpen && (
+            <div className="absolute right-0 mt-1.5 w-48 bg-card border border-border/80 rounded-md shadow-lg z-50 py-1 animate-in fade-in slide-in-from-top-1 duration-150">
+              <button
+                onClick={() => {
+                  handleExport(true);
+                  setIsExportOpen(false);
+                }}
+                disabled={selectedDiceIds.size === 0 && selectedGroupIds.size === 0}
+                className="w-full text-left px-3 py-2 text-xs font-semibold text-foreground hover:bg-muted/50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-between"
+              >
+                Export Selected
+                <span className="text-[10px] text-muted-foreground bg-muted/70 px-1.5 py-0.5 rounded-sm">
+                  {selectedDiceIds.size + selectedGroupIds.size}
+                </span>
+              </button>
+              <button
+                onClick={() => {
+                  handleExport(false);
+                  setIsExportOpen(false);
+                }}
+                className="w-full text-left px-3 py-2 text-xs font-semibold text-foreground hover:bg-muted/50 transition-colors flex items-center justify-between"
+              >
+                Export All
+                <span className="text-[10px] text-muted-foreground bg-muted/70 px-1.5 py-0.5 rounded-sm">
+                  {diceConfigs.length + groups.length}
+                </span>
+              </button>
+              <hr className="border-border/40 my-1" />
+              <button
+                onClick={() => {
+                  handleExportToClipboard();
+                  setIsExportOpen(false);
+                }}
+                className="w-full text-left px-3 py-2 text-xs font-semibold text-primary hover:bg-primary/5 transition-colors flex items-center gap-1.5"
+              >
+                <Copy size={12} />
+                Copy to Clipboard
+              </button>
+            </div>
+          )}
+        </div>
+
+        {/* Import Button */}
+        <Button
+          variant="outline"
+          size="xs"
+          onClick={() => setIsImportOpen(true)}
+          className="h-8 text-[11px] gap-1.5 px-2.5 font-semibold uppercase hover:border-primary hover:text-primary transition-colors shrink-0"
+        >
+          <Upload size={13} />
+          <span className="hidden sm:inline">Import</span>
+        </Button>
+      </div>
+    </div>
+  );
+};
+
+interface DiceBuilderFooterProps {
+  showQuickAdd: boolean;
+  setShowQuickAdd: (show: boolean) => void;
+  notation: string;
+  setNotation: (notation: string) => void;
+  error: boolean;
+  handleAddManual: () => void;
+  handleAddNewQuick: () => void;
+  settings: any;
+  onRollNotation: (notation: string, name: string, isDaggerheart: boolean, mode: "normal" | "advantage" | "disadvantage") => void;
+  handleAddGroupQuick: () => void;
+  handleClearAll: () => void;
+}
+
+const DiceBuilderFooter: React.FC<DiceBuilderFooterProps> = ({
+  showQuickAdd,
+  setShowQuickAdd,
+  notation,
+  setNotation,
+  error,
+  handleAddManual,
+  handleAddNewQuick,
+  settings,
+  onRollNotation,
+  handleAddGroupQuick,
+  handleClearAll,
+}) => {
+  return (
+    <div className="p-3 border-t border-border/50 bg-background/50 shrink-0 space-y-3">
+      {showQuickAdd && (
+        <div className="flex gap-2 animate-in fade-in slide-in-from-bottom-2 duration-200">
+          <Input
+            autoFocus
+            placeholder="Enter notation (e.g. 2d10+5)"
+            className={clsx(
+              "h-9 text-xs",
+              error && "border-destructive ring-destructive/20"
+            )}
+            value={notation}
+            onChange={(e) => setNotation(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') handleAddManual();
+              if (e.key === 'Escape') setShowQuickAdd(false);
+            }}
+          />
+          <Button size="sm" onClick={() => handleAddManual()} className="h-9 px-4">Add</Button>
+        </div>
+      )}
+      <div className="grid grid-cols-5 gap-2">
+        <Button
+          variant={showQuickAdd ? "default" : "secondary"}
+          className="gap-2 h-10 px-0 flex-row py-1 text-[11px]"
+          onClick={() => setShowQuickAdd(!showQuickAdd)}
+        >
+          <Zap size={14} />
+          Quick
+        </Button>
+        <Button variant="secondary" className="gap-2 h-10 px-0 flex-row py-1 text-[11px]" onClick={handleAddNewQuick}>
+          <Plus size={14} />
+          Dice
+        </Button>
+        <Button
+          variant="default"
+          className="gap-2 h-10 px-0 flex-row py-1 text-[11px]"
+          onClick={(e) => {
+            const mode = e.ctrlKey || e.metaKey ? "advantage" : e.shiftKey ? "disadvantage" : "normal";
+            if (settings.daggerheartMode) {
+              onRollNotation("2d12", "Hope & Fear Roll", true, mode);
+            } else {
+              onRollNotation("1d20", "Quick D20 Roll", false, mode);
+            }
+          }}
+        >
+          <Dices size={14} />
+          {settings.daggerheartMode ? "DH Roll" : "D20"}
+        </Button>
+        <Button variant="secondary" className="gap-2 h-10 px-0 flex-row py-1 text-[11px]" onClick={handleAddGroupQuick}>
+          <FolderPlus size={14} />
+          Group
+        </Button>
+        <Button
+          variant="outline"
+          className="gap-2 h-10 px-0 flex-row py-1 text-[11px] text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 hover:bg-red-500/10 border-red-500/20"
+          onClick={handleClearAll}
+        >
+          <Trash2 size={14} />
+          Clear
+        </Button>
+      </div>
     </div>
   );
 };

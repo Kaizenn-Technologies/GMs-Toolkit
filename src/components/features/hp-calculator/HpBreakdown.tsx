@@ -98,7 +98,7 @@ export function HpBreakdown({ items }: { items: BreakdownItem[] }) {
       {/* Breakdown rows */}
       <TooltipProvider delay={100}>
         <div className="border border-border/60 divide-y divide-border/40 bg-muted/30">
-          {groups.map((group, gIdx) => {
+          {groups.map((group) => {
             const classObj = Object.values(classes).find(
               (c) => c.name.toLowerCase() === group.className.toLowerCase()
             );
@@ -106,7 +106,7 @@ export function HpBreakdown({ items }: { items: BreakdownItem[] }) {
             const classColor = isCustomClass ? "#9ca3af" : classObj?.color;
 
             return (
-              <div key={gIdx} className="divide-y divide-border/20">
+              <div key={group.className} className="divide-y divide-border/20">
                 {group.items.map(({ item, index }) => {
                   const eqParts = item.value.split("=");
                   const formula = eqParts.length > 1 ? eqParts.slice(0, -1).join("=").trim() : item.value;
@@ -121,7 +121,7 @@ export function HpBreakdown({ items }: { items: BreakdownItem[] }) {
 
                   return (
                     <div
-                      key={index}
+                      key={item.label}
                       className={`
                         group flex items-center gap-0 
                         hover:bg-muted/60 transition-colors duration-150
@@ -198,8 +198,8 @@ export function HpBreakdown({ items }: { items: BreakdownItem[] }) {
                               {isMax && <span className="text-muted-foreground">)</span>}
 
                               {/* Modifiers — subdued */}
-                              {modParts.map((mod, mIdx) => (
-                                <span key={mIdx} className="text-muted-foreground">
+                              {modParts.map((mod, modSeq) => (
+                                <span key={`mod-${modSeq}-${mod.sign}-${mod.value}`} className="text-muted-foreground">
                                   <span className="opacity-50">{mod.sign}</span>
                                   <span>{mod.value}</span>
                                 </span>

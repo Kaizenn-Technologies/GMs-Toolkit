@@ -53,9 +53,10 @@ const LogEntry: React.FC<{ log: RollLog }> = ({ log }) => {
   const hasAdvDis = log.mode && log.mode !== "normal";
 
   return (
-    <div
+    <button
+      type="button"
       className={clsx(
-        "group cursor-pointer rounded border border-border/40 bg-muted/10 transition-all hover:bg-muted/20 overflow-hidden",
+        "w-full text-left bg-transparent p-0 block focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 group cursor-pointer rounded border border-border/40 bg-muted/10 transition-all hover:bg-muted/20 overflow-hidden",
         isExpanded && "border-primary/30 bg-primary/5"
       )}
       onClick={() => setIsExpanded(!isExpanded)}
@@ -117,11 +118,11 @@ const LogEntry: React.FC<{ log: RollLog }> = ({ log }) => {
       {isExpanded && (
         <div className="border-t border-border/40 bg-background/40 p-3 space-y-2 animate-in fade-in slide-in-from-top-1 duration-200">
           <div className="space-y-2">
-            {log.rolls.map((roll, idx) => (
-              <div key={idx} className="flex flex-col gap-1 border-b border-border/10 pb-2 last:border-0 last:pb-0">
+            {log.rolls.map((roll, rollSeq) => (
+              <div key={`${roll.configId || "roll"}-${rollSeq}`} className="flex flex-col gap-1 border-b border-border/10 pb-2 last:border-0 last:pb-0">
                 <div className="flex items-center justify-between text-[10px] font-semibold uppercase tracking-tight text-muted-foreground/80">
                   <div className="flex items-center gap-1.5 min-w-0">
-                    <span className="truncate">{roll.config.name || `Roll ${idx + 1}`}</span>
+                    <span className="truncate">{roll.config.name || `Roll ${rollSeq + 1}`}</span>
                     <span className="text-primary/50 font-mono text-[11px]">
                       [{roll.config.count}d{roll.config.sides}{roll.config.modifier ? (roll.config.modifier > 0 ? `+${roll.config.modifier}` : `-${Math.abs(roll.config.modifier)}`) : ""}]
                     </span>
@@ -133,10 +134,10 @@ const LogEntry: React.FC<{ log: RollLog }> = ({ log }) => {
                 {/* Table-like row 2: The Rolls */}
                 <div className="flex flex-col gap-2 pl-1">
                   <RollSet roll={roll} isRejected={false} isDaggerheart={log.mode === "daggerheart"} />
-                  {log.rejectedRolls && log.rejectedRolls[idx] && (
+                  {log.rejectedRolls && log.rejectedRolls[rollSeq] && (
                     <div className="flex items-start gap-2">
                       <span className="text-[9px] font-semibold uppercase text-muted-foreground/40 mt-1 shrink-0">Discarded</span>
-                      <RollSet roll={log.rejectedRolls[idx]} isRejected={true} />
+                      <RollSet roll={log.rejectedRolls[rollSeq]} isRejected={true} />
                     </div>
                   )}
                 </div>
@@ -145,25 +146,25 @@ const LogEntry: React.FC<{ log: RollLog }> = ({ log }) => {
           </div>
         </div>
       )}
-    </div>
+    </button>
   );
 };
 
 const RollSet: React.FC<{ roll: RollResult, isRejected: boolean, isDaggerheart?: boolean }> = ({ roll, isRejected, isDaggerheart }) => {
   return (
     <div className={clsx("flex flex-wrap gap-1", isRejected && "opacity-40 grayscale")}>
-      {roll.results.map((val, idx) => {
+      {roll.results.map((val, resultSeq) => {
         const isMax = val === roll.config.sides;
         const isMin = val === 1;
-        const isKept = roll.kept[idx];
+        const isKept = roll.kept[resultSeq];
 
         // Daggerheart coloring: 0 is Hope (Golden), 1 is Fear (Purple)
-        const isHopeDie = isDaggerheart && idx === 0;
-        const isFearDie = isDaggerheart && idx === 1;
+        const isHopeDie = isDaggerheart && resultSeq === 0;
+        const isFearDie = isDaggerheart && resultSeq === 1;
 
         return (
           <span
-            key={idx}
+            key={`res-${roll.configId || "roll"}-${resultSeq}`}
             className={clsx(
               "inline-flex items-center justify-center min-w-[20px] h-[20px] px-1 text-[10px] font-bold rounded border transition-colors relative",
               isKept ? "bg-background/80" : "text-muted-foreground/50 line-through opacity-60",

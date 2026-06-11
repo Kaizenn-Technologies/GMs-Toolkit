@@ -87,8 +87,7 @@ export function HpCalculator() {
               <div className="mb-4">
                 <p className="text-xl font-semibold text-center border-b pb-2">Class Picker</p>
               </div>
-              <style dangerouslySetInnerHTML={{
-                __html: `
+              <style>{`
                 @keyframes rowFadeInSlide {
                   from {
                     opacity: 0;
@@ -122,106 +121,19 @@ export function HpCalculator() {
                 .animate-row-delete {
                   animation: rowFadeOutSlide 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
                 }
-              `}} />
+              `}</style>
 
               {/* Class Selections */}
-              <div className="space-y-4">
-                {classSelections.map((selection, index) => (
-                  <div
-                    key={selection.id}
-                    className={`space-y-2 ${deletingIds.includes(selection.id)
-                        ? "animate-row-delete"
-                        : "animate-row-add"
-                      }`}
-                  >
-                    <label className="text-xs font-medium text-muted-foreground block">
-                      Class {index + 1}
-                    </label>
-                    <div className="flex justify-between items-center gap-2">
-                      <div className="flex flex-row flex-1 justify-between gap-2">
-                        <div className="min-w-0">
-                          <Select
-                            value={selection.className}
-                            onValueChange={(value) =>
-                              value && updateClassSelection(selection.id, "className", value)
-                            }
-                          >
-                            <SelectTrigger aria-label={`Select Class ${index + 1}`}>
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {hpClassOptions.map((className) => {
-                                const isSelected = classSelections.some(c => c.className === className && c.id !== selection.id);
-                                return (
-                                  <SelectItem key={className} value={className} disabled={isSelected && className !== CUSTOM_CLASS_NAME}>
-                                    {className}
-                                  </SelectItem>
-                                );
-                              })}
-                            </SelectContent>
-                          </Select>
-                        </div>
-
-                        {selection.className === CUSTOM_CLASS_NAME && (
-                          <div className="shrink-0">
-                            <Select
-                              value={`d${selection.customHitDie ?? CUSTOM_HIT_DIE_OPTIONS[0]}`}
-                              onValueChange={(value) => {
-                                if (!value) return;
-                                updateClassSelection(selection.id, "customHitDie", Number(value.replace("d", "")));
-                              }}
-                            >
-                              <SelectTrigger aria-label={`Select Custom Hit Die for Class ${index + 1}`}>
-                                <SelectValue />
-                              </SelectTrigger>
-                              <SelectContent>
-                                {CUSTOM_HIT_DIE_OPTIONS.map((die) => (
-                                  <SelectItem key={die} value={`d${die}`}>
-                                    {`d${die}`}
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                          </div>
-                        )}
-
-                        <div>
-                          <StepperInput
-                            className="rounded-none h-8 w-24"
-                            min={classSelections.length > 1 ? 0 : 1}
-                            max={20}
-                            value={selection.level}
-                            aria-label={`Class ${index + 1} Level`}
-                            onChange={(val) => {
-                              if (val === 0) {
-                                handleInitiateRemove(selection.id);
-                              } else {
-                                updateClassSelection(selection.id, "level", val);
-                              }
-                            }}
-                          />
-                        </div>
-                      </div>
-
-                      {classSelections.length > 1 && (
-                        <Button
-                          variant="destructive"
-                          size="icon"
-                          className="shrink-0"
-                          onClick={() => handleInitiateRemove(selection.id)}
-                          aria-label={`Remove Class ${index + 1} selection`}
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </Button>
-                      )}
-                    </div>
-                  </div>
-                ))}
-              </div>
+              <ClassSelectionsSection
+                classSelections={classSelections}
+                deletingIds={deletingIds}
+                updateClassSelection={updateClassSelection}
+                handleInitiateRemove={handleInitiateRemove}
+              />
 
               <div className="flex flex-wrap justify-between mb-2 py-2 border-y ">
                 <Button onClick={addClassSelection} variant="outline" className="m-0">
-                  <Plus className="w-4 h-4 mr-2" />
+                  <Plus className="size-4 mr-2" />
                   Add Another Class
                 </Button>
                 <ResetButton onClick={handleResetClassSelections} className="m-0" size="default" />
@@ -245,7 +157,7 @@ export function HpCalculator() {
 
                 <div className="space-y-3">
                   <TooltipProvider delay={100}>
-                    <div className="flex items-center space-x-2">
+                    <div className="flex items-center gap-2">
                       <Checkbox id="tough" checked={tough} onCheckedChange={(checked) => setTough(checked as boolean)} />
                       <Tooltip>
                         <TooltipTrigger render={<label htmlFor="tough" className="text-sm font-medium cursor-help border-b border-dashed border-muted-foreground/50">Tough Origin Feat</label>} />
@@ -253,7 +165,7 @@ export function HpCalculator() {
                       </Tooltip>
                     </div>
 
-                    <div className="flex items-center space-x-2">
+                    <div className="flex items-center gap-2">
                       <Checkbox id="hillDwarf" checked={hillDwarf} onCheckedChange={(checked) => setHillDwarf(checked as boolean)} />
                       <Tooltip>
                         <TooltipTrigger render={<label htmlFor="hillDwarf" className="text-sm font-medium cursor-help border-b border-dashed border-muted-foreground/50">Dwarf Lineage</label>} />
@@ -315,7 +227,7 @@ export function HpCalculator() {
 
                   <div className="flex flex-col gap-2">
                     <Button onClick={handleRollAgain} className="w-full m-0" disabled={isRolling}>
-                      <Dices className="w-4 h-4 mr-2" />
+                      <Dices className="size-4 mr-2" />
                       {isRolling ? "Rolling..." : "Roll Again"}
                     </Button>
                     <ShareButton onClick={() => handleShareLink("rolled")} copied={copied} />
@@ -335,5 +247,115 @@ export function HpCalculator() {
         />
       )}
     </>
+  );
+}
+
+interface ClassSelectionsSectionProps {
+  classSelections: any[];
+  deletingIds: string[];
+  updateClassSelection: (id: string, field: any, value: any) => void;
+  handleInitiateRemove: (id: string) => void;
+}
+
+function ClassSelectionsSection({
+  classSelections,
+  deletingIds,
+  updateClassSelection,
+  handleInitiateRemove,
+}: ClassSelectionsSectionProps) {
+  return (
+    <div className="space-y-4">
+      {classSelections.map((selection, index) => (
+        <div
+          key={selection.id}
+          className={`space-y-2 ${deletingIds.includes(selection.id)
+              ? "animate-row-delete"
+              : "animate-row-add"
+            }`}
+        >
+          <label className="text-xs font-medium text-muted-foreground block">
+            Class {index + 1}
+          </label>
+          <div className="flex justify-between items-center gap-2">
+            <div className="flex flex-row flex-1 justify-between gap-2">
+              <div className="min-w-0">
+                <Select
+                  value={selection.className}
+                  onValueChange={(value) =>
+                    value && updateClassSelection(selection.id, "className", value)
+                  }
+                >
+                  <SelectTrigger aria-label={`Select Class ${index + 1}`}>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {hpClassOptions.map((className) => {
+                      const isSelected = classSelections.some(c => c.className === className && c.id !== selection.id);
+                      return (
+                        <SelectItem key={className} value={className} disabled={isSelected && className !== CUSTOM_CLASS_NAME}>
+                          {className}
+                        </SelectItem>
+                      );
+                    })}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {selection.className === CUSTOM_CLASS_NAME && (
+                <div className="shrink-0">
+                  <Select
+                    value={`d${selection.customHitDie ?? CUSTOM_HIT_DIE_OPTIONS[0]}`}
+                    onValueChange={(value) => {
+                      if (!value) return;
+                      updateClassSelection(selection.id, "customHitDie", Number(value.replace("d", "")));
+                    }}
+                  >
+                    <SelectTrigger aria-label={`Select Custom Hit Die for Class ${index + 1}`}>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {CUSTOM_HIT_DIE_OPTIONS.map((die) => (
+                        <SelectItem key={die} value={`d${die}`}>
+                          {`d${die}`}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
+
+              <div>
+                <StepperInput
+                  className="rounded-none h-8 w-24"
+                  min={classSelections.length > 1 ? 0 : 1}
+                  max={20}
+                  value={selection.level}
+                  aria-label={`Class ${index + 1} Level`}
+                  onChange={(val) => {
+                    if (val === 0) {
+                      handleInitiateRemove(selection.id);
+                    } else {
+                      updateClassSelection(selection.id, "level", val);
+                    }
+                  }}
+                />
+              </div>
+            </div>
+
+            {classSelections.length > 1 && (
+              <Button
+                variant="destructive"
+                size="icon"
+                className="shrink-0"
+                onClick={() => handleInitiateRemove(selection.id)}
+                aria-label={`Remove Class ${index + 1} selection`}
+              >
+                <Trash2 className="size-4" />
+              </Button>
+            )}
+          </div>
+        </div>
+      ))}
+    </div>
   );
 }
