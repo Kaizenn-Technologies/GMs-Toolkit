@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useRef } from "react";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { useSettings } from "@/contexts/SettingsContext";
 import { useDiceLogs } from "./useDiceLogs";

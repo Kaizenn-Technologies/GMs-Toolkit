@@ -47,7 +47,7 @@ export function ShareModal({
     if (!isOpen) return "";
 
     if (onGenerateUrl) {
-      return onGenerateUrl(localName);
+      return onGenerateUrl(currentName);
     } else {
       // Default URL builder
       const url = new URL(window.location.href);

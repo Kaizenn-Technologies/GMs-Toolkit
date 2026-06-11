@@ -1050,8 +1050,8 @@ export function useStatGenerator() {
         return acc;
       }, {} as Record<Ability, { rolls: number[]; total: number }>)
     );
-    setSharedRolls(null);
-    setSharedName("");
+    sharedRollsRef.current = null;
+    sharedNameRef.current = "";
     setSharedTimestamp("");
     setSharedTimezone("");
     setRollCount(0);
@@ -1074,7 +1074,7 @@ export function useStatGenerator() {
 
       setShareModalProps({
         encodedData: "",
-        characterName: sharedName || "",
+        characterName: sharedNameRef.current || "",
         isRandomized: true,
         rollMeta: { rolls: rollCount, timestamp: new Date().toISOString() },
         onGenerateUrl: (name: string) => {
@@ -1155,7 +1155,7 @@ export function useStatGenerator() {
     isShareModalOpen,
     setIsShareModalOpen,
     shareModalProps,
-    sharedName,
+    sharedName: sharedNameRef.current,
     sharedRolls: sharedRollsRef.current,
     sharedTimestamp,
     sharedTimezone,

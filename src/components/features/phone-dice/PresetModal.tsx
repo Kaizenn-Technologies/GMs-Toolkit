@@ -1,4 +1,4 @@
-import React, { useState, useReducer, useEffect } from "react";
+import React, { useReducer, useEffect } from "react";
 import type { DicePreset } from "./types";
 import { X, Trash2, Plus, Minus, Swords, Shield, Flame, Sparkles, Wand2, Heart, Dices } from "lucide-react";
 
@@ -108,7 +108,7 @@ export const PresetModal: React.FC<PresetModalProps> = ({
 
   // Recalculate notation formula based on stack
   const updateFormulaFromStack = (groups: typeof diceGroups, mod: number) => {
-    const parts = groups.map((g) => `${g.count}d${g.sides}`);
+    const parts = groups.map((g: any) => `${g.count}d${g.sides}`);
     const modPart = mod > 0 ? `+${mod}` : mod < 0 ? `${mod}` : "";
     setFormula(parts.join("+") + modPart);
   };

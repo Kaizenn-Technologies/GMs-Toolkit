@@ -189,4 +189,4 @@ export const feats = {
         ],
     },
 } satisfies Record<string, Feat>;
-const featNames = Object.values(feats).map((c) => c.name);
+export const featNames = Object.values(feats).map((c) => c.name);

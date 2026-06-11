@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect, useReducer } from "react";
+import React, { useRef, useEffect, useReducer } from "react";
 import type { DiceConfig, DiceGroup as IDiceGroup } from "./types";
 import { DiceCard } from "./DiceCard";
 import { DiceGroup } from "./DiceGroup";

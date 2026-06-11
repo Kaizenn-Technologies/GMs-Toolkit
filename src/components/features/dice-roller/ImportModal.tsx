@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect, useCallback, useReducer } from "react";
+import React, { useRef, useEffect, useCallback, useReducer } from "react";
 import { X, Upload, FileJson, Check, AlertCircle, Folder, Dice6 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
