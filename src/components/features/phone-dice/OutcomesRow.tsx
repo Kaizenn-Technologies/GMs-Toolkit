@@ -25,14 +25,9 @@ export const OutcomesRow: React.FC<OutcomesRowProps> = ({
   // Chronological order: oldest on left, latest on right (last item)
   const chronologicalHistory = [...history].reverse();
 
-  // Track previous activeRoll.id to detect prop changes without triggering re-renders.
-  // This value is never rendered to JSX, so useRef avoids wasted reconciliation.
-  const prevActiveRollIdRef = useRef<string | null>(activeRoll?.id || null);
-
-  if (activeRoll?.id !== prevActiveRollIdRef.current) {
-    prevActiveRollIdRef.current = activeRoll?.id || null;
+  useEffect(() => {
     setVisualActiveId(activeRoll?.id || null);
-  }
+  }, [activeRoll?.id]);
 
   // Scroll to active item whenever it changes or history changes
   useEffect(() => {
