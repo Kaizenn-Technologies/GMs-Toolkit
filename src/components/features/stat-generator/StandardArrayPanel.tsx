@@ -126,7 +126,7 @@ export const StandardArrayPanel: React.FC<StandardArrayPanelProps> = ({
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="">
-                        —
+                        -
                       </SelectItem>
                       {(() => {
                         const assignedScores: number[] = [];
@@ -318,7 +318,7 @@ export const StandardArrayPanel: React.FC<StandardArrayPanelProps> = ({
                         />
                       ) : (
                         <span className="inline-block w-28 text-center text-muted-foreground/30 select-none font-medium">
-                          —
+                          -
                         </span>
                       )}
                     </CenteredCellContent>

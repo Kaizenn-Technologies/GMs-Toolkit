@@ -17,7 +17,7 @@ export const calculateHP = (
     const breakdown: BreakdownItem[] = [];
 
     // Sort classes by hit die descending
-    const sortedSelections = [...classSelections].sort((a, b) => {
+    const sortedSelections = classSelections.toSorted((a, b) => {
         const classA =
             a.className === CUSTOM_CLASS_NAME
                 ? (a.customHitDie ?? 0)

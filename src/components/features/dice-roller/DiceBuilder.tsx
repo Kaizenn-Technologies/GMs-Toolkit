@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useRef, useEffect, useReducer } from "react";
 import type { DiceConfig, DiceGroup as IDiceGroup } from "./types";
 import { DiceCard } from "./DiceCard";
 import { DiceGroup } from "./DiceGroup";
@@ -136,17 +136,33 @@ export const DiceBuilder: React.FC<DiceBuilderProps> = ({
   settings,
   onImportData,
 }) => {
-  const [notation, setNotation] = useState("");
-  const [error, setError] = useState(false);
-  const [showQuickAdd, setShowQuickAdd] = useState(false);
-  const [activeId, setActiveId] = useState<string | null>(null);
+  const [state, dispatch] = useReducer((s: any, a: any) => ({ ...s, ...a }), {
+    notation: "",
+    error: false,
+    showQuickAdd: false,
+    activeId: null as string | null,
+    isSelectionMode: false,
+    selectedDiceIds: new Set<string>(),
+    selectedGroupIds: new Set<string>(),
+    isExportOpen: false,
+    isImportOpen: false,
+  });
 
-  // Load & Export Selection Mode states
-  const [isSelectionMode, setIsSelectionMode] = useState(false);
-  const [selectedDiceIds, setSelectedDiceIds] = useState<Set<string>>(new Set());
-  const [selectedGroupIds, setSelectedGroupIds] = useState<Set<string>>(new Set());
-  const [isExportOpen, setIsExportOpen] = useState(false);
-  const [isImportOpen, setIsImportOpen] = useState(false);
+  const { notation, error, showQuickAdd, activeId, isSelectionMode, selectedDiceIds, selectedGroupIds, isExportOpen, isImportOpen } = state;
+
+  const setNotation = (notation: string) => dispatch({ notation });
+  const setError = (error: boolean) => dispatch({ error });
+  const setShowQuickAdd = (showQuickAdd: boolean) => dispatch({ showQuickAdd });
+  const setActiveId = (activeId: string | null) => dispatch({ activeId });
+  const setIsSelectionMode = (isSelectionMode: boolean) => dispatch({ isSelectionMode });
+  const setSelectedDiceIds = (selectedDiceIds: Set<string> | ((prev: Set<string>) => Set<string>)) => {
+    dispatch({ selectedDiceIds: typeof selectedDiceIds === 'function' ? selectedDiceIds(state.selectedDiceIds) : selectedDiceIds });
+  };
+  const setSelectedGroupIds = (selectedGroupIds: Set<string> | ((prev: Set<string>) => Set<string>)) => {
+    dispatch({ selectedGroupIds: typeof selectedGroupIds === 'function' ? selectedGroupIds(state.selectedGroupIds) : selectedGroupIds });
+  };
+  const setIsExportOpen = (isExportOpen: boolean) => dispatch({ isExportOpen });
+  const setIsImportOpen = (isImportOpen: boolean) => dispatch({ isImportOpen });
 
   const exportDropdownRef = useRef<HTMLDivElement>(null);
 
@@ -213,11 +229,10 @@ export const DiceBuilder: React.FC<DiceBuilderProps> = ({
             name: g.name,
             collapsed: g.collapsed,
             dice: diceToExport
-              .map((dId, idx) => {
+              .flatMap((dId, idx) => {
                 const c = diceConfigs.find((config) => config.id === dId);
-                return c ? { ...c, position: idx } : null;
-              })
-              .filter(Boolean),
+                return c ? [{ ...c, position: idx }] : [];
+              }),
           });
         }
       });
@@ -234,11 +249,10 @@ export const DiceBuilder: React.FC<DiceBuilderProps> = ({
           name: g.name,
           collapsed: g.collapsed,
           dice: g.diceIds
-            .map((dId, idx) => {
+            .flatMap((dId, idx) => {
               const c = diceConfigs.find((config) => config.id === dId);
-              return c ? { ...c, position: idx } : null;
-            })
-            .filter(Boolean),
+              return c ? [{ ...c, position: idx }] : [];
+            }),
         });
       });
 
@@ -265,11 +279,10 @@ export const DiceBuilder: React.FC<DiceBuilderProps> = ({
       name: g.name,
       collapsed: g.collapsed,
       dice: g.diceIds
-        .map((dId, idx) => {
+        .flatMap((dId, idx) => {
           const c = diceConfigs.find((config) => config.id === dId);
-          return c ? { ...c, position: idx } : null;
-        })
-        .filter(Boolean),
+          return c ? [{ ...c, position: idx }] : [];
+        }),
     }));
 
     const ungroupedDice = diceConfigs.filter(
@@ -609,6 +622,7 @@ const DiceBuilderHeader: React.FC<DiceBuilderHeaderProps> = ({
           {isExportOpen && (
             <div className="absolute right-0 mt-1.5 w-48 bg-card border border-border/80 rounded-md shadow-lg z-50 py-1 animate-in fade-in slide-in-from-top-1 duration-150">
               <button
+                type="button"
                 onClick={() => {
                   handleExport(true);
                   setIsExportOpen(false);
@@ -622,6 +636,7 @@ const DiceBuilderHeader: React.FC<DiceBuilderHeaderProps> = ({
                 </span>
               </button>
               <button
+                type="button"
                 onClick={() => {
                   handleExport(false);
                   setIsExportOpen(false);
@@ -635,6 +650,7 @@ const DiceBuilderHeader: React.FC<DiceBuilderHeaderProps> = ({
               </button>
               <hr className="border-border/40 my-1" />
               <button
+                type="button"
                 onClick={() => {
                   handleExportToClipboard();
                   setIsExportOpen(false);

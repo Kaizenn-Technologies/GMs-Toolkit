@@ -244,7 +244,7 @@ export const PointBuyPanel: React.FC<PointBuyPanelProps> = ({
                         />
                       ) : (
                         <span className="inline-block w-28 text-center text-muted-foreground/30 select-none font-medium">
-                          —
+                          -
                         </span>
                       )}
                     </CenteredCellContent>

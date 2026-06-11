@@ -3,6 +3,7 @@ import {
   use,
   useState,
   useEffect,
+  useMemo,
   type ReactNode,
 } from "react";
 
@@ -29,6 +30,7 @@ export interface DiceRollerSettings {
   manualNotation: boolean;
   autoClearLogs: boolean;
   daggerheartMode: boolean;
+  soundEnabled: boolean;
 }
 
 export interface SitewideSettings {
@@ -74,7 +76,7 @@ export interface HpSettings {
 
 // ─── Defaults ─────────────────────────────────────────────────────────────────
 
-export const DEFAULT_SITEWIDE_SETTINGS: SitewideSettings = {
+const DEFAULT_SITEWIDE_SETTINGS: SitewideSettings = {
   darkMode: true,
   showHeader: true,
   showFooter: true,
@@ -85,7 +87,7 @@ export const DEFAULT_SITEWIDE_SETTINGS: SitewideSettings = {
   maximizeSpace: false,
 };
 
-export const DEFAULT_POINT_BUY_SETTINGS: PointBuySettings = {
+const DEFAULT_POINT_BUY_SETTINGS: PointBuySettings = {
   pointPool: 27,
   maxPurchasable: 15,
   minPurchasable: 8,
@@ -93,7 +95,7 @@ export const DEFAULT_POINT_BUY_SETTINGS: PointBuySettings = {
   enforceAsiFromBackground: true,
 };
 
-export const DEFAULT_ROLL_SETTINGS: RollSettings = {
+const DEFAULT_ROLL_SETTINGS: RollSettings = {
   rerollOnes: false,
   sortDescending: true,
   colorDice: true,
@@ -103,21 +105,22 @@ export const DEFAULT_ROLL_SETTINGS: RollSettings = {
   enforceAsiFromBackground: true,
 };
 
-export const DEFAULT_STANDARD_SETTINGS: StandardSettings = {
+const DEFAULT_STANDARD_SETTINGS: StandardSettings = {
   bgBonusPool: 3,
   enforceAsiFromBackground: true,
 };
 
-export const DEFAULT_HP_SETTINGS: HpSettings = {
+const DEFAULT_HP_SETTINGS: HpSettings = {
   showRollCounter: true,
   rollingAnimation: true,
   showBreakdown: true,
 };
 
-export const DEFAULT_DICE_ROLLER_SETTINGS: DiceRollerSettings = {
+const DEFAULT_DICE_ROLLER_SETTINGS: DiceRollerSettings = {
   manualNotation: true,
   autoClearLogs: false,
   daggerheartMode: false,
+  soundEnabled: true,
 };
 
 // ─── Context ──────────────────────────────────────────────────────────────────
@@ -146,7 +149,7 @@ const SettingsContext = createContext<SettingsContextValue | null>(null);
 export function SettingsProvider({ children }: { children: ReactNode }) {
   const [settings, setSettings] = useState<AppSettings>(() => {
     // Try to load from localStorage if available, or use defaults
-    const saved = localStorage.getItem("dnd_tools_settings");
+    const saved = localStorage.getItem("dnd_tools_settings:v1");
     if (saved) {
       try {
         const parsed = JSON.parse(saved);
@@ -176,7 +179,7 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
 
   // Persistence
   useEffect(() => {
-    localStorage.setItem("dnd_tools_settings", JSON.stringify(settings));
+    localStorage.setItem("dnd_tools_settings:v1", JSON.stringify(settings));
   }, [settings]);
 
   // Dark mode effect
@@ -260,27 +263,27 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
       diceRoller: { ...DEFAULT_DICE_ROLLER_SETTINGS },
     }));
 
+  const contextValue = useMemo(() => ({
+    settings,
+    updateSitewide,
+    updatePointBuy,
+    updateRoll,
+    updateStandard,
+    updateHp,
+    updateDiceRoller,
+    resetSitewide,
+    resetPointBuy,
+    resetRoll,
+    resetStandard,
+    resetHp,
+    resetDiceRoller,
+    isOpen,
+    openSettings: () => setIsOpen(true),
+    closeSettings: () => setIsOpen(false),
+  }), [settings, isOpen]);
+
   return (
-    <SettingsContext.Provider
-      value={{
-        settings,
-        updateSitewide,
-        updatePointBuy,
-        updateRoll,
-        updateStandard,
-        updateHp,
-        updateDiceRoller,
-        resetSitewide,
-        resetPointBuy,
-        resetRoll,
-        resetStandard,
-        resetHp,
-        resetDiceRoller,
-        isOpen,
-        openSettings: () => setIsOpen(true),
-        closeSettings: () => setIsOpen(false),
-      }}
-    >
+    <SettingsContext.Provider value={contextValue}>
       {children}
     </SettingsContext.Provider>
   );

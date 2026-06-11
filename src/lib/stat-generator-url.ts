@@ -38,7 +38,7 @@ export function parseClampedIntParam(
   return Math.max(min, Math.min(max, parsed));
 }
 
-export function setAbilityParams(
+function setAbilityParams(
   params: URLSearchParams,
   values: Record<Ability, number>,
   keys: Record<Ability, string>,
@@ -48,7 +48,7 @@ export function setAbilityParams(
   }
 }
 
-export function setOptionalAbilityParams(
+function setOptionalAbilityParams(
   params: URLSearchParams,
   values: Record<Ability, number | null>,
   keys: Record<Ability, string>,

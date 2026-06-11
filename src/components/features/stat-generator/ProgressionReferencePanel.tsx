@@ -8,7 +8,7 @@ import {
   MAGIC_ITEMS_PROGRESSION,
 } from "@/lib/progression-data";
 
-export function RarityBadge({ rarityKey }: { rarityKey: string }) {
+function RarityBadge({ rarityKey }: { rarityKey: string }) {
   const config = BADGE_VARIANTS[rarityKey];
   if (!config) return null;
 
@@ -63,8 +63,9 @@ export const ProgressionReferencePanel: React.FC = () => {
                   </div>
                   <p
                     className="text-xs text-muted-foreground leading-relaxed"
-                    dangerouslySetInnerHTML={{ __html: item.description }}
-                  />
+                  >
+                    {item.description}
+                  </p>
                 </div>
               ))}
             </div>
@@ -111,8 +112,9 @@ export const ProgressionReferencePanel: React.FC = () => {
                         </span>
                         <p
                           className="text-xs text-muted-foreground leading-relaxed"
-                          dangerouslySetInnerHTML={{ __html: item.description }}
-                        />
+                        >
+                          {item.description}
+                        </p>
                       </div>
                     </div>
                   );
@@ -149,8 +151,9 @@ export const ProgressionReferencePanel: React.FC = () => {
                     </div>
                     <p
                       className="text-xs text-muted-foreground leading-relaxed"
-                      dangerouslySetInnerHTML={{ __html: item.description }}
-                    />
+                    >
+                      {item.description}
+                    </p>
                   </div>
                 );
               })}

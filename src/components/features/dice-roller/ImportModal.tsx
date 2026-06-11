@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useRef, useEffect, useCallback, useReducer } from "react";
 import { X, Upload, FileJson, Check, AlertCircle, Folder, Dice6 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
@@ -43,20 +43,28 @@ interface ImportModalProps {
 }
 
 export const ImportModal: React.FC<ImportModalProps> = ({ isOpen, onClose, onImport }) => {
-  const [inputText, setInputText] = useState("");
-  const [dragActive, setDragActive] = useState(false);
-  const [parsedData, setParsedData] = useState<ImportedData | null>(null);
-  const [validationError, setValidationError] = useState<string | null>(null);
-  const [importMode, setImportMode] = useState<"merge" | "replace">("merge");
+  const [state, dispatch] = useReducer((s: any, a: any) => ({ ...s, ...a }), {
+    inputText: "",
+    dragActive: false,
+    parsedData: null as ImportedData | null,
+    validationError: null as string | null,
+    importMode: "merge" as "merge" | "replace"
+  });
+
+  const { inputText, dragActive, parsedData, validationError, importMode } = state;
+
+  const setInputText = (inputText: string) => dispatch({ inputText });
+  const setDragActive = (dragActive: boolean) => dispatch({ dragActive });
+  const setParsedData = (parsedData: ImportedData | null) => dispatch({ parsedData });
+  const setValidationError = (validationError: string | null) => dispatch({ validationError });
+  const setImportMode = (importMode: "merge" | "replace") => dispatch({ importMode });
   
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const handleClose = () => {
-    setInputText("");
-    setParsedData(null);
-    setValidationError(null);
+  const handleClose = useCallback(() => {
+    dispatch({ inputText: "", parsedData: null, validationError: null });
     onClose();
-  };
+  }, [onClose]);
 
   // Validate incoming JSON
   const validateJson = (jsonString: string) => {
@@ -161,13 +169,15 @@ export const ImportModal: React.FC<ImportModalProps> = ({ isOpen, onClose, onImp
   };
 
   // Close on ESC
+  const handleCloseRef = useRef(handleClose);
+  handleCloseRef.current = handleClose;
+
   useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape") handleClose();
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") handleCloseRef.current();
     };
-    if (isOpen) window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    if (isOpen) window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
   }, [isOpen]);
 
   if (!isOpen) return null;
@@ -235,6 +245,7 @@ export const ImportModal: React.FC<ImportModalProps> = ({ isOpen, onClose, onImp
               accept=".json"
               onChange={handleFileChange}
               className="hidden"
+              aria-label="Upload JSON config file"
             />
             <FileJson className={`w-8 h-8 mb-2 transition-transform ${dragActive ? "scale-110 text-primary" : "text-muted-foreground/60"}`} />
             <p className="text-xs font-semibold uppercase tracking-wider text-foreground">
@@ -247,10 +258,11 @@ export const ImportModal: React.FC<ImportModalProps> = ({ isOpen, onClose, onImp
 
           {/* Paste JSON Editor */}
           <div className="space-y-1.5">
-            <label className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">
+            <label htmlFor="json-paste" className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">
               Or Paste JSON Content
             </label>
             <textarea
+              id="json-paste"
               value={inputText}
               onChange={handleTextChange}
               placeholder='{\n  "groups": [],\n  "ungrouped": []\n}'
@@ -351,11 +363,12 @@ const ImportPreviewSection: React.FC<ImportPreviewSectionProps> = ({
 
       {/* Conflict Options Segmented Controller */}
       <div className="space-y-2 border-t border-border/30 pt-3">
-        <label className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider block">
+        <div className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider block">
           Import Action / Conflict Handling
-        </label>
+        </div>
         <div className="grid grid-cols-2 gap-2 p-1 bg-muted/40 border border-border/50 rounded-lg">
           <button
+            type="button"
             onClick={() => setImportMode("merge")}
             className={`py-2 px-3 text-xs font-bold uppercase tracking-wider rounded-md transition-all ${
               importMode === "merge"
@@ -366,6 +379,7 @@ const ImportPreviewSection: React.FC<ImportPreviewSectionProps> = ({
             Merge with Existing
           </button>
           <button
+            type="button"
             onClick={() => setImportMode("replace")}
             className={`py-2 px-3 text-xs font-bold uppercase tracking-wider rounded-md transition-all ${
               importMode === "replace"

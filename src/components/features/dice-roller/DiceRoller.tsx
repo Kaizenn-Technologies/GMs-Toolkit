@@ -10,13 +10,17 @@ export const DiceRoller: React.FC = () => {
   const { settings } = useSettings();
   const { logs, addLog, clearLogs } = useDiceLogs();
 
-  // Handle auto-clear logs on refresh
+  const mountedRef = useRef(false);
+  const autoClearLogs = settings.diceRoller.autoClearLogs;
+  
   useEffect(() => {
-    if (settings.diceRoller.autoClearLogs) {
-      clearLogs();
+    if (!mountedRef.current) {
+      mountedRef.current = true;
+      if (autoClearLogs) {
+        clearLogs();
+      }
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []); // Only on mount
+  }, [autoClearLogs, clearLogs]);
 
   const {
     diceConfigs,

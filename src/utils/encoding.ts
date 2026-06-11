@@ -3,7 +3,7 @@ import { CUSTOM_CLASS_NAME } from "../lib/constants";
 import type { ClassSelection } from "@/types";
 import type { Ability } from "@/types";
 
-export const SKILL_TO_CODE: Record<string, string> = {
+const SKILL_TO_CODE: Record<string, string> = {
     "Athletics": "A1",
     "Acrobatics": "B1",
     "Sleight of Hand": "B2",
@@ -48,7 +48,7 @@ export const CLASS_LETTER_MAP: Record<string, string> = Object.fromEntries(
     CLASS_ORDER.map((key, i) => [key, String.fromCharCode(65 + i)])
 );
 
-export const CLASS_TO_LETTER: Record<string, string> = {
+const CLASS_TO_LETTER: Record<string, string> = {
     barbarian: "A",
     bard: "B",
     cleric: "C",
@@ -64,7 +64,7 @@ export const CLASS_TO_LETTER: Record<string, string> = {
 };
 
 // Background Mapping Definitions
-export const BG_TO_LETTER: Record<string, string> = {
+const BG_TO_LETTER: Record<string, string> = {
     acolyte: "A",
     artisan: "B",
     charlatan: "C",
@@ -84,7 +84,7 @@ export const BG_TO_LETTER: Record<string, string> = {
 };
 
 // Ability Score Definitions
-export const ABILITY_LETTERS: Record<Ability, string> = {
+const ABILITY_LETTERS: Record<Ability, string> = {
     Strength: "A",
     Dexterity: "B",
     Constitution: "C",
@@ -93,7 +93,7 @@ export const ABILITY_LETTERS: Record<Ability, string> = {
     Charisma: "F",
 };
 
-export const ABILITY_ORDER: Ability[] = [
+const ABILITY_ORDER: Ability[] = [
     "Strength",
     "Dexterity",
     "Constitution",
@@ -108,7 +108,7 @@ function pad2(n: number): string {
 }
 
 // Helper: get local UTC offset like +0530 or -0700
-export function getLocalUtcOffset(): string {
+function getLocalUtcOffset(): string {
     const offsetMinutes = new Date().getTimezoneOffset();
     const sign = offsetMinutes <= 0 ? "+" : "-";
     const absMinutes = Math.abs(offsetMinutes);
@@ -183,7 +183,7 @@ export function classSelectionsToClassInput(classSelections: ClassSelection[]): 
 }
 
 function toSortedSelections(classSelections: ClassSelection[]): ClassSelection[] {
-    return [...classSelections].sort((a, b) => {
+    return classSelections.toSorted((a, b) => {
         const hitDieA =
             a.className === CUSTOM_CLASS_NAME
                 ? (a.customHitDie ?? 0)
@@ -364,8 +364,7 @@ export function encodeCharacter(character: EncodedCharacter): string {
 
             if (hasSaves) {
                 const sortedSaves = [...sk.savingThrows]
-                    .map((ab) => ABILITY_LETTERS[ab])
-                    .filter(Boolean)
+                    .flatMap((ab) => ABILITY_LETTERS[ab] ? [ABILITY_LETTERS[ab]] : [])
                     .sort()
                     .join("");
                 skillsStr += `s${sortedSaves}`;
@@ -373,8 +372,7 @@ export function encodeCharacter(character: EncodedCharacter): string {
 
             if (hasProfs) {
                 const sortedProfs = sk.proficiencies
-                    .map((name) => SKILL_TO_CODE[name])
-                    .filter(Boolean)
+                    .flatMap((name) => SKILL_TO_CODE[name] ? [SKILL_TO_CODE[name]] : [])
                     .sort()
                     .join("");
                 skillsStr += `p${sortedProfs}`;
@@ -382,8 +380,7 @@ export function encodeCharacter(character: EncodedCharacter): string {
 
             if (hasExps) {
                 const sortedExps = sk.expertises
-                    .map((name) => SKILL_TO_CODE[name])
-                    .filter(Boolean)
+                    .flatMap((name) => SKILL_TO_CODE[name] ? [SKILL_TO_CODE[name]] : [])
                     .sort()
                     .join("");
                 skillsStr += `e${sortedExps}`;

@@ -36,12 +36,21 @@ export const MANUAL_BONUS_MAX = 20;
 export const STANDARD_ARRAY_OPTIONS = [8, 10, 12, 13, 14, 15] as const;
 export const CHOOSE_STANDARD_CLASS = "Choose a class";
 export const CHOOSE_BACKGROUND = "Choose a background";
-export const ROLLED_POOL_PARAM = "rpool";
+const ROLLED_POOL_PARAM = "rpool";
 export const STAT_TAB_ROUTES = {
   pointbuy: "/stat-generator/pointbuy",
   roll: "/stat-generator/rolled",
   standard: "/stat-generator/standard-array",
 } as const;
+
+const rollDie = () => randomInt(1, 6);
+
+const computeTotalFromRolls = (rolls: number[]) => {
+  if (!rolls.length) return 0;
+  const sum = rolls.reduce((s, v) => s + v, 0);
+  const min = Math.min(...rolls);
+  return sum - min;
+};
 
 function cumulativeCost(score: number, minPurchasable: number): number {
   let cost = 0;
@@ -63,7 +72,7 @@ function cumulativeCost(score: number, minPurchasable: number): number {
   return cost;
 }
 
-export function pointsUsed(
+function pointsUsed(
   scores: Record<Ability, number>,
   minPurchasable: number,
 ): number {
@@ -73,7 +82,7 @@ export function pointsUsed(
   );
 }
 
-export function getPrimaryStatInfo(className: string): {
+function getPrimaryStatInfo(className: string): {
   type: PrimaryStat["type"];
   abilities: Ability[];
 } {
@@ -90,7 +99,7 @@ function getBackgroundByName(name: string) {
   return Object.values(backgrounds).find((b) => b.name === name) ?? null;
 }
 
-export function getBackgroundAbilities(bgName: string): Ability[] {
+function getBackgroundAbilities(bgName: string): Ability[] {
   return getBackgroundByName(bgName)?.abilityScores ?? [];
 }
 
@@ -113,7 +122,7 @@ function defaultManualBonuses(): Record<Ability, number> {
 
 function makeScoresFromStandardArray(className: string): Record<Ability, number> {
   const classArray = getClassStandardArrayByName(className);
-  const fallback = [...STANDARD_ARRAY_OPTIONS].sort((a, b) => b - a);
+  const fallback = STANDARD_ARRAY_OPTIONS.toSorted((a, b) => b - a);
   const arrayToUse =
     classArray && classArray.length === ABILITIES.length ? classArray : fallback;
 
@@ -195,19 +204,19 @@ export function useStatGenerator() {
   const [selectedClass, setSelectedClass] = useState<string>(CHOOSE_STANDARD_CLASS);
   const [selectedBackground, setSelectedBackground] = useState<string>(CHOOSE_BACKGROUND);
   const [scores, setScores] = useState<Record<Ability, number>>(
-    makeDefaultScores(minPurchasable),
+    () => makeDefaultScores(minPurchasable)
   );
   const [selectedStandardClass, setSelectedStandardClass] =
     useState<string>(CHOOSE_STANDARD_CLASS);
   const [standardScores, setStandardScores] = useState<
     Record<Ability, number | null>
-  >(makeUnfilledStandardScores());
+  >(() => makeUnfilledStandardScores());
   const [bgBonuses, setBgBonuses] = useState<Record<Ability, number>>(
-    defaultBgBonuses(),
+    () => defaultBgBonuses()
   );
   const [featBonusEnabled, setFeatBonusEnabled] = useState(false);
   const [manualBonuses, setManualBonuses] = useState<Record<Ability, number>>(
-    defaultManualBonuses(),
+    () => defaultManualBonuses()
   );
   const { copied, copyToClipboard } = useCopyToClipboard();
 
@@ -215,8 +224,8 @@ export function useStatGenerator() {
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [shareModalProps, setShareModalProps] = useState<any>(null);
-  const [sharedName, setSharedName] = useState("");
-  const [sharedRolls, setSharedRolls] = useState<number | null>(null);
+  const sharedNameRef = useRef("");
+  const sharedRollsRef = useRef<number | null>(null);
   const [sharedTimestamp, setSharedTimestamp] = useState("");
   const [sharedTimezone, setSharedTimezone] = useState("");
 
@@ -230,13 +239,25 @@ export function useStatGenerator() {
     }, {} as Record<Ability, { rolls: number[]; total: number }>),
   );
   const [isRolling, setIsRolling] = useState(false);
-  const [rollCount, setRollCount] = useState<number>(0);
+  const [rollCount, setRollCount] = useState<number>(() => {
+    if (typeof window === 'undefined') return 0;
+    const params = new URLSearchParams(location.search);
+    const codeFromUrl = params.get("code");
+    if (codeFromUrl) {
+      try {
+        const decoded = decodeCharacter(codeFromUrl);
+        return decoded.metadata?.rollCount ?? 0;
+      } catch (e) {}
+    }
+    return 0;
+  });
   const rollIntervalRef = useRef<number | null>(null);
 
   useEffect(() => {
+    const ref = rollIntervalRef;
     return () => {
-      if (rollIntervalRef.current) {
-        window.clearInterval(rollIntervalRef.current);
+      if (ref.current) {
+        window.clearInterval(ref.current);
       }
     };
   }, []);
@@ -288,40 +309,40 @@ export function useStatGenerator() {
           ? selectedStandardClass
           : selectedClass;
 
+  const prevActiveClassRef = useRef(activeClass);
   // Autofill saving throws when active class changes
-  useEffect(() => {
+  if (activeClass !== prevActiveClassRef.current) {
     if (ignoreClassChangeRef.current) {
       ignoreClassChangeRef.current = false;
-      return;
+    } else {
+      if (!activeClass || activeClass === CHOOSE_STANDARD_CLASS) {
+        setSavingThrowsState({
+          Strength: "none",
+          Dexterity: "none",
+          Constitution: "none",
+          Intelligence: "none",
+          Wisdom: "none",
+          Charisma: "none",
+        });
+      } else {
+        const activeClassData = Object.values(classes).find((c) => c.name === activeClass);
+        const activeSavingThrows = (activeClassData?.savingThrows ?? []) as Ability[];
+
+        setSavingThrowsState((prev) => {
+          const next = { ...prev };
+          ABILITIES.forEach((ability) => {
+            if (activeSavingThrows.includes(ability)) {
+              next[ability] = "prof";
+            } else {
+              next[ability] = "none";
+            }
+          });
+          return next;
+        });
+      }
     }
-
-    if (!activeClass || activeClass === CHOOSE_STANDARD_CLASS) {
-      setSavingThrowsState({
-        Strength: "none",
-        Dexterity: "none",
-        Constitution: "none",
-        Intelligence: "none",
-        Wisdom: "none",
-        Charisma: "none",
-      });
-      return;
-    }
-
-    const activeClassData = Object.values(classes).find((c) => c.name === activeClass);
-    const activeSavingThrows = (activeClassData?.savingThrows ?? []) as Ability[];
-
-    setSavingThrowsState((prev) => {
-      const next = { ...prev };
-      ABILITIES.forEach((ability) => {
-        if (activeSavingThrows.includes(ability)) {
-          next[ability] = "prof";
-        } else {
-          next[ability] = "none";
-        }
-      });
-      return next;
-    });
-  }, [activeClass]);
+    prevActiveClassRef.current = activeClass;
+  }
 
   const handleSkillsReset = () => {
     setSkillsState({
@@ -593,7 +614,7 @@ export function useStatGenerator() {
 
       setShareModalProps({
         encodedData: "",
-        characterName: sharedName || "",
+        characterName: sharedNameRef.current || "",
         isRandomized: isRandom,
         rollMeta: isRandom ? { rolls: rollCount, timestamp: new Date().toISOString() } : undefined,
         onGenerateUrl: (name: string) => {
@@ -622,10 +643,9 @@ export function useStatGenerator() {
         const decoded = decodeCharacter(codeFromUrl);
 
         if (decoded.metadata) {
-          if (decoded.metadata.name) setSharedName(decoded.metadata.name);
+          if (decoded.metadata.name) sharedNameRef.current = decoded.metadata.name;
           if (decoded.metadata.rollCount !== undefined) {
-            setSharedRolls(decoded.metadata.rollCount);
-            setRollCount(decoded.metadata.rollCount);
+            sharedRollsRef.current = decoded.metadata.rollCount;
           }
           if (decoded.metadata.unixTime) {
             setSharedTimestamp(new Date(decoded.metadata.unixTime * 1000).toISOString());
@@ -906,15 +926,6 @@ export function useStatGenerator() {
     hydrateFromUrl();
   }, [hydrateFromUrl]);
 
-  const rollDie = () => randomInt(1, 6);
-
-  const computeTotalFromRolls = (rolls: number[]) => {
-    if (!rolls.length) return 0;
-    const sum = rolls.reduce((s, v) => s + v, 0);
-    const min = Math.min(...rolls);
-    return sum - min;
-  };
-
   const rollAllStats = () => {
     if (isRolling) return;
     setShowAssignPanel(false);
@@ -1145,7 +1156,7 @@ export function useStatGenerator() {
     setIsShareModalOpen,
     shareModalProps,
     sharedName,
-    sharedRolls,
+    sharedRolls: sharedRollsRef.current,
     sharedTimestamp,
     sharedTimezone,
   };

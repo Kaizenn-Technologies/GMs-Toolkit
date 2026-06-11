@@ -14,14 +14,14 @@ function getFallback(): Random {
  * Sets a seeded engine for deterministic testing.
  * @param seed The seed value to initialize the Mersenne Twister engine.
  */
-export function setSeededEngine(seed: number): void {
+function setSeededEngine(seed: number): void {
   testRandom = new Random(MersenneTwister19937.seed(seed));
 }
 
 /**
  * Clears the seeded test engine, reverting to default secure/fallback RNG.
  */
-export function clearSeededEngine(): void {
+function clearSeededEngine(): void {
   testRandom = null;
 }
 

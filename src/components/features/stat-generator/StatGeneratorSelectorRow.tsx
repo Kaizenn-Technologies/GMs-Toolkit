@@ -43,12 +43,12 @@ export function StatGeneratorSelectorRow({
       <div className="flex flex-row flex-wrap  lg:items-center gap-4 lg:gap-8">
         {/* Class Selection */}
         <div className="flex flex-col sm:flex-row sm:items-center gap-2 lg:gap-3 flex-1">
-          <label className="text-xs text-center font-bold uppercase tracking-wider text-muted-foreground shrink-0 sm:w-24 lg:w-auto">
+          <label htmlFor="class-select" className="text-xs text-center font-bold uppercase tracking-wider text-muted-foreground shrink-0 sm:w-24 lg:w-auto">
             Class
           </label>
           <div className="flex-1 max-w-sm">
             <Select value={classValue} onValueChange={onClassChange}>
-              <SelectTrigger className="bg-background/50 hover:bg-background transition-colors">
+              <SelectTrigger id="class-select" className="bg-background/50 hover:bg-background transition-colors">
                 <SelectValue placeholder={classPlaceholder} />
               </SelectTrigger>
               <SelectContent>
@@ -68,12 +68,12 @@ export function StatGeneratorSelectorRow({
 
         {/* Background Selection */}
         <div className="flex flex-col sm:flex-row sm:items-center gap-2 lg:gap-3 flex-1">
-          <label className="text-xs text-center font-bold uppercase tracking-wider text-muted-foreground shrink-0 sm:w-24 lg:w-auto">
+          <label htmlFor="background-select" className="text-xs text-center font-bold uppercase tracking-wider text-muted-foreground shrink-0 sm:w-24 lg:w-auto">
             Background
           </label>
           <div className="flex-1">
             <Select value={backgroundValue} onValueChange={onBackgroundChange}>
-              <SelectTrigger className="w-full lg:w-23  bg-background/50 hover:bg-background transition-colors">
+              <SelectTrigger id="background-select" className="w-full lg:w-23  bg-background/50 hover:bg-background transition-colors">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>

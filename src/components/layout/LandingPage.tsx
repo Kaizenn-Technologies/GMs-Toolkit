@@ -1,4 +1,4 @@
-import { Calculator, Users, Dices } from "lucide-react";
+import { Calculator, Users, Dices, Smartphone } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
 import { useSettings } from "@/contexts/SettingsContext";
@@ -30,6 +30,15 @@ const FEATURES = [
     gradient: "from-purple-500/5 via-purple-500/0 to-transparent dark:from-purple-600/20 dark:via-purple-900/10 dark:to-transparent",
     accent: "bg-purple-500",
     shadow: "hover:shadow-purple-500/5 dark:hover:shadow-purple-500/20",
+  },
+  {
+    title: "Mobile Dice (Beta)",
+    description: "Tactile portrait roller. Large touch targets, instant presets, and smart history logs for phone use.",
+    icon: <Smartphone className="size-12 text-pink-600 dark:text-pink-400" />,
+    path: "/phone-dice",
+    gradient: "from-pink-500/5 via-pink-500/0 to-transparent dark:from-pink-600/20 dark:via-pink-900/10 dark:to-transparent",
+    accent: "bg-pink-500",
+    shadow: "hover:shadow-pink-500/5 dark:hover:shadow-pink-500/20",
   },
 ];
 
@@ -68,7 +77,7 @@ export function LandingPage() {
       </div>
 
       {/* Feature Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-6xl w-full perspective-1000">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 max-w-6xl w-full perspective-1000">
         {FEATURES.map((feature, index) => (
           <button
             type="button"

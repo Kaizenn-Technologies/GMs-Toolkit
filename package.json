@@ -1,7 +1,7 @@
 {
   "name": "gm-toolkit",
   "private": true,
-  "version": "0.8.0",
+  "version": "0.8.1",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -26,7 +26,6 @@
     "qrcode": "^1.5.4",
     "random-js": "^2.1.0",
     "react": "^19.2.7",
-    "react-doctor": "^0.2.16",
     "react-dom": "^19.2.7",
     "react-router-dom": "^7.17.0",
     "shadcn": "^4.11.0",

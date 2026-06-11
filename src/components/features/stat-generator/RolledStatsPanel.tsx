@@ -113,7 +113,7 @@ export const RolledStatsPanel: React.FC<RolledStatsPanelProps> = ({
           const totalColorClass =
             total === 18 ? "text-amber-400" : total === 3 ? "text-red-500" : "";
           const displayed = settings.roll?.sortDescending
-            ? [...rolls].sort((a, b) => b - a)
+            ? rolls.toSorted((a, b) => b - a)
             : rolls;
 
           return (
@@ -445,7 +445,7 @@ export const RolledStatsPanel: React.FC<RolledStatsPanelProps> = ({
                             </SelectTrigger>
                             <SelectContent>
                               <SelectItem value="">
-                                Select
+                                -
                               </SelectItem>
                               {(() => {
                                 const assignedScores: number[] = [];
@@ -482,7 +482,7 @@ export const RolledStatsPanel: React.FC<RolledStatsPanelProps> = ({
                           {showBgStepper ? (
                             <StepperInput className="rounded-none w-28 bg-background/50" value={bgBonus} min={0} max={BG_BONUS_MAX} onChange={(val) => handleBgBonusChange(ability, val)} />
                           ) : (
-                            <span className="inline-block w-28 text-center text-muted-foreground/30 select-none font-medium">—</span>
+                            <span className="inline-block w-28 text-center text-muted-foreground/30 select-none font-medium">-</span>
                           )}
                         </CenteredCellContent>
                       </td>

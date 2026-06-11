@@ -68,10 +68,16 @@ function TabsList({
     }
   }, []);
 
+  const updateSliderRef = useRef(updateSlider);
   useEffect(() => {
-    updateSlider();
+    updateSliderRef.current = updateSlider;
+  });
 
-    const observer = new MutationObserver(updateSlider);
+  useEffect(() => {
+    const stableUpdateSlider = () => updateSliderRef.current();
+    stableUpdateSlider();
+
+    const observer = new MutationObserver(stableUpdateSlider);
 
     if (containerRef.current) {
       observer.observe(containerRef.current, {
@@ -82,17 +88,17 @@ function TabsList({
       });
     }
 
-    window.addEventListener("resize", updateSlider);
-    const timer1 = setTimeout(updateSlider, 50);
-    const timer2 = setTimeout(updateSlider, 150);
+    window.addEventListener("resize", stableUpdateSlider);
+    const timer1 = setTimeout(stableUpdateSlider, 50);
+    const timer2 = setTimeout(stableUpdateSlider, 150);
 
     return () => {
       observer.disconnect();
-      window.removeEventListener("resize", updateSlider);
+      window.removeEventListener("resize", stableUpdateSlider);
       clearTimeout(timer1);
       clearTimeout(timer2);
     };
-  }, [updateSlider]);
+  }, []);
 
   return (
     <TabsPrimitive.List

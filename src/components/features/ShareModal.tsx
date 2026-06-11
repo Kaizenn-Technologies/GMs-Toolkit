@@ -29,17 +29,18 @@ export function ShareModal({
   rollMeta,
   onGenerateUrl,
 }: ShareModalProps) {
-  const [localName, setLocalName] = useState(characterName);
-  const [prevCharacterName, setPrevCharacterName] = useState(characterName);
+  const [localName, setLocalName] = useState<string | null>(null);
+  const prevCharacterNameRef = useRef(characterName);
   const [copied, setCopied] = useState(false);
-
   const inputRef = useRef<HTMLInputElement | null>(null);
 
   // Sync state with props during render if characterName prop changes
-  if (characterName !== prevCharacterName) {
-    setLocalName(characterName);
-    setPrevCharacterName(characterName);
+  if (characterName !== prevCharacterNameRef.current) {
+    setLocalName(null);
+    prevCharacterNameRef.current = characterName;
   }
+
+  const currentName = localName !== null ? localName : characterName;
 
   // Generate share URL dynamically without state to avoid cascading renders
   const shareUrl = useMemo(() => {
@@ -54,7 +55,7 @@ export function ShareModal({
       url.searchParams.set("code", encodedData);
 
       if (isRandomized) {
-        const nameToUse = localName.trim() || "Unnamed Character";
+        const nameToUse = currentName.trim() || "Unnamed Character";
         url.searchParams.set("name", nameToUse);
         if (rollMeta?.rolls !== undefined) {
           url.searchParams.set("rolls", String(rollMeta.rolls));
@@ -66,15 +67,18 @@ export function ShareModal({
       }
       return url.toString();
     }
-  }, [isOpen, encodedData, localName, isRandomized, rollMeta, onGenerateUrl]);
+  }, [isOpen, encodedData, localName, currentName, isRandomized, rollMeta, onGenerateUrl]);
 
   // Generate QR Code logic extracted to ShareQRCodePanel below
+
+  const onCloseRef = useRef(onClose);
+  onCloseRef.current = onClose;
 
   // Handle ESC key to close
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
-        onClose();
+        onCloseRef.current();
       }
     };
 
@@ -89,7 +93,7 @@ export function ShareModal({
     return () => {
       window.removeEventListener("keydown", handleKeyDown);
     };
-  }, [isOpen, onClose]);
+  }, [isOpen]);
 
   const handleCopy = async () => {
     try {
@@ -191,7 +195,7 @@ export function ShareModal({
                 id="char-name-input"
                 ref={inputRef}
                 placeholder="e.g. Unnamed Character"
-                value={localName}
+                value={currentName}
                 onChange={(e) => setLocalName(e.target.value)}
                 className="w-full text-xs rounded-none border-border focus-visible:ring-1 focus-visible:ring-primary/45 font-mono"
               />
@@ -199,11 +203,12 @@ export function ShareModal({
 
             {/* Share Link Row */}
             <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+              <label htmlFor="share-link-input" className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
                 Share Link
               </label>
               <div className="flex items-center gap-2">
                 <input
+                  id="share-link-input"
                   type="text"
                   readOnly
                   value={shareUrl}

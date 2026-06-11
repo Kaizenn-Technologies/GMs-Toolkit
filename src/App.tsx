@@ -14,6 +14,9 @@ const StatGenerator = lazy(() =>
 const DiceRoller = lazy(() =>
   import("@/components/features/dice-roller/DiceRoller").then((m) => ({ default: m.DiceRoller }))
 );
+const PhoneDiceRoller = lazy(() =>
+  import("@/components/features/phone-dice/PhoneDiceRoller").then((m) => ({ default: m.PhoneDiceRoller }))
+);
 const LandingPage = lazy(() =>
   import("@/components/layout/LandingPage").then((m) => ({ default: m.LandingPage }))
 );
@@ -26,12 +29,12 @@ export default function App() {
 
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: "smooth" });
-  }, [location.pathname]);
+  }, [location]);
 
   const getActiveTab = (): "hp" | "point-buy" | "dice-roller" | "landing" => {
     if (location.pathname === "/") return "landing";
     if (location.pathname.startsWith("/stat-generator")) return "point-buy";
-    if (location.pathname.startsWith("/dm-dice-roller")) return "dice-roller";
+    if (location.pathname.startsWith("/dm-dice-roller") || location.pathname.startsWith("/phone-dice")) return "dice-roller";
     if (location.pathname.startsWith("/hp-calculator")) return "hp";
     return "hp";
   };
@@ -61,7 +64,7 @@ export default function App() {
           fallback={
             <div className="flex-1 flex flex-col items-center justify-center min-h-[400px] text-muted-foreground animate-pulse">
               <div className="size-8 rounded-full border-4 border-primary border-t-transparent animate-spin mb-4" />
-              <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground/60">Loading session...</p>
+              <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground/60">Loading session…</p>
             </div>
           }
         >
@@ -79,10 +82,11 @@ export default function App() {
             />
             <Route path="/stat-generator/rolled" element={<StatGenerator />} />
             <Route path="/dm-dice-roller" element={<DiceRoller />} />
+            <Route path="/phone-dice" element={<PhoneDiceRoller />} />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </Suspense>
-        <Footer />
+        {location.pathname !== "/phone-dice" && <Footer />}
       </main>
 
       <SettingsOverlay

@@ -98,9 +98,10 @@ export function useHpCalculator() {
   const rollIntervalRef = useRef<number | null>(null);
 
   useEffect(() => {
+    const ref = rollIntervalRef;
     return () => {
-      if (rollIntervalRef.current) {
-        window.clearInterval(rollIntervalRef.current);
+      if (ref.current) {
+        window.clearInterval(ref.current);
       }
     };
   }, []);

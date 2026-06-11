@@ -5,12 +5,12 @@ import type { Ability } from "@/types";
 import { CLASS_ORDER, CODE_TO_SKILL } from "./encoding";
 
 // Reverse Class Letters Map
-export const LETTER_TO_CLASS: Record<string, string> = Object.fromEntries(
+const LETTER_TO_CLASS: Record<string, string> = Object.fromEntries(
     CLASS_ORDER.map((key, i) => [String.fromCharCode(65 + i), key])
 );
 
 // Reverse Background Letters Map
-export const LETTER_TO_BG: Record<string, string> = {
+const LETTER_TO_BG: Record<string, string> = {
     A: "Acolyte",
     B: "Artisan",
     C: "Charlatan",
@@ -30,7 +30,7 @@ export const LETTER_TO_BG: Record<string, string> = {
 };
 
 // Reverse Ability Letters Map
-export const LETTERS_TO_ABILITY: Record<string, Ability> = {
+const LETTERS_TO_ABILITY: Record<string, Ability> = {
     A: "Strength",
     B: "Dexterity",
     C: "Constitution",
@@ -39,7 +39,7 @@ export const LETTERS_TO_ABILITY: Record<string, Ability> = {
     F: "Charisma",
 };
 
-export const ABILITY_ORDER: Ability[] = [
+const ABILITY_ORDER: Ability[] = [
     "Strength",
     "Dexterity",
     "Constitution",
@@ -54,7 +54,7 @@ function isDigit(char: string): boolean {
 }
 
 // Global segment parser
-export function parseSegments(urlStr: string) {
+function parseSegments(urlStr: string) {
     const segments = urlStr.split(";");
     let coredata = "";
     let rolled = "";
@@ -120,24 +120,27 @@ const CUSTOM_HIT_DIE_FROM_CODE: Record<1 | 2 | 3 | 4, 6 | 8 | 10 | 12> = {
 };
 
 export function decodedClassesToSelections(decodedClasses: DecodedClass[]): ClassSelection[] {
-    return decodedClasses
-        .map((decodedClass, index) => {
-            if (decodedClass.type === "custom") {
-                return {
-                    id: String(index + 1),
-                    className: CUSTOM_CLASS_NAME,
-                    level: decodedClass.levels,
-                    customHitDie: CUSTOM_HIT_DIE_FROM_CODE[decodedClass.hitDie] || 6,
-                };
-            }
-
-            return {
+    return decodedClasses.reduce<ClassSelection[]>((acc, decodedClass, index) => {
+        let selection: ClassSelection;
+        if (decodedClass.type === "custom") {
+            selection = {
+                id: String(index + 1),
+                className: CUSTOM_CLASS_NAME,
+                level: decodedClass.levels,
+                customHitDie: CUSTOM_HIT_DIE_FROM_CODE[decodedClass.hitDie] || 6,
+            };
+        } else {
+            selection = {
                 id: String(index + 1),
                 className: classes[decodedClass.key].name,
                 level: decodedClass.levels,
             };
-        })
-        .filter((selection) => selection.level > 0);
+        }
+        if (selection.level > 0) {
+            acc.push(selection);
+        }
+        return acc;
+    }, []);
 }
 
 export function parseCoreData(shareString: string): DecodedCoreData {
@@ -312,7 +315,7 @@ export interface DecodedCharacter {
     };
 }
 
-export function decodeSkills(skillsStr: string): DecodedSkillsData | undefined {
+function decodeSkills(skillsStr: string): DecodedSkillsData | undefined {
     if (!skillsStr) return undefined;
 
     const isBard = skillsStr[0] === "1";
@@ -320,7 +323,8 @@ export function decodeSkills(skillsStr: string): DecodedSkillsData | undefined {
 
     // Parse conMod
     let conModStr = "";
-    while (idx < skillsStr.length && !["s", "p", "e", "l"].includes(skillsStr[idx])) {
+    const stopChars = new Set(["s", "p", "e", "l"]);
+    while (idx < skillsStr.length && !stopChars.has(skillsStr[idx])) {
         conModStr += skillsStr[idx];
         idx++;
     }
@@ -333,7 +337,8 @@ export function decodeSkills(skillsStr: string): DecodedSkillsData | undefined {
     // Parse s section if present
     if (idx < skillsStr.length && skillsStr[idx] === "s") {
         idx++; // skip 's'
-        while (idx < skillsStr.length && !["p", "e", "l"].includes(skillsStr[idx])) {
+        const sStopChars = new Set(["p", "e", "l"]);
+        while (idx < skillsStr.length && !sStopChars.has(skillsStr[idx])) {
             const letter = skillsStr[idx];
             const ability = LETTERS_TO_ABILITY[letter.toUpperCase()];
             if (ability) {
@@ -346,7 +351,8 @@ export function decodeSkills(skillsStr: string): DecodedSkillsData | undefined {
     // Parse p section if present
     if (idx < skillsStr.length && skillsStr[idx] === "p") {
         idx++; // skip 'p'
-        while (idx < skillsStr.length && !["e", "l"].includes(skillsStr[idx])) {
+        const pStopChars = new Set(["e", "l"]);
+        while (idx < skillsStr.length && !pStopChars.has(skillsStr[idx])) {
             const code = skillsStr.substring(idx, idx + 2);
             const skillName = CODE_TO_SKILL[code];
             if (skillName) {

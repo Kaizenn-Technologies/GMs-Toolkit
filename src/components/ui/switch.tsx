@@ -11,6 +11,8 @@ interface SwitchProps {
    * so the handle doesn't overshoot.
    */
   size?: "default" | "sm";
+  "aria-label"?: string;
+  "aria-labelledby"?: string;
 }
 
 function Switch({
@@ -20,6 +22,8 @@ function Switch({
   id,
   className,
   size = "default",
+  "aria-label": ariaLabel,
+  "aria-labelledby": ariaLabelledby,
 }: SwitchProps) {
   const isSm = size === "sm";
 
@@ -33,6 +37,8 @@ function Switch({
       role="switch"
       type="button"
       aria-checked={checked}
+      aria-label={ariaLabel}
+      aria-labelledby={ariaLabelledby}
       disabled={disabled}
       onClick={() => !disabled && onCheckedChange(!checked)}
       className={cn(

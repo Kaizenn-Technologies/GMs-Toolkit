@@ -1,5 +1,13 @@
 # Changelog
 
+## [v0.8.1]
+
+### Added
+- A new expermental UI for mobile users, curently only available via landing page.
+
+### Changed
+- Bug fixes and performance improvements.
+
 ## [v0.8.0]
 
 ### Added

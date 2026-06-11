@@ -5,7 +5,7 @@
  */
 
 import { useState, type ReactNode } from "react";
-import { X, SlidersHorizontal, RotateCcw, Sun, Moon, ChevronDown, ChevronRight, Info } from "lucide-react";
+import { X, SlidersHorizontal, RotateCcw, Sun, Moon, ChevronDown, ChevronRight, Info, Download, Upload } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { StepperInput } from "@/components/ui/stepper-input";
@@ -302,7 +302,7 @@ export function SettingsOverlay({
             Reset to defaults
           </Button>
           <Button variant="outline" size="sm" onClick={closeSettings}>
-            Done
+            Save changes
           </Button>
         </div>
       </div>
@@ -617,10 +617,227 @@ function HpSettingsPanel() {
   );
 }
 
+interface DesktopDiceConfig {
+  id: string;
+  name: string;
+  count: number;
+  sides: number;
+  modifier: number;
+  explode?: "single" | "compound";
+  reroll?: { type: "once" | "until"; threshold: number };
+  rule?: { type: "keep" | "drop"; target: "highest" | "lowest"; value: number };
+  isEditing: boolean;
+}
+
+interface DesktopDiceGroup {
+  id: string;
+  name: string;
+  diceIds: string[];
+  collapsed: boolean;
+  isEditing: boolean;
+}
+
+const handleExportMobile = () => {
+  const saved = localStorage.getItem("phone-dice-presets");
+  if (!saved) {
+    alert("No mobile presets found to export.");
+    return;
+  }
+  try {
+    const data = JSON.parse(saved);
+    const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(data, null, 2));
+    const downloadAnchor = document.createElement("a");
+    downloadAnchor.setAttribute("href", dataStr);
+    downloadAnchor.setAttribute("download", "mobile-dice-presets.json");
+    document.body.appendChild(downloadAnchor);
+    downloadAnchor.click();
+    downloadAnchor.remove();
+  } catch (e) {
+    console.error("Export mobile error:", e);
+    alert("Failed to export mobile presets.");
+  }
+};
+
+const handleImportMobile = () => {
+  const fileInput = document.createElement("input");
+  fileInput.type = "file";
+  fileInput.accept = ".json";
+  fileInput.onchange = (e) => {
+    const file = (e.target as HTMLInputElement).files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      try {
+        const json = JSON.parse(event.target?.result as string);
+        if (!Array.isArray(json)) {
+          alert("Invalid presets format. Expected a JSON array of presets.");
+          return;
+        }
+        const valid = json.every((item) => item && typeof item === "object" && "formula" in item);
+        if (!valid) {
+          alert("Invalid presets format. Each preset must contain a formula.");
+          return;
+        }
+        localStorage.setItem("phone-dice-presets:v1", JSON.stringify(json));
+        alert("Mobile presets imported successfully! Reloading...");
+        window.location.reload();
+      } catch (err) {
+        console.error("Import mobile error:", err);
+        alert("Failed to parse JSON file.");
+      }
+    };
+    reader.readAsText(file);
+  };
+  fileInput.click();
+};
+
+const handleExportDesktop = () => {
+  const savedPresets = localStorage.getItem("dm-dice-presets");
+  const savedGroups = localStorage.getItem("dm-dice-groups");
+  
+  const presets: DesktopDiceConfig[] = savedPresets ? JSON.parse(savedPresets) : [];
+  const groups: DesktopDiceGroup[] = savedGroups ? JSON.parse(savedGroups) : [];
+  
+  if (presets.length === 0 && groups.length === 0) {
+    alert("No desktop presets found to export.");
+    return;
+  }
+
+  try {
+    const exportedGroups = groups.map((g) => ({
+      id: g.id,
+      name: g.name,
+      collapsed: g.collapsed,
+      dice: g.diceIds
+        .flatMap((dId, idx) => {
+          const c = presets.find((config) => config.id === dId);
+          return c ? [{ ...c, position: idx }] : [];
+        }),
+    }));
+
+    const ungroupedDice = presets.filter(
+      (c) => !groups.some((g) => g.diceIds.includes(c.id))
+    );
+    const exportedUngrouped = ungroupedDice.map((d, idx) => ({ ...d, position: idx }));
+
+    const exportData = {
+      version: "1.0.0",
+      groups: exportedGroups,
+      ungrouped: exportedUngrouped
+    };
+
+    const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(exportData, null, 2));
+    const downloadAnchor = document.createElement("a");
+    downloadAnchor.setAttribute("href", dataStr);
+    downloadAnchor.setAttribute("download", "desktop-dice-presets.json");
+    document.body.appendChild(downloadAnchor);
+    downloadAnchor.click();
+    downloadAnchor.remove();
+  } catch (e) {
+    console.error("Export desktop error:", e);
+    alert("Failed to export desktop presets.");
+  }
+};
+
+const handleImportDesktop = () => {
+  const fileInput = document.createElement("input");
+  fileInput.type = "file";
+  fileInput.accept = ".json";
+  fileInput.onchange = (e) => {
+    const file = (e.target as HTMLInputElement).files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      try {
+        const json = JSON.parse(event.target?.result as string);
+        if (json && typeof json === "object" && ("groups" in json || "ungrouped" in json)) {
+          const groups = Array.isArray(json.groups) ? (json.groups as Record<string, unknown>[]) : [];
+          const ungrouped = Array.isArray(json.ungrouped) ? (json.ungrouped as Record<string, unknown>[]) : [];
+          
+          const configs: DesktopDiceConfig[] = [];
+          const idMap = new Map<string, string>();
+          const getRegeneratedId = (oldId: string | undefined): string => {
+            if (!oldId) return crypto.randomUUID();
+            if (!idMap.has(oldId)) {
+              idMap.set(oldId, crypto.randomUUID());
+            }
+            return idMap.get(oldId)!;
+          };
+
+          const processedGroups = groups.map((g) => {
+            const gId = crypto.randomUUID();
+            const diceList = Array.isArray(g.dice) ? (g.dice as Record<string, unknown>[]) : [];
+            const diceIds = diceList.map((d) => {
+              const dId = getRegeneratedId(typeof d.id === "string" ? d.id : undefined);
+              configs.push({
+                id: dId,
+                name: typeof d.name === "string" ? d.name : `${d.count || 1}d${d.sides || 20}`,
+                count: typeof d.count === "number" ? d.count : 1,
+                sides: typeof d.sides === "number" ? d.sides : 20,
+                modifier: typeof d.modifier === "number" ? d.modifier : 0,
+                explode: d.explode as "single" | "compound" | undefined,
+                reroll: d.reroll as { type: "once" | "until"; threshold: number } | undefined,
+                rule: d.rule as { type: "keep" | "drop"; target: "highest" | "lowest"; value: number } | undefined,
+                isEditing: false
+              });
+              return dId;
+            });
+            return {
+              id: gId,
+              name: typeof g.name === "string" ? g.name : "Imported Group",
+              diceIds,
+              collapsed: typeof g.collapsed === "boolean" ? g.collapsed : false,
+              isEditing: false
+            };
+          });
+
+          ungrouped.forEach((d) => {
+            configs.push({
+              id: getRegeneratedId(typeof d.id === "string" ? d.id : undefined),
+              name: typeof d.name === "string" ? d.name : `${d.count || 1}d${d.sides || 20}`,
+              count: typeof d.count === "number" ? d.count : 1,
+              sides: typeof d.sides === "number" ? d.sides : 20,
+              modifier: typeof d.modifier === "number" ? d.modifier : 0,
+              explode: d.explode as "single" | "compound" | undefined,
+              reroll: d.reroll as { type: "once" | "until"; threshold: number } | undefined,
+              rule: d.rule as { type: "keep" | "drop"; target: "highest" | "lowest"; value: number } | undefined,
+              isEditing: false
+            });
+          });
+
+          localStorage.setItem("dm-dice-presets:v1", JSON.stringify(configs));
+          localStorage.setItem("dm-dice-groups:v1", JSON.stringify(processedGroups));
+        } else if (Array.isArray(json)) {
+          localStorage.setItem("dm-dice-presets:v1", JSON.stringify(json));
+          localStorage.setItem("dm-dice-groups:v1", JSON.stringify([]));
+        } else {
+          alert("Invalid desktop presets format.");
+          return;
+        }
+        alert("Desktop presets imported successfully! Reloading...");
+        window.location.reload();
+      } catch (err) {
+        console.error("Import desktop error:", err);
+        alert("Failed to parse JSON file.");
+      }
+    };
+    reader.readAsText(file);
+  };
+  fileInput.click();
+};
+
 function DiceSettingsPanel() {
   const { settings, updateDiceRoller } = useSettings();
+  const location = useLocation();
+
+  const isMobileDice = location.pathname.includes("/phone-dice");
+  const isDesktopDice = location.pathname.includes("/dm-dice-roller");
+  const showMobile = isMobileDice || (!isMobileDice && !isDesktopDice);
+  const showDesktop = isDesktopDice || (!isMobileDice && !isDesktopDice);
+
+
   return (
-    <div className="space-y-2">
+    <div className="space-y-2 pb-4">
       <SettingRow
         label="Manual Notation"
         description="Enable the manual dice notation input field."
@@ -650,6 +867,80 @@ function DiceSettingsPanel() {
           onCheckedChange={(v) => updateDiceRoller({ daggerheartMode: v })}
         />
       </SettingRow>
+
+      <SettingRow
+        label="Roll Sound Effects"
+        description="Enable synthesized sound feedback when rolling dice."
+      >
+        <Switch
+          checked={settings.diceRoller.soundEnabled}
+          onCheckedChange={(v) => updateDiceRoller({ soundEnabled: v })}
+        />
+      </SettingRow>
+
+      {showMobile && (
+        <>
+          <SectionDivider label="Mobile Dice Presets" />
+          <div className="py-1 flex items-center justify-between gap-4">
+            <div className="min-w-0">
+              <p className="text-sm font-medium">Backup & Restore</p>
+              <p className="text-xs text-muted-foreground mt-0.5">Export mobile presets or import them from file.</p>
+            </div>
+            <div className="flex gap-2 shrink-0">
+              <Button
+                variant="outline"
+                size="xs"
+                className="h-8 text-[11px] gap-1 px-2.5 font-bold uppercase cursor-pointer"
+                onClick={handleExportMobile}
+              >
+                <Download className="size-3" />
+                Export
+              </Button>
+              <Button
+                variant="outline"
+                size="xs"
+                className="h-8 text-[11px] gap-1 px-2.5 font-bold uppercase cursor-pointer hover:border-primary hover:text-primary"
+                onClick={handleImportMobile}
+              >
+                <Upload className="size-3" />
+                Import
+              </Button>
+            </div>
+          </div>
+        </>
+      )}
+
+      {showDesktop && (
+        <>
+          <SectionDivider label="Desktop DM Dice Presets" />
+          <div className="py-1 flex items-center justify-between gap-4">
+            <div className="min-w-0">
+              <p className="text-sm font-medium">Backup & Restore</p>
+              <p className="text-xs text-muted-foreground mt-0.5">Export desktop presets & groups, or import them.</p>
+            </div>
+            <div className="flex gap-2 shrink-0">
+              <Button
+                variant="outline"
+                size="xs"
+                className="h-8 text-[11px] gap-1 px-2.5 font-bold uppercase cursor-pointer"
+                onClick={handleExportDesktop}
+              >
+                <Download className="size-3" />
+                Export
+              </Button>
+              <Button
+                variant="outline"
+                size="xs"
+                className="h-8 text-[11px] gap-1 px-2.5 font-bold uppercase cursor-pointer hover:border-primary hover:text-primary"
+                onClick={handleImportDesktop}
+              >
+                <Upload className="size-3" />
+                Import
+              </Button>
+            </div>
+          </div>
+        </>
+      )}
     </div>
   );
 }

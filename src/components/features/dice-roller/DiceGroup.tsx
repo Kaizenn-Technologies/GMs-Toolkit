@@ -53,8 +53,11 @@ export const DiceGroup: React.FC<DiceGroupProps> = ({
   onSelectGroup,
   onSelectDice,
 }) => {
-  const [isEditing, setIsEditing] = useState(group.isEditing || false);
-  const [name, setName] = useState(group.name);
+  const [isEditingLocal, setIsEditingLocal] = useState(false);
+  const [localName, setLocalName] = useState<string | null>(null);
+
+  const isEditing = isEditingLocal || group.isEditing;
+  const currentName = localName !== null ? localName : group.name;
 
   const {
     attributes,
@@ -87,13 +90,15 @@ export const DiceGroup: React.FC<DiceGroupProps> = ({
 
   const handleSave = (e: React.MouseEvent) => {
     e.stopPropagation();
-    setIsEditing(false);
-    onUpdateGroup(group.id, { name, isEditing: false });
+    setIsEditingLocal(false);
+    onUpdateGroup(group.id, { name: currentName, isEditing: false });
+    setLocalName(null);
   };
 
   const handleEdit = (e: React.MouseEvent) => {
     e.stopPropagation();
-    setIsEditing(true);
+    setIsEditingLocal(true);
+    setLocalName(group.name);
   };
 
   return (
@@ -149,8 +154,8 @@ export const DiceGroup: React.FC<DiceGroupProps> = ({
             <div className="flex items-center gap-1 flex-1 min-w-0 pl-2 pr-2" onClick={(e) => e.stopPropagation()}>
               <Input
                 className="h-7 text-xs py-0 px-2"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
+                value={currentName}
+                onChange={(e) => setLocalName(e.target.value)}
                 aria-label="Group Name"
                 autoFocus
               />

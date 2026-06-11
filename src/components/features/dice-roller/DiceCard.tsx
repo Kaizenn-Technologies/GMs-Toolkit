@@ -40,7 +40,8 @@ export const DiceCard: React.FC<DiceCardProps> = ({
   isSelected = false,
   onSelect,
 }) => {
-  const [isEditing, setIsEditing] = useState(config.isEditing || false);
+  const [isEditingLocal, setIsEditingLocal] = useState(false);
+  const isEditing = isEditingLocal || config.isEditing;
   const {
     attributes,
     listeners,
@@ -58,19 +59,9 @@ export const DiceCard: React.FC<DiceCardProps> = ({
     opacity: isDragging ? 0.2 : 1,
     visibility: (isDragging && !isOverlay ? "visible" : "visible") as "visible" | "hidden" | "collapse",
   };
-
   // The "hint line" effect
   // Show a blue line when another item is being dragged over this one.
   const isDropTarget = isOver && !isDragging;
-
-  // Sync internal editing state with prop if it changes (e.g. from hook)
-  useEffect(() => {
-    if (config.isEditing !== undefined) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
-      setIsEditing(config.isEditing);
-    }
-  }, [config.isEditing]);
-
   const handleRoll = (e: React.MouseEvent | React.KeyboardEvent) => {
     if (isEditing) return;
     let mode: "normal" | "advantage" | "disadvantage" = "normal";
@@ -93,7 +84,7 @@ export const DiceCard: React.FC<DiceCardProps> = ({
 
   const handleSave = (e: React.MouseEvent) => {
     e.stopPropagation();
-    setIsEditing(false);
+    setIsEditingLocal(false);
     onUpdate({ isEditing: false });
   };
 
@@ -148,7 +139,7 @@ export const DiceCard: React.FC<DiceCardProps> = ({
             <Checkbox
               checked={isSelected}
               onCheckedChange={(checked) => onSelect(!!checked)}
-              className="h-4 w-4 rounded-sm border-border/70 text-primary data-[state=checked]:bg-primary data-[state=checked]:text-primary-foreground focus-visible:ring-primary/45"
+              className="size-4 rounded-sm border-border/70 text-primary data-[state=checked]:bg-primary data-[state=checked]:text-primary-foreground focus-visible:ring-primary/45"
             />
           </div>
         )}
@@ -179,10 +170,10 @@ export const DiceCard: React.FC<DiceCardProps> = ({
                   <Button
                     variant="ghost"
                     size="icon"
-                    className="h-8 w-8 text-muted-foreground/40 hover:text-primary hover:bg-primary/10 transition-colors"
+                    className="size-8 text-muted-foreground/40 hover:text-primary hover:bg-primary/10 transition-colors"
                     onClick={(e) => {
                       e.stopPropagation();
-                      setIsEditing(true);
+                      setIsEditingLocal(true);
                     }}
                     aria-label="Edit roll preset"
                   >
@@ -199,7 +190,7 @@ export const DiceCard: React.FC<DiceCardProps> = ({
                   <Button
                     variant="ghost"
                     size="icon"
-                    className="h-8 w-8 text-muted-foreground/40 hover:text-red-500 hover:bg-red-500/10 transition-colors"
+                    className="size-8 text-muted-foreground/40 hover:text-red-500 hover:bg-red-500/10 transition-colors"
                     onClick={(e) => {
                       e.stopPropagation();
                       onDelete();
@@ -219,7 +210,7 @@ export const DiceCard: React.FC<DiceCardProps> = ({
                   <Button
                     variant="secondary"
                     size="icon"
-                    className="h-8 w-8 bg-blue-500/10 border border-blue-500/20 text-blue-500 hover:bg-blue-500/20 hover:border-blue-500/30 transition-all shadow-sm"
+                    className="size-8 bg-blue-500/10 border border-blue-500/20 text-blue-500 hover:bg-blue-500/20 hover:border-blue-500/30 transition-all shadow-sm"
                     onClick={(e) => {
                       e.stopPropagation();
                       const mode = e.ctrlKey || e.metaKey ? "advantage" : e.shiftKey ? "disadvantage" : "normal";

@@ -1,5 +1,6 @@
-import { useState, useEffect, useRef, useCallback } from "react";
-import { Settings, Menu, X, Calculator, Users, Dices, ChevronRight } from "lucide-react";
+import { useState, useEffect, useRef } from "react";
+import { Settings, Menu, X, Calculator, Users, Dices, ChevronRight, Smartphone } from "lucide-react";
+import { useNavigate, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { useSettings } from "@/contexts/SettingsContext";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "../ui/tooltip";
@@ -27,7 +28,7 @@ export function Header({ activeTab, setActiveTab }: HeaderProps) {
     return () => window.removeEventListener("resize", handleResize);
   }, []);
 
-  const updateSlider = useCallback(() => {
+  const updateSlider = () => {
     if (!containerRef.current) return;
     const activeTrigger = containerRef.current.querySelector(
       '[data-active="true"]'
@@ -46,13 +47,20 @@ export function Header({ activeTab, setActiveTab }: HeaderProps) {
     } else {
       setSliderStyle((prev) => ({ ...prev, opacity: 0 }));
     }
-  }, []);
+  };
+
+  // Store the latest handler in a ref so the subscription reads .current
+  // without re-subscribing on every render (advanced-event-handler-refs fix).
+  const updateSliderRef = useRef(updateSlider);
+  updateSliderRef.current = updateSlider;
 
   useEffect(() => {
-    updateSlider();
-    const timer = setTimeout(updateSlider, 50);
+    const stableHandler = () => updateSliderRef.current();
 
-    const observer = new MutationObserver(updateSlider);
+    stableHandler();
+    const timer = setTimeout(stableHandler, 50);
+
+    const observer = new MutationObserver(stableHandler);
     if (containerRef.current) {
       observer.observe(containerRef.current, {
         attributes: true,
@@ -62,13 +70,13 @@ export function Header({ activeTab, setActiveTab }: HeaderProps) {
       });
     }
 
-    window.addEventListener("resize", updateSlider);
+    window.addEventListener("resize", stableHandler);
     return () => {
       observer.disconnect();
-      window.removeEventListener("resize", updateSlider);
+      window.removeEventListener("resize", stableHandler);
       clearTimeout(timer);
     };
-  }, [updateSlider]);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -129,6 +137,7 @@ export function Header({ activeTab, setActiveTab }: HeaderProps) {
           />
 
           <button
+            type="button"
             onClick={() => setActiveTab("hp")}
             data-active={activeTab === "hp"}
             className={`px-3 py-1 border transition-all duration-200 text-xs font-bold tracking-tight rounded-none cursor-pointer select-none relative z-10 ${activeTab === "hp"
@@ -140,6 +149,7 @@ export function Header({ activeTab, setActiveTab }: HeaderProps) {
           </button>
 
           <button
+            type="button"
             onClick={() => setActiveTab("point-buy")}
             data-active={activeTab === "point-buy"}
             className={`px-3 py-1 border transition-all duration-200 text-xs font-bold tracking-tight rounded-none cursor-pointer select-none relative z-10 ${activeTab === "point-buy"
@@ -151,6 +161,7 @@ export function Header({ activeTab, setActiveTab }: HeaderProps) {
           </button>
 
           <button
+            type="button"
             onClick={() => setActiveTab("dice-roller")}
             data-active={activeTab === "dice-roller"}
             className={`px-3 py-1 border transition-all duration-200 text-xs font-bold tracking-tight rounded-none cursor-pointer select-none relative z-10 ${activeTab === "dice-roller"
@@ -245,6 +256,10 @@ const MobileDrawerMenu: React.FC<MobileDrawerMenuProps> = ({
   setIsOpen,
   isDarkMode,
 }) => {
+  const navigate = useNavigate();
+  const location = useLocation();
+  const isPhoneDice = location.pathname === "/phone-dice";
+
   return (
     <div
       className={`absolute top-full left-0 w-full border-b border-border bg-background/98 backdrop-blur-xl transition-all duration-300 ease-in-out origin-top md:hidden ${isOpen
@@ -266,6 +281,7 @@ const MobileDrawerMenu: React.FC<MobileDrawerMenuProps> = ({
         <div className="grid grid-cols-1 gap-1.5">
           {/* HP Calculator */}
           <button
+            type="button"
             onClick={() => {
               setActiveTab("hp");
               setIsOpen(false);
@@ -295,6 +311,7 @@ const MobileDrawerMenu: React.FC<MobileDrawerMenuProps> = ({
 
           {/* Ability Score */}
           <button
+            type="button"
             onClick={() => {
               setActiveTab("point-buy");
               setIsOpen(false);
@@ -324,27 +341,58 @@ const MobileDrawerMenu: React.FC<MobileDrawerMenuProps> = ({
 
           {/* DM Dice Roller */}
           <button
+            type="button"
             onClick={() => {
               setActiveTab("dice-roller");
               setIsOpen(false);
             }}
-            className={`group flex items-center gap-2.5 py-1.5 px-2 rounded-none border text-left transition-all duration-200 cursor-pointer ${activeTab === "dice-roller"
+            className={`group flex items-center gap-2.5 py-1.5 px-2 rounded-none border text-left transition-all duration-200 cursor-pointer ${activeTab === "dice-roller" && !isPhoneDice
               ? "border-primary bg-primary/5 dark:bg-primary/10"
               : "border-border/60 hover:border-border hover:bg-muted/30"
               }`}
           >
-            <div className={`p-1.5 rounded-none border shrink-0 transition-colors duration-200 ${activeTab === "dice-roller"
+            <div className={`p-1.5 rounded-none border shrink-0 transition-colors duration-200 ${activeTab === "dice-roller" && !isPhoneDice
               ? "bg-primary/10 border-primary text-primary"
               : "bg-muted border-border text-muted-foreground group-hover:text-primary group-hover:bg-primary/5 group-hover:border-primary/20"
               }`}>
               <Dices className="size-3.5" />
             </div>
             <div className="flex-1 flex items-center gap-1.5 min-w-0">
-              <span className={`text-xs font-bold tracking-tight transition-colors duration-200 ${activeTab === "dice-roller" ? "text-primary" : "text-foreground"
+              <span className={`text-xs font-bold tracking-tight transition-colors duration-200 ${activeTab === "dice-roller" && !isPhoneDice ? "text-primary" : "text-foreground"
                 }`}>
                 DM Dice Roller
               </span>
-              {activeTab === "dice-roller" && (
+              {activeTab === "dice-roller" && !isPhoneDice && (
+                <span className="size-1.5 rounded-none bg-primary animate-pulse" />
+              )}
+            </div>
+            <ChevronRight className="size-3.5 text-muted-foreground/40 shrink-0 group-hover:text-primary group-hover:translate-x-0.5 transition-all duration-200" />
+          </button>
+
+          {/* Mobile Dice Roller */}
+          <button
+            type="button"
+            onClick={() => {
+              navigate("/phone-dice");
+              setIsOpen(false);
+            }}
+            className={`group flex items-center gap-2.5 py-1.5 px-2 rounded-none border text-left transition-all duration-200 cursor-pointer ${isPhoneDice
+              ? "border-primary bg-primary/5 dark:bg-primary/10"
+              : "border-border/60 hover:border-border hover:bg-muted/30"
+              }`}
+          >
+            <div className={`p-1.5 rounded-none border shrink-0 transition-colors duration-200 ${isPhoneDice
+              ? "bg-primary/10 border-primary text-primary"
+              : "bg-muted border-border text-muted-foreground group-hover:text-primary group-hover:bg-primary/5 group-hover:border-primary/20"
+              }`}>
+              <Smartphone className="size-3.5" />
+            </div>
+            <div className="flex-1 flex items-center gap-1.5 min-w-0">
+              <span className={`text-xs font-bold tracking-tight transition-colors duration-200 ${isPhoneDice ? "text-primary" : "text-foreground"
+                }`}>
+                Mobile Dice Roller (Beta)
+              </span>
+              {isPhoneDice && (
                 <span className="size-1.5 rounded-none bg-primary animate-pulse" />
               )}
             </div>
