@@ -38,25 +38,3 @@ export function parseClampedIntParam(
   return Math.max(min, Math.min(max, parsed));
 }
 
-export function setAbilityParams(
-  params: URLSearchParams,
-  values: Record<Ability, number>,
-  keys: Record<Ability, string>,
-): void {
-  for (const [ability, key] of Object.entries(keys) as [Ability, string][]) {
-    params.set(key, String(values[ability]));
-  }
-}
-
-export function setOptionalAbilityParams(
-  params: URLSearchParams,
-  values: Record<Ability, number | null>,
-  keys: Record<Ability, string>,
-): void {
-  for (const [ability, key] of Object.entries(keys) as [Ability, string][]) {
-    const value = values[ability];
-    if (value !== null) {
-      params.set(key, String(value));
-    }
-  }
-}

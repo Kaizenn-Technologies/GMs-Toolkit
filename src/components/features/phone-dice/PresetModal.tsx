@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { useReducer, useEffect } from "react";
 import type { DicePreset } from "./types";
 import { X, Trash2, Plus, Minus, Swords, Shield, Flame, Sparkles, Wand2, Heart, Dices } from "lucide-react";

@@ -1,5 +1,4 @@
-/* eslint-disable react-hooks/set-state-in-effect */
-import { useEffect, useRef, useState, useCallback } from "react";
+import { useEffect, useRef, useState, useCallback, useMemo } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { classes, classNames } from "@/lib/classes";
 import { backgrounds, backgroundNames } from "@/lib/backgrounds";
@@ -226,8 +225,29 @@ export function useStatGenerator() {
   const [shareModalProps, setShareModalProps] = useState<any>(null);
   const sharedNameRef = useRef("");
   const sharedRollsRef = useRef<number | null>(null);
-  const [sharedTimestamp, setSharedTimestamp] = useState("");
-  const [sharedTimezone, setSharedTimezone] = useState("");
+
+  const [isReset, setIsReset] = useState(false);
+  const { sharedTimestamp, sharedTimezone } = useMemo(() => {
+    if (isReset) return { sharedTimestamp: "", sharedTimezone: "" };
+    const params = new URLSearchParams(location.search);
+    const codeFromUrl = params.get("code");
+    let ts = "";
+    let tz = "";
+    if (codeFromUrl) {
+      try {
+        const decoded = decodeCharacter(codeFromUrl);
+        if (decoded.metadata) {
+          if (decoded.metadata.unixTime) {
+            ts = new Date(decoded.metadata.unixTime * 1000).toISOString();
+          }
+          if (decoded.metadata.offset) {
+            tz = decoded.metadata.offset;
+          }
+        }
+      } catch { /* ignore */ }
+    }
+    return { sharedTimestamp: ts, sharedTimezone: tz };
+  }, [location.search, isReset]);
 
   // Rolled stats state
   const [rolledBoxes, setRolledBoxes] = useState<
@@ -247,7 +267,7 @@ export function useStatGenerator() {
       try {
         const decoded = decodeCharacter(codeFromUrl);
         return decoded.metadata?.rollCount ?? 0;
-      } catch (e) {}
+      } catch { /* ignore */ }
     }
     return 0;
   });
@@ -647,12 +667,6 @@ export function useStatGenerator() {
           if (decoded.metadata.rollCount !== undefined) {
             sharedRollsRef.current = decoded.metadata.rollCount;
           }
-          if (decoded.metadata.unixTime) {
-            setSharedTimestamp(new Date(decoded.metadata.unixTime * 1000).toISOString());
-          }
-          if (decoded.metadata.offset) {
-            setSharedTimezone(decoded.metadata.offset);
-          }
         }
 
         // Hydrate Stats
@@ -920,11 +934,10 @@ export function useStatGenerator() {
     updateStandard,
   ]);
 
-  useEffect(() => {
-    if (hasHydratedFromUrl.current) return;
+  if (!hasHydratedFromUrl.current) {
     hasHydratedFromUrl.current = true;
     hydrateFromUrl();
-  }, [hydrateFromUrl]);
+  }
 
   const rollAllStats = () => {
     if (isRolling) return;
@@ -1052,8 +1065,7 @@ export function useStatGenerator() {
     );
     sharedRollsRef.current = null;
     sharedNameRef.current = "";
-    setSharedTimestamp("");
-    setSharedTimezone("");
+    setIsReset(true);
     setRollCount(0);
     setShowAssignPanel(false);
     handleAssignmentReset();

@@ -1,7 +1,7 @@
 import { Random, MersenneTwister19937 } from "random-js";
 
 let fallback: Random | null = null;
-let testRandom: Random | null = null;
+const testRandom: Random | null = null;
 
 function getFallback(): Random {
   if (!fallback) {
@@ -10,20 +10,7 @@ function getFallback(): Random {
   return fallback;
 }
 
-/**
- * Sets a seeded engine for deterministic testing.
- * @param seed The seed value to initialize the Mersenne Twister engine.
- */
-export function setSeededEngine(seed: number): void {
-  testRandom = new Random(MersenneTwister19937.seed(seed));
-}
 
-/**
- * Clears the seeded test engine, reverting to default secure/fallback RNG.
- */
-export function clearSeededEngine(): void {
-  testRandom = null;
-}
 
 /**
  * Generates a secure random integer between min and max (inclusive).

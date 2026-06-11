@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState } from "react";
 import { Minus, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -21,12 +21,12 @@ export function StepperInput({
   "aria-label"?: string;
 }) {
   const [isFocused, setIsFocused] = useState(false);
-  const prevValueRef = useRef(value);
+  const [prevValue, setPrevValue] = useState(value);
   const [direction, setDirection] = useState<"left" | "right" | null>(null);
 
-  if (value !== prevValueRef.current) {
-    setDirection(value > prevValueRef.current ? "right" : "left");
-    prevValueRef.current = value;
+  if (value !== prevValue) {
+    setDirection(value > prevValue ? "right" : "left");
+    setPrevValue(value);
   }
 
   return (

@@ -1,5 +1,11 @@
 # Changelog
 
+## [v0.8.2]
+
+### Changed
+- Codebase refactoring
+- Bug fixes and performance improvements.
+
 ## [v0.8.1]
 
 ### Added

@@ -30,14 +30,14 @@ export function ShareModal({
   onGenerateUrl,
 }: ShareModalProps) {
   const [localName, setLocalName] = useState<string | null>(null);
-  const prevCharacterNameRef = useRef(characterName);
+  const [prevCharacterName, setPrevCharacterName] = useState(characterName);
   const [copied, setCopied] = useState(false);
   const inputRef = useRef<HTMLInputElement | null>(null);
 
   // Sync state with props during render if characterName prop changes
-  if (characterName !== prevCharacterNameRef.current) {
+  if (characterName !== prevCharacterName) {
     setLocalName(null);
-    prevCharacterNameRef.current = characterName;
+    setPrevCharacterName(characterName);
   }
 
   const currentName = localName !== null ? localName : characterName;
@@ -67,12 +67,14 @@ export function ShareModal({
       }
       return url.toString();
     }
-  }, [isOpen, encodedData, localName, currentName, isRandomized, rollMeta, onGenerateUrl]);
+  }, [isOpen, encodedData, currentName, isRandomized, rollMeta, onGenerateUrl]);
 
   // Generate QR Code logic extracted to ShareQRCodePanel below
 
   const onCloseRef = useRef(onClose);
-  onCloseRef.current = onClose;
+  useEffect(() => {
+    onCloseRef.current = onClose;
+  });
 
   // Handle ESC key to close
   useEffect(() => {

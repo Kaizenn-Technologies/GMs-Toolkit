@@ -52,7 +52,9 @@ export function Header({ activeTab, setActiveTab }: HeaderProps) {
   // Store the latest handler in a ref so the subscription reads .current
   // without re-subscribing on every render (advanced-event-handler-refs fix).
   const updateSliderRef = useRef(updateSlider);
-  updateSliderRef.current = updateSlider;
+  useEffect(() => {
+    updateSliderRef.current = updateSlider;
+  });
 
   useEffect(() => {
     const stableHandler = () => updateSliderRef.current();
@@ -76,7 +78,7 @@ export function Header({ activeTab, setActiveTab }: HeaderProps) {
       window.removeEventListener("resize", stableHandler);
       clearTimeout(timer);
     };
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  }, []);
 
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">

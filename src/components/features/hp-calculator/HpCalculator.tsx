@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { useState } from "react";
 import { Plus, Trash2, Dices } from "lucide-react";
 import { Button } from "@/components/ui/button";

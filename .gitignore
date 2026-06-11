@@ -34,3 +34,6 @@ dev-dist
 dev-dist/*
 shareURL-spec-abilityscore.md
 GM-Lighthouse
+react-doctor-report.json
+react-doctor-report-utf8.json
+react-doctor.json

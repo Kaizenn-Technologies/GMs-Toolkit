@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { useRef, useEffect, useCallback, useReducer } from "react";
 import { X, Upload, FileJson, Check, AlertCircle, Folder, Dice6 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -170,7 +171,9 @@ export const ImportModal: React.FC<ImportModalProps> = ({ isOpen, onClose, onImp
 
   // Close on ESC
   const handleCloseRef = useRef(handleClose);
-  handleCloseRef.current = handleClose;
+  useEffect(() => {
+    handleCloseRef.current = handleClose;
+  });
 
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {

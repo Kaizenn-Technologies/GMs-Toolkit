@@ -11,7 +11,7 @@ export const RollerTabNav: React.FC<RollerTabNavProps> = ({
   setActiveTab,
 }) => {
   return (
-    <div className="px-4 pt-2.5 pb-1 border-b border-border/30 shrink-0 bg-card">
+    <div className=" border-b border-border/30 shrink-0 bg-card">
       <div className="flex p-0.5 bg-muted rounded-xl border border-border/60">
         <button
           type="button"

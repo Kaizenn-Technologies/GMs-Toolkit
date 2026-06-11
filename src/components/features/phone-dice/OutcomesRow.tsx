@@ -20,14 +20,17 @@ export const OutcomesRow: React.FC<OutcomesRowProps> = ({
   const lastScrollSelectedIdRef = useRef<string | null>(null);
 
   // Local state to track the visually highlighted roll ID in real-time scroll
-  const [visualActiveId, setVisualActiveId] = useState<string | null>(activeRoll?.id || null);
+  const currentId = activeRoll?.id ?? null;
+  const [visualActiveId, setVisualActiveId] = useState<string | null>(currentId);
+  const prevActiveRollId = useRef<string | null>(currentId);
+
+  if (currentId !== prevActiveRollId.current) {
+    prevActiveRollId.current = currentId;
+    setVisualActiveId(currentId);
+  }
 
   // Chronological order: oldest on left, latest on right (last item)
   const chronologicalHistory = [...history].reverse();
-
-  useEffect(() => {
-    setVisualActiveId(activeRoll?.id || null);
-  }, [activeRoll?.id]);
 
   // Scroll to active item whenever it changes or history changes
   useEffect(() => {
