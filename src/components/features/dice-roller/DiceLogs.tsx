@@ -17,7 +17,7 @@ export const DiceLogs: React.FC<DiceLogsProps> = ({ logs, onClear }) => {
         <CardTitle className="text-sm font-bold flex items-center gap-2">
           <Logs size={14} className="text-primary" />
           Roll History
-        </CardTitle>
+        </CardTitle> 
         <Button
           variant="outline"
           size="sm"

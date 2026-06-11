@@ -31,6 +31,7 @@ export interface DiceRollerSettings {
   autoClearLogs: boolean;
   daggerheartMode: boolean;
   soundEnabled: boolean;
+  rollingAnimation: boolean;
 }
 
 export interface SitewideSettings {
@@ -121,6 +122,7 @@ const DEFAULT_DICE_ROLLER_SETTINGS: DiceRollerSettings = {
   autoClearLogs: false,
   daggerheartMode: false,
   soundEnabled: true,
+  rollingAnimation: true,
 };
 
 // ─── Context ──────────────────────────────────────────────────────────────────

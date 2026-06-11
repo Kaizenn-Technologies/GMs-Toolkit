@@ -878,6 +878,16 @@ function DiceSettingsPanel() {
         />
       </SettingRow>
 
+      <SettingRow
+        label="Rolling Animation"
+        description="Enable a dynamic visual delay before showing the final result."
+      >
+        <Switch
+          checked={settings.diceRoller.rollingAnimation}
+          onCheckedChange={(v) => updateDiceRoller({ rollingAnimation: v })}
+        />
+      </SettingRow>
+
       {showMobile && (
         <>
           <SectionDivider label="Mobile Dice Presets" />

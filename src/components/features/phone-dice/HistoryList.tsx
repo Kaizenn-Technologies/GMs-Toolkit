@@ -1,34 +1,7 @@
 import React from "react";
 import type { RollObject } from "./types";
-import { Clock, Sparkles, ShieldAlert, Trash2 } from "lucide-react";
-
-// Pure formatters — use only their parameters and globals, so they belong
-// at module scope rather than being rebuilt on every render.
-const formatTime = (timestamp: number) => {
-  const date = new Date(timestamp);
-  const hours = date.getHours().toString().padStart(2, "0");
-  const minutes = date.getMinutes().toString().padStart(2, "0");
-  const seconds = date.getSeconds().toString().padStart(2, "0");
-  return `${hours}:${minutes}:${seconds}`;
-};
-
-const getAdvantageBadge = (state: RollObject["advantageState"]) => {
-  if (state === "advantage") {
-    return (
-      <span className="inline-flex items-center gap-0.5 text-[8px] font-extrabold uppercase px-1.5 py-0.5 rounded bg-indigo-600/10 text-indigo-400 border border-indigo-500/15">
-        <Sparkles className="size-2" /> ADV
-      </span>
-    );
-  }
-  if (state === "disadvantage") {
-    return (
-      <span className="inline-flex items-center gap-0.5 text-[8px] font-extrabold uppercase px-1.5 py-0.5 rounded bg-amber-600/10 text-amber-400 border border-amber-500/15">
-        <ShieldAlert className="size-2" /> DIS
-      </span>
-    );
-  }
-  return null;
-};
+import { Trash2 } from "lucide-react";
+import { clsx } from "clsx";
 
 interface HistoryListProps {
   history: RollObject[];
@@ -43,7 +16,6 @@ export const HistoryList: React.FC<HistoryListProps> = ({
   onOpenDetails,
   onClearHistory,
 }) => {
-
   return (
     <div className="flex-1 flex flex-col h-full overflow-hidden">
       {/* List Header */}
@@ -78,61 +50,72 @@ export const HistoryList: React.FC<HistoryListProps> = ({
             Your roll history is empty. Try rolling some dice!
           </div>
         ) : (
-          history.map((roll) => {
-            // Border and result text coloring
-            let resultColor = "text-primary";
-            let borderColor = "border-border/40 hover:border-primary/20";
-            if (roll.advantageState === "advantage") {
-              resultColor = "text-indigo-400";
-              borderColor = "border-indigo-500/10 hover:border-indigo-500/30 hover:bg-indigo-600/5";
-            } else if (roll.advantageState === "disadvantage") {
-              resultColor = "text-amber-400";
-              borderColor = "border-amber-500/10 hover:border-amber-500/30 hover:bg-amber-600/5";
-            }
-
-            return (
-              <button
-                type="button"
-                key={roll.id}
-                onClick={() => {
-                  onSelectRoll(roll);
-                  onOpenDetails();
-                }}
-                className={`
-                  w-full text-left bg-card border rounded-xl p-3 flex items-center justify-between
-                  cursor-pointer select-none transition-all duration-200 active:scale-[0.99]
-                  ${borderColor}
-                `}
-              >
-                {/* Details */}
-                <div className="space-y-1 pr-4 min-w-0">
-                  <div className="flex items-center gap-1.5 flex-wrap">
-                    <span className="font-extrabold text-xs text-foreground truncate max-w-[160px]">
-                      {roll.formula}
-                    </span>
-                    {getAdvantageBadge(roll.advantageState)}
-                  </div>
-                  <div className="flex items-center gap-1 text-[9px] text-muted-foreground/80 font-medium">
-                    <Clock className="size-2.5" />
-                    <span>{formatTime(roll.timestamp)}</span>
-                    <span className="text-muted-foreground/30">•</span>
-                    <span className="truncate max-w-[120px]">
-                      Rolls: {roll.rolls.join(", ")}
-                    </span>
-                  </div>
-                </div>
-
-                {/* Big Pill Result */}
-                <div className="flex items-center gap-2 pl-2 border-l border-border/40 shrink-0">
-                  <div className={`font-mono text-xl font-black ${resultColor}`}>
-                    {roll.result}
-                  </div>
-                </div>
-              </button>
-            );
-          })
+          history.map((roll) => (
+            <HistoryListEntry
+              key={roll.id}
+              roll={roll}
+              onClick={() => {
+                onSelectRoll(roll);
+                onOpenDetails();
+              }}
+            />
+          ))
         )}
       </div>
     </div>
   );
 };
+
+const HistoryListEntry: React.FC<{ roll: RollObject; onClick: () => void }> = ({ roll, onClick }) => {
+  const timeString = new Date(roll.timestamp).toLocaleTimeString([], {
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+
+  return (
+    <button
+      type="button"
+      className={clsx(
+        "w-full text-left bg-transparent p-0 block focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 group cursor-pointer rounded border border-border/40 bg-muted/10 transition-all hover:bg-muted/20 overflow-hidden active:scale-[0.99]"
+      )}
+      onClick={onClick}
+    >
+      {/* Compact Header */}
+      <div className="flex items-stretch min-h-[40px]">
+        {/* Total Box */}
+        <div
+          className={clsx(
+            "flex items-center justify-center min-w-[45px] font-bold text-lg border-r border-border/40 shrink-0 shadow-inner",
+            roll.advantageState === "advantage" ? "text-green-500 bg-green-500/10" :
+              roll.advantageState === "disadvantage" ? "text-red-500 bg-red-500/10" :
+                "text-primary bg-primary/10"
+          )}
+        >
+          {roll.result}
+        </div>
+
+        {/* Name & Time */}
+        <div className="flex-1 flex flex-col justify-center px-3 py-1.5 min-w-0">
+          <div className="flex items-center justify-between gap-2">
+            <span className="text-[11px] font-bold uppercase tracking-tight text-foreground/80 truncate">
+              {roll.formula || "Custom Roll"}
+            </span>
+            <span className="text-[10px] font-medium text-muted-foreground/60 whitespace-nowrap">
+              {timeString}
+            </span>
+          </div>
+          {/* {hasAdvDis && (
+            <span className={clsx(
+              "text-[10px] font-semibold uppercase tracking-widest",
+              roll.advantageState === "advantage" ? "text-green-500/70" : 
+              roll.advantageState === "disadvantage" ? "text-red-500/70" : ""
+            )}>
+              {roll.advantageState}
+            </span>
+          )} */}
+        </div>
+      </div>
+    </button>
+  );
+};
+

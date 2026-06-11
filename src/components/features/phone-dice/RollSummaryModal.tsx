@@ -38,6 +38,13 @@ export const RollSummaryModal: React.FC<RollSummaryModalProps> = ({
   const isDisadvantage = roll.advantageState === "disadvantage";
   const hasDiscarded = !!roll.discardedRolls && roll.discardedRolls.length > 0;
 
+  // Attempt to parse the primary dice size from the formula to highlight max values
+  let primaryDiceSides = 20; // default
+  const matchDice = rawFormula.match(/d(\d+)/i);
+  if (matchDice) {
+    primaryDiceSides = parseInt(matchDice[1], 10);
+  }
+
   return (
     <div className="absolute inset-0 z-50 flex flex-col justify-end bg-black/75 backdrop-blur-xs select-none">
       {/* Tap outside to close */}
@@ -102,20 +109,26 @@ export const RollSummaryModal: React.FC<RollSummaryModalProps> = ({
                   {/* Kept */}
                   <div className="flex flex-col items-center gap-1 w-full">
                     <div className="flex flex-wrap justify-center gap-1.5 w-full">
-                      {roll.rolls.map((val, idx) => (
-                        <div
-                          key={`kept-${val}-${idx}`}
-                          className={`
-                            size-9 rounded-lg font-mono text-sm font-extrabold flex items-center justify-center border
-                            ${isAdvantage
-                              ? "bg-emerald-500/10 border-emerald-500 text-emerald-500 dark:text-emerald-400"
-                              : "bg-red-500/10 border-red-500 text-red-500 dark:text-red-400"
-                            }
-                          `}
-                        >
-                          {val}
-                        </div>
-                      ))}
+                      {roll.rolls.map((val, idx) => {
+                        const isMax = val === primaryDiceSides;
+                        const isMin = val === 1;
+                        return (
+                          <div
+                            key={`kept-${val}-${idx}`}
+                            className={`
+                              size-9 rounded-lg font-mono text-sm font-extrabold flex items-center justify-center border
+                              ${isMax
+                                ? "bg-emerald-500/10 border-emerald-500 text-emerald-500 dark:text-emerald-400"
+                                : isMin
+                                  ? "bg-red-500/10 border-red-500 text-red-500 dark:text-red-400"
+                                  : "bg-card border-border/80 text-foreground"
+                              }
+                            `}
+                          >
+                            {val}
+                          </div>
+                        );
+                      })}
                     </div>
                     <span className="text-xs pt-1 font-bold uppercase tracking-wider text-muted-foreground/50">
                       Kept Set ({roll.rolls.reduce((a, b) => a + b, 0)})
@@ -154,14 +167,26 @@ export const RollSummaryModal: React.FC<RollSummaryModalProps> = ({
                 </div>
               ) : (
                 <div className="flex flex-wrap items-center justify-center gap-1.5 max-w-xs w-full">
-                  {roll.rolls.map((dieVal, idx) => (
-                    <div
-                      key={`roll-${dieVal}-${idx}`}
-                      className="size-9 rounded-lg bg-card border border-border/80 font-mono text-sm font-bold flex items-center justify-center text-foreground"
-                    >
-                      {dieVal}
-                    </div>
-                  ))}
+                  {roll.rolls.map((dieVal, idx) => {
+                    const isMax = dieVal === primaryDiceSides;
+                    const isMin = dieVal === 1;
+                    return (
+                      <div
+                        key={`roll-${dieVal}-${idx}`}
+                        className={`
+                          size-9 rounded-lg font-mono text-sm font-bold flex items-center justify-center border
+                          ${isMax
+                            ? "bg-emerald-500/10 border-emerald-500 text-emerald-500 dark:text-emerald-400"
+                            : isMin
+                              ? "bg-red-500/10 border-red-500 text-red-500 dark:text-red-400"
+                              : "bg-card border-border/80 text-foreground"
+                          }
+                        `}
+                      >
+                        {dieVal}
+                      </div>
+                    );
+                  })}
                 </div>
               )}
 

@@ -80,12 +80,10 @@ const PresetCard: React.FC<PresetCardProps> = ({ preset, isRolling, onRoll, onEd
     <button
       type="button"
       disabled={isRolling}
-      onMouseDown={startPress}
-      onMouseUp={endPress}
-      onMouseLeave={cancelPress}
-      onTouchStart={startPress}
-      onTouchEnd={endPress}
-      onTouchMove={cancelPress}
+      onPointerDown={startPress}
+      onPointerUp={endPress}
+      onPointerLeave={cancelPress}
+      onPointerCancel={cancelPress}
       onContextMenu={(e) => e.preventDefault()}
       className="
         group relative bg-card border border-border/80 rounded-xl overflow-hidden

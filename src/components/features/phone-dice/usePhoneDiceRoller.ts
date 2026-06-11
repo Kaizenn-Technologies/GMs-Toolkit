@@ -72,7 +72,7 @@ function parseMultiDiceFormula(formulaStr: string) {
   return { diceTerms, modifier };
 }
 
-export function usePhoneDiceRoller() {
+export function usePhoneDiceRoller(rollingAnimation: boolean = true) {
   const [rollHistory, setRollHistory] = useState<RollObject[]>(() => {
     const saved = localStorage.getItem(HISTORY_KEY);
     return saved ? JSON.parse(saved) : [];
@@ -153,7 +153,6 @@ export function usePhoneDiceRoller() {
   };
 
   const rollDice = (formula: string, label?: string) => {
-    setIsRolling(true);
     const { diceTerms, modifier } = parseMultiDiceFormula(formula);
     const rolls: number[] = [];
     const discardedRolls: number[] = [];
@@ -253,12 +252,18 @@ export function usePhoneDiceRoller() {
     // Reset advantage/disadvantage after a roll
     setAdvantageState("none");
 
-    // Add to history and set as active roll after a delay to simulate a real roll
-    setTimeout(() => {
+    if (rollingAnimation) {
+      setIsRolling(true);
+      // Add to history and set as active roll after a delay to simulate a real roll
+      setTimeout(() => {
+        setRollHistory((prev) => [newRoll, ...prev]);
+        setActiveRoll(newRoll);
+        setIsRolling(false);
+      }, 450);
+    } else {
       setRollHistory((prev) => [newRoll, ...prev]);
       setActiveRoll(newRoll);
-      setIsRolling(false);
-    }, 450);
+    }
   };
 
   const selectRoll = (roll: RollObject) => {

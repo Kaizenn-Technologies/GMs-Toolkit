@@ -1,5 +1,13 @@
 # Changelog
 
+## [v0.8.3]
+
+### Added
+- Mobile Dice Roller Annoucement - A new experimental UI for mobile users.
+
+### Changed
+- Updated the Mobile Dice Roller to use the same dice roller history as the desktop version.
+
 ## [v0.8.2]
 
 ### Changed

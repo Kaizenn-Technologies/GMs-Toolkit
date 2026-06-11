@@ -1,4 +1,4 @@
-import { Calculator, Users, Dices, Smartphone } from "lucide-react";
+import { Calculator, Users, Dices, Smartphone, ChevronRight } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
 import { useSettings } from "@/contexts/SettingsContext";
@@ -55,6 +55,20 @@ export function LandingPage() {
 
       {/* Hero Header */}
       <div className="text-center mb-20 space-y-6 animate-in fade-in slide-in-from-top-12 duration-1000">
+        
+        {/* Announcement Pill */}
+        <div className="flex justify-center mb-8">
+          <button
+            type="button"
+            onClick={() => navigate('/phone-dice')}
+            className="group relative inline-flex items-center gap-2 rounded-full border border-pink-500/30 bg-pink-500/10 px-4 py-1.5 text-sm font-medium text-pink-600 dark:text-pink-400 transition-colors hover:bg-pink-500/20 focus:outline-none focus-visible:ring-2 focus-visible:ring-pink-500"
+          >
+            <span className="flex size-2 rounded-full bg-pink-500 animate-pulse" />
+            New: Mobile Dice Roller (Beta)
+            <ChevronRight className="ml-1 size-4 transition-transform group-hover:translate-x-1" />
+          </button>
+        </div>
+
         <div className="relative inline-block group">
           <div className="absolute -inset-1 bg-gradient-to-r from-blue-600 to-purple-600 rounded-full blur opacity-25 group-hover:opacity-50 transition duration-1000 group-hover:duration-200" />
           <img

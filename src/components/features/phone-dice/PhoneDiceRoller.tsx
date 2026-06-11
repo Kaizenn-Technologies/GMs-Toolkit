@@ -15,6 +15,10 @@ import type { DicePreset } from "./types";
 import { useSettings } from "@/contexts/SettingsContext";
 
 export const PhoneDiceRoller: React.FC = () => {
+  const { settings } = useSettings();
+  const rollingAnimation = settings.diceRoller.rollingAnimation;
+  const soundEnabled = settings.diceRoller.soundEnabled;
+
   const {
     rollHistory,
     presets,
@@ -35,7 +39,7 @@ export const PhoneDiceRoller: React.FC = () => {
     rollPool,
     dicePoolEnabled,
     setDicePoolEnabled,
-  } = usePhoneDiceRoller();
+  } = usePhoneDiceRoller(rollingAnimation);
 
   // Navigation tab state: 'roller' | 'history'
   const [activeTab, setActiveTab] = useState<"roller" | "history">("roller");
@@ -57,9 +61,6 @@ export const PhoneDiceRoller: React.FC = () => {
   const [presetToEdit, setPresetToEdit] = useState<DicePreset | null>(null);
   
   const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
-
-  const { settings } = useSettings();
-  const soundEnabled = settings.diceRoller.soundEnabled;
 
   const handleRoll = (formula: string, label?: string) => {
     playRollSound(soundEnabled);
@@ -99,7 +100,7 @@ export const PhoneDiceRoller: React.FC = () => {
       {/* Tab Contents Viewport */}
       <div className="flex-1 overflow-hidden flex flex-col relative bg-muted/5">
         {activeTab === "roller" ? (
-          <div ref={scrollContainerRef} className="flex-1 overflow-y-auto px-4 py-2 space-y-2.5 scrollbar-thin">
+          <div ref={scrollContainerRef} className="flex-1 overflow-y-auto py-2 space-y-2.5 scrollbar-thin">
             
             {/* Outcomes Horizontal Scroll */}
             <OutcomesRow
@@ -161,7 +162,7 @@ export const PhoneDiceRoller: React.FC = () => {
 
           </div>
         ) : (
-          <div className="flex-1 overflow-hidden px-4 py-2">
+          <div className="flex-1 overflow-hidden py-2">
             {/* Full History vertical listing */}
             <HistoryList
               history={rollHistory}
